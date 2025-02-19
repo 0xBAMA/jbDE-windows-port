@@ -1,0 +1,9 @@
+[submodule "src/utils/tinybvh"]
+	path = src/utils/tinybvh
+	url = https://github.com/jbikker/tinybvh.git
+[submodule "src/utils/tracy"]
+	path = src/utils/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "src/utils/noise/FastNoise2"]
+	path = src/utils/noise/FastNoise2
+	url = https://github.com/Auburn/FastNoise2.git
