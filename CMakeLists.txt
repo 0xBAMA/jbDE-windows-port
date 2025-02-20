@@ -153,6 +153,18 @@ target_link_libraries( Demo
 	PUBLIC
 	engineBase
 )# =================================================================================================
+# =================================================================================================
+# Physarum ( 3D )
+# =================================================================================================
+add_executable( Physarum3D
+	src/projects/Physarum/3D/main.cc
+)
+
+target_link_libraries( Physarum3D
+	PUBLIC
+	engineBase
+)
+
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf
