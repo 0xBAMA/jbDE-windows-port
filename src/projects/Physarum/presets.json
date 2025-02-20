@@ -1,0 +1,580 @@
+{
+  "PhysarumPresets": [
+	{
+		"decayFactor": 0.9604095816612244,
+		"depositAmount": 65400,
+		"senseAngle": 1.6163198947906494,
+		"senseDistance": 0.004961645696312189,
+		"stepSize": 0.0005442271940410137,
+		"turnAngle": 1.992329716682434,
+		"writeBack": false
+	},
+    {
+      "decayFactor": 0.9875,
+      "depositAmount": 1250,
+      "senseAngle": 2.454,
+      "senseDistance": 0.0013,
+      "stepSize": 0.0006,
+      "turnAngle": 1.25,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9355,
+      "depositAmount": 27170,
+      "senseAngle": 2.4011,
+      "senseDistance": 0.0017,
+      "stepSize": 0.0003,
+      "turnAngle": 1.6381,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9166,
+      "depositAmount": 27660,
+      "senseAngle": 1.6722,
+      "senseDistance": 0.0032,
+      "stepSize": 0.0005,
+      "turnAngle": 2.556,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9335,
+      "depositAmount": 32166,
+      "senseAngle": 1.6659,
+      "senseDistance": 0.0039,
+      "stepSize": 0.0022,
+      "turnAngle": 2.2867,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8513,
+      "depositAmount": 26686,
+      "senseAngle": 1.5892,
+      "senseDistance": 0.0038,
+      "stepSize": 0.0005,
+      "turnAngle": 2.7801,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9698,
+      "depositAmount": 14325,
+      "senseAngle": 1.5665,
+      "senseDistance": 0.002,
+      "stepSize": 0.0025,
+      "turnAngle": 2.7712,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.908,
+      "depositAmount": 5238,
+      "senseAngle": 2.4745,
+      "senseDistance": 0.0039,
+      "stepSize": 0.0009,
+      "turnAngle": 2.2314,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.857,
+      "depositAmount": 30399,
+      "senseAngle": 1.6821,
+      "senseDistance": 0.0046,
+      "stepSize": 0.0006,
+      "turnAngle": 2.7587,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.986,
+      "depositAmount": 20467,
+      "senseAngle": 1.6981,
+      "senseDistance": 0.0027,
+      "stepSize": 0.0027,
+      "turnAngle": 2.0121,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9691,
+      "depositAmount": 19525,
+      "senseAngle": 0.9316,
+      "senseDistance": 0.0038,
+      "stepSize": 0.0028,
+      "turnAngle": 2.6084,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9950857758522034,
+      "depositAmount": 34527,
+      "senseAngle": 2.1044111251831055,
+      "senseDistance": 0.004722463898360729,
+      "stepSize": 6.421505531761795e-05,
+      "turnAngle": 2.5585079193115234,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9533895254135132,
+      "depositAmount": 39647,
+      "senseAngle": 0.305856853723526,
+      "senseDistance": 0.004714421462267637,
+      "stepSize": 0.0002863314002752304,
+      "turnAngle": 2.044386863708496,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8726912140846252,
+      "depositAmount": 52936,
+      "senseAngle": 2.411559581756592,
+      "senseDistance": 0.0034646710846573114,
+      "stepSize": 0.00159473589155823,
+      "turnAngle": 2.1905126571655273,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7523981332778931,
+      "depositAmount": 38308,
+      "senseAngle": 1.2509251832962036,
+      "senseDistance": 0.003907390870153904,
+      "stepSize": 0.001819254015572369,
+      "turnAngle": 1.9868906736373901,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9977227449417114,
+      "depositAmount": 5667,
+      "senseAngle": 2.4783687591552734,
+      "senseDistance": 0.004837337415665388,
+      "stepSize": 0.0017388095147907734,
+      "turnAngle": 2.652597665786743,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.870439887046814,
+      "depositAmount": 26834,
+      "senseAngle": 1.352266788482666,
+      "senseDistance": 0.004321925807744265,
+      "stepSize": 0.003824960207566619,
+      "turnAngle": 1.432559847831726,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8671867847442627,
+      "depositAmount": 44807,
+      "senseAngle": 2.176680088043213,
+      "senseDistance": 0.0031965961679816246,
+      "stepSize": 0.0020686446223407984,
+      "turnAngle": 2.0922603607177734,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.899370551109314,
+      "depositAmount": 60975,
+      "senseAngle": 2.1078131198883057,
+      "senseDistance": 0.003168376861140132,
+      "stepSize": 0.001623813877813518,
+      "turnAngle": 1.9586528539657593,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7727528810501099,
+      "depositAmount": 36931,
+      "senseAngle": 1.62140953540802,
+      "senseDistance": 0.003918098751455545,
+      "stepSize": 0.0029908206779509783,
+      "turnAngle": 2.70462965965271,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9564495086669922,
+      "depositAmount": 17291,
+      "senseAngle": 2.3137972354888916,
+      "senseDistance": 0.0021041836589574814,
+      "stepSize": 0.0003243288956582546,
+      "turnAngle": 2.115999937057495,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7881481051445007,
+      "depositAmount": 23304,
+      "senseAngle": 1.9947673082351685,
+      "senseDistance": 0.004049102775752544,
+      "stepSize": 0.0004359643207862973,
+      "turnAngle": 0.2500362992286682,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9163155555725098,
+      "depositAmount": 49306,
+      "senseAngle": 1.6063653230667114,
+      "senseDistance": 0.0038548677694052458,
+      "stepSize": 0.0019721784628927708,
+      "turnAngle": 1.6258511543273926,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7842472791671753,
+      "depositAmount": 38363,
+      "senseAngle": 1.0235300064086914,
+      "senseDistance": 0.004525826312601566,
+      "stepSize": 0.0011559968115761876,
+      "turnAngle": 2.3794424533843994,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8578781485557556,
+      "depositAmount": 49047,
+      "senseAngle": 0.3959227204322815,
+      "senseDistance": 0.0001264830061700195,
+      "stepSize": 0.0004841852351091802,
+      "turnAngle": 2.2006683349609375,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8999327421188354,
+      "depositAmount": 49953,
+      "senseAngle": 1.81428062915802,
+      "senseDistance": 0.00424772035330534,
+      "stepSize": 0.0033169372472912073,
+      "turnAngle": 2.2276711463928223,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7590275406837463,
+      "depositAmount": 28203,
+      "senseAngle": 1.0683746337890625,
+      "senseDistance": 0.003543865866959095,
+      "stepSize": 0.001558748772367835,
+      "turnAngle": 1.5356248617172241,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9030942916870117,
+      "depositAmount": 16395,
+      "senseAngle": 1.2699264287948608,
+      "senseDistance": 0.0023849084973335266,
+      "stepSize": 0.0005241769831627607,
+      "turnAngle": 2.6512749195098877,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.886544942855835,
+      "depositAmount": 58930,
+      "senseAngle": 1.7485581636428833,
+      "senseDistance": 0.004956807009875774,
+      "stepSize": 0.0001672932121437043,
+      "turnAngle": 1.178238868713379,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.903033971786499,
+      "depositAmount": 32788,
+      "senseAngle": 1.1880334615707397,
+      "senseDistance": 0.004231036175042391,
+      "stepSize": 0.0008984453161247075,
+      "turnAngle": 2.0280823707580566,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8091865181922913,
+      "depositAmount": 68569,
+      "senseAngle": 1.4833595752716064,
+      "senseDistance": 0.0023637409321963787,
+      "stepSize": 0.0001528267894173041,
+      "turnAngle": 1.6914563179016113,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9159362316131592,
+      "depositAmount": 4230,
+      "senseAngle": 2.129565715789795,
+      "senseDistance": 0.0020442502573132515,
+      "stepSize": 0.0006355486111715436,
+      "turnAngle": 1.5641167163848877,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8703817129135132,
+      "depositAmount": 54367,
+      "senseAngle": 1.9436008930206299,
+      "senseDistance": 0.0035285388585180044,
+      "stepSize": 0.0008763190126046538,
+      "turnAngle": 2.387052536010742,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8922410011291504,
+      "depositAmount": 41126,
+      "senseAngle": 0.9782407283782959,
+      "senseDistance": 0.0031610040459781885,
+      "stepSize": 0.00394645007327199,
+      "turnAngle": 2.400773048400879,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8445103764533997,
+      "depositAmount": 24650,
+      "senseAngle": 2.4276444911956787,
+      "senseDistance": 0.004287986550480127,
+      "stepSize": 0.004894974175840616,
+      "turnAngle": 1.6201494932174683,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7576338052749634,
+      "depositAmount": 51347,
+      "senseAngle": 2.090770959854126,
+      "senseDistance": 0.0045772152952849865,
+      "stepSize": 0.0025168764404952526,
+      "turnAngle": 2.374068021774292,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8137773871421814,
+      "depositAmount": 32844,
+      "senseAngle": 1.9793357849121094,
+      "senseDistance": 0.0032109329476952553,
+      "stepSize": 0.004898139275610447,
+      "turnAngle": 2.320948600769043,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9597957134246826,
+      "depositAmount": 66431,
+      "senseAngle": 2.4649863243103027,
+      "senseDistance": 0.003827217500656843,
+      "stepSize": 0.0037150958087295294,
+      "turnAngle": 1.55539071559906,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9887712001800537,
+      "depositAmount": 31813,
+      "senseAngle": 1.878766655921936,
+      "senseDistance": 0.004234738647937775,
+      "stepSize": 0.002719864249229431,
+      "turnAngle": 1.9587416648864746,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9380971193313599,
+      "depositAmount": 16893,
+      "senseAngle": 2.5646607875823975,
+      "senseDistance": 0.00334848347119987,
+      "stepSize": 0.004652852192521095,
+      "turnAngle": 2.702209711074829,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9173837900161743,
+      "depositAmount": 34639,
+      "senseAngle": 0.6876450777053833,
+      "senseDistance": 0.00306403124704957,
+      "stepSize": 0.002102714031934738,
+      "turnAngle": 3.1390461921691895,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8920187950134277,
+      "depositAmount": 64874,
+      "senseAngle": 2.3240883350372314,
+      "senseDistance": 0.0026884537655860186,
+      "stepSize": 0.001842152327299118,
+      "turnAngle": 1.8085229396820068,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7549687623977661,
+      "depositAmount": 32920,
+      "senseAngle": 2.041186809539795,
+      "senseDistance": 0.002391591900959611,
+      "stepSize": 0.004559887107461691,
+      "turnAngle": 2.143357276916504,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9386916756629944,
+      "depositAmount": 22720,
+      "senseAngle": 3.1174404621124268,
+      "senseDistance": 0.0005729605327360332,
+      "stepSize": 0.0010635843500494957,
+      "turnAngle": 1.5137568712234497,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9363628029823303,
+      "depositAmount": 47705,
+      "senseAngle": 1.1115363836288452,
+      "senseDistance": 0.002862343331798911,
+      "stepSize": 0.00022932456340640783,
+      "turnAngle": 2.535614013671875,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8037872910499573,
+      "depositAmount": 14852,
+      "senseAngle": 2.2691752910614014,
+      "senseDistance": 0.003651024540886283,
+      "stepSize": 0.00021211474086157978,
+      "turnAngle": 0.754242479801178,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.850982129573822,
+      "depositAmount": 8114,
+      "senseAngle": 0.9728925824165344,
+      "senseDistance": 0.0034528293181210756,
+      "stepSize": 0.001680038869380951,
+      "turnAngle": 2.3977420330047607,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8881533145904541,
+      "depositAmount": 62753,
+      "senseAngle": 2.668827772140503,
+      "senseDistance": 0.004958007950335741,
+      "stepSize": 0.0010922251967713237,
+      "turnAngle": 2.4857420921325684,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.972288966178894,
+      "depositAmount": 36286,
+      "senseAngle": 1.3573932647705078,
+      "senseDistance": 0.0021677527111023664,
+      "stepSize": 0.0009341213153675199,
+      "turnAngle": 2.572002410888672,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9829354882240295,
+      "depositAmount": 38146,
+      "senseAngle": 1.1394871473312378,
+      "senseDistance": 0.0032589291222393513,
+      "stepSize": 0.00019962720398325473,
+      "turnAngle": 1.074021577835083,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9337233304977417,
+      "depositAmount": 23151,
+      "senseAngle": 2.1307544708251953,
+      "senseDistance": 0.0014578724512830377,
+      "stepSize": 0.003005678066983819,
+      "turnAngle": 3.030632257461548,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9806308746337891,
+      "depositAmount": 73719,
+      "senseAngle": 2.0095596313476563,
+      "senseDistance": 0.003917999099940062,
+      "stepSize": 0.0009578270255587995,
+      "turnAngle": 0.8323489427566528,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9996113777160645,
+      "depositAmount": 60769,
+      "senseAngle": 2.0720314979553223,
+      "senseDistance": 0.002790268510580063,
+      "stepSize": 0.0017200671136379242,
+      "turnAngle": 0.6106428503990173,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8913759589195251,
+      "depositAmount": 56751,
+      "senseAngle": 1.509493112564087,
+      "senseDistance": 0.004893283359706402,
+      "stepSize": 0.004872308112680912,
+      "turnAngle": 1.9184871912002563,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8784788250923157,
+      "depositAmount": 59282,
+      "senseAngle": 1.5488358736038208,
+      "senseDistance": 0.0037660475354641676,
+      "stepSize": 7.314293179661036e-05,
+      "turnAngle": 1.4189457893371582,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8988332748413086,
+      "depositAmount": 27572,
+      "senseAngle": 1.1865264177322388,
+      "senseDistance": 0.004400075878947973,
+      "stepSize": 0.004948494490236044,
+      "turnAngle": 2.4851832389831543,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8659595847129822,
+      "depositAmount": 11951,
+      "senseAngle": 0.9984015822410583,
+      "senseDistance": 0.003912285901606083,
+      "stepSize": 0.004044847562909126,
+      "turnAngle": 2.7512619495391846,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7606327533721924,
+      "depositAmount": 23573,
+      "senseAngle": 2.031026601791382,
+      "senseDistance": 0.0043263304978609085,
+      "stepSize": 0.0011805822141468525,
+      "turnAngle": 2.3852243423461914,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8394180536270142,
+      "depositAmount": 6710,
+      "senseAngle": 2.5879833698272705,
+      "senseDistance": 0.004756434820592403,
+      "stepSize": 0.0008049287716858089,
+      "turnAngle": 2.221229076385498,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.8907999992370605,
+      "depositAmount": 10660,
+      "senseAngle": 1.7289999723434448,
+      "senseDistance": 0.004756434820592403,
+      "stepSize": 0.0008999999845400453,
+      "turnAngle": 2.2014000415802,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.7809613943099976,
+      "depositAmount": 7366,
+      "senseAngle": 1.3274096250534058,
+      "senseDistance": 0.0023532933555543423,
+      "stepSize": 0.0004352643736638129,
+      "turnAngle": 1.2246136665344238,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9612982869148254,
+      "depositAmount": 14322,
+      "senseAngle": 1.7367095947265625,
+      "senseDistance": 0.00232523400336504,
+      "stepSize": 0.001914737280458212,
+      "turnAngle": 2.5922412872314453,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9264234900474548,
+      "depositAmount": 36752,
+      "senseAngle": 1.2265032529830933,
+      "senseDistance": 0.001998872496187687,
+      "stepSize": 0.0009655180620029569,
+      "turnAngle": 2.8286516666412354,
+      "writeBack": false
+    },
+    {
+      "decayFactor": 0.9977872371673584,
+      "depositAmount": 69393,
+      "senseAngle": 1.5281366109848022,
+      "senseDistance": 0.0038400166667997837,
+      "stepSize": 0.003863781224936247,
+      "turnAngle": 0.3812125325202942,
+      "writeBack": false
+    }
+  ]
+}
