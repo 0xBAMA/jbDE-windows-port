@@ -225,3 +225,15 @@ target_link_libraries( jbPaint
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Prototype line renderer
+# =================================================================================================
+add_executable( LineSpam
+	src/projects/LineSpam/main.cc
+)
+
+target_link_libraries( LineSpam
+	PUBLIC
+	engineBase
+)
