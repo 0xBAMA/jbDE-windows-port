@@ -202,6 +202,44 @@ target_link_libraries( Physarum3D
 	engineBase
 )
 
+
+
+
+# =================================================================================================
+# VoxelSpace
+# =================================================================================================
+add_executable( VoxelSpace
+	src/projects/VoxelSpace/CommancheMaps/main.cc
+)
+
+target_link_libraries( VoxelSpace
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
+# VoxelSpace_Erode
+# =================================================================================================
+add_executable( VoxelSpace_Erode
+	src/projects/VoxelSpace/Erosion/main.cc
+)
+
+target_link_libraries( VoxelSpace_Erode
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
+# VoxelSpace_Physarum
+# =================================================================================================
+add_executable( VoxelSpace_Physarum
+	src/projects/VoxelSpace/Physarum/main.cc
+)
+
+target_link_libraries( VoxelSpace_Physarum
+	PUBLIC
+	engineBase
+)
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf
