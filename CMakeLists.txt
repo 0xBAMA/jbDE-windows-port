@@ -363,6 +363,18 @@ target_link_libraries( Chorizo
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Random L-system generator
+# =================================================================================================
+add_executable( ChorizoForest
+	src/projects/Impostors/ChorizoForest/main.cc
+)
+
+target_link_libraries( ChorizoForest
+	PUBLIC
+	engineBase
+)
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf

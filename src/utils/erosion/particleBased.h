@@ -142,7 +142,7 @@ public:
 				//     break;
 
 				// thought I was clever, just discard if out of bounds
-				if( !glm::all( glm::greaterThanEqual( p.position, glm::vec2( 0.0f ) ) ) ||
+				if ( !glm::all( glm::greaterThanEqual( p.position, glm::vec2( 0.0f ) ) ) ||
 					!glm::all( glm::lessThan( p.position, glm::vec2( w, h ) ) ) ) break;
 
 				// sediment capacity
