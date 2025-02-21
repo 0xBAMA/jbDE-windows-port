@@ -540,18 +540,21 @@ void engineBase::ShaderCompile () {
 		// tonemapping shader - this will need some refinement as time goes on
 		std::system( "dir" );
 		shaders[ "Tonemap" ] = computeShader( basePath + "tonemap.cs.glsl" ).shaderHandle;
-
-		cout << "finished compilnig" << endl;
+		glObjectLabel( GL_PROGRAM, shaders[ "Tonemap" ], -1, string( "Tonemap" ).c_str() );
 
 		// create the shader for the triangles to cover the screen
 		shaders[ "Display" ] = regularShader( basePath + "blit.vs.glsl", basePath + "blit.fs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Display" ], -1, string( "Display" ).c_str() );
 
 		// initialize the text renderer
 		shaders[ "Font Renderer" ] = computeShader( "../src/utils/fonts/fontRenderer/font.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Font Renderer" ], -1, string( "Font Renderer" ).c_str() );
 
 		// trident shaders
 		shaders[ "Trident Raymarch" ] = computeShader( "../src/utils/trident/tridentGenerate.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Trident Raymarch" ], -1, string( "Trident Raymarch" ).c_str() );
 		shaders[ "Trident Blit" ] = computeShader( "../src/utils/trident/tridentCopy.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Trident Blit" ], -1, string( "Trident Blit" ).c_str() );
 		trident.PassInShaders( shaders[ "Trident Raymarch" ], shaders[ "Trident Blit" ] );
 	}
 }
