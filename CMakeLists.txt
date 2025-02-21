@@ -185,6 +185,20 @@ target_link_libraries( Siren
 )
 
 # =================================================================================================
+# Daedalus
+# =================================================================================================
+add_executable( Daedalus
+	src/projects/PathTracing/Daedalus/main.cc
+	src/projects/PathTracing/Daedalus/daedalusData.cc
+	src/projects/PathTracing/Daedalus/daedalusImgui.cc
+)
+
+target_link_libraries( Daedalus
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
 # realtime caustics experiment
 # =================================================================================================
 add_executable( Caustic
