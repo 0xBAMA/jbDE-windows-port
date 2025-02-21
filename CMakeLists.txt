@@ -353,6 +353,18 @@ target_link_libraries( VoxelSpace_Physarum
 )
 
 # =================================================================================================
+# SoftBodies
+# =================================================================================================
+add_executable( SoftBodies
+	src/projects/SoftBodies/CPU/main.cc
+	src/projects/SoftBodies/CPU/model.cc
+)
+
+target_link_libraries( SoftBodies
+	PUBLIC
+	engineBase
+)
+# =================================================================================================
 # Vertexture
 # =================================================================================================
 add_executable( Vertexture
