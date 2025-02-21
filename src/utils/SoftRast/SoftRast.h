@@ -84,7 +84,7 @@ public:
 	SoftRast( uint32_t x = 0, uint32_t y = 0 ) : width( x ), height( y ), Color( x, y ), Depth( x, y ) {
 		Color.ClearTo( color_4U( { 0, 0, 0, 0 } ) );
 		Depth.ClearTo( color_1F( { 0.0f } ) );
-		BlueNoise = Image_4U( "src/utils/noise/blueNoise.png" ); // for sample jitter, write helper function to return some samples
+		BlueNoise = Image_4U( "../src/utils/noise/blueNoise.png" ); // for sample jitter, write helper function to return some samples
 		// init std::random generator as member variable, for picking blue noise sample point - then sweep along x or y to get low discrepancy sequence
 	}
 
