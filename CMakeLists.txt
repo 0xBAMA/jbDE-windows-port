@@ -156,7 +156,6 @@ add_executable( Demo
 target_link_libraries( Demo
 	PUBLIC
 	engineBase
-)# =================================================================================================
 )
 
 
@@ -222,6 +221,17 @@ target_link_libraries( Icarus
 	engineBase
 )
 
+# =================================================================================================
+# BVH construction/traversal experiment based on https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/
+# =================================================================================================
+add_executable( BVHtest
+	src/projects/PathTracing/BVHtest/main.cc
+)
+
+target_link_libraries( BVHtest
+	PUBLIC
+	engineBase
+)
 # =================================================================================================
 add_executable( CATable
 	src/projects/CellularAutomata/table/main.cc
