@@ -183,7 +183,7 @@ using glm::normalize;
 using json = nlohmann::json;
 
 // more general noise solution
-//#include "../utils/noise/FastNoise2/include/FastNoise/FastNoise.h"
+#include "../utils/noise/FastNoise2/include/FastNoise/FastNoise.h"
 
 // wrapper for TinyOBJLoader
 #include "../utils/ModelLoading/TinyOBJLoader/tiny_obj_loader.h"

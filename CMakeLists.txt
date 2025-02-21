@@ -35,6 +35,9 @@ target_link_libraries( gl INTERFACE glad )
 add_library( glm INTERFACE )
 target_include_directories( glm INTERFACE "${PROJECT_SOURCE_DIR}/thirdparty/glm" )
 
+# FastNoise2
+add_subdirectory( ${PROJECT_SOURCE_DIR}/src/utils/noise/FastNoise2 )
+
 # this is for ImGUI
 add_library( imgui STATIC
 	src/utils/ImGUI/imgui_impl_sdl3.cpp
@@ -113,7 +116,7 @@ target_link_libraries(
 	autocomplete
 	tinyBVH
 	STB_ImageUtilsWrapper
-	# FastNoise
+	FastNoise
 	fftw3
 	Perlin
 	# Tracy::TracyClient
