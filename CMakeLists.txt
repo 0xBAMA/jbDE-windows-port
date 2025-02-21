@@ -449,6 +449,18 @@ target_link_libraries( CantorDust
 	engineBase
 )
 # =================================================================================================
+# generalizing Adam7 to arbitrary size neighborhoods
+# =================================================================================================
+add_executable( Adam
+	src/projects/SignalProcessing/Adam/main.cc
+)
+
+target_link_libraries( Adam
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
 # Trying to copy DynaDraw: http://www.graficaobscura.com/dyna/
 # =================================================================================================
 add_executable( jbPaint
