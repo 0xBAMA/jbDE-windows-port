@@ -7,7 +7,7 @@ public:
 	windowHandler () {}
 
 	void PreInit () {
-		if ( !SDL_Init( SDL_INIT_VIDEO ) ) {
+		if ( !SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) ) {
 			cout << "Error: " << SDL_GetError() << newline;
 		}
 		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER,       1 );
