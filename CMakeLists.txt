@@ -278,6 +278,19 @@ target_link_libraries( GoL
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Cellular Automata in Parallel Bit Planes
+# =================================================================================================
+add_executable( CABitPlanes
+	src/projects/CellularAutomata/bitPlanes/main.cc
+)
+
+target_link_libraries( CABitPlanes
+	PUBLIC
+	engineBase
+)
+
 # =================================================================================================
 # Aquaria
 # =================================================================================================
