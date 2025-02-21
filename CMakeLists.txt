@@ -351,6 +351,18 @@ target_link_libraries( VoxelSpace_Physarum
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Chorizo
+# =================================================================================================
+add_executable( Chorizo
+	src/projects/Impostors/Chorizo/main.cc
+)
+
+target_link_libraries( Chorizo
+	PUBLIC
+	engineBase
+)
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf
