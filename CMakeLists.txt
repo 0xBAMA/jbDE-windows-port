@@ -232,6 +232,31 @@ target_link_libraries( BVHtest
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Cellular Automata with History
+# =================================================================================================
+add_executable( CAHistory
+	src/projects/CellularAutomata/CAHistory/main.cc
+)
+
+target_link_libraries( CAHistory
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
+# Cellular Automata with History ( split colors )
+# =================================================================================================
+add_executable( CAColorSplit
+src/projects/CellularAutomata/colorSplit/main.cc
+)
+
+target_link_libraries( CAColorSplit
+PUBLIC
+engineBase
+)
+
 # =================================================================================================
 add_executable( CATable
 	src/projects/CellularAutomata/table/main.cc
