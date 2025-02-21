@@ -45,12 +45,14 @@ struct physarumConfig_t {
 	bool accumulate = false;
 
 	// scattering density threshold
-	int densityThreshold = 5000;
+	int densityThreshold = 500000;
 	// while rendering, we subtract this from the noise read
 	int noiseFloor = 0;
 
 	vec3 skyColor1 = vec3( 1.0f, 0.25f, 0.15f );
 	vec3 skyColor2 = vec3( 0.15f, 0.25f, 1.0f );
+
+	bool highlightBounds = true;
 };
 
 class Physarum final : public engineBase {
@@ -421,6 +423,7 @@ public:
 		ImGui::ColorEdit3( "Sky Color 1", ( float* ) &physarumConfig.skyColor1, ImGuiColorEditFlags_PickerHueWheel );
 		ImGui::ColorEdit3( "Sky Color 2", ( float* ) &physarumConfig.skyColor2, ImGuiColorEditFlags_PickerHueWheel );
 		ImGui::Separator();
+		ImGui::Checkbox( "Highlight Sim Volume Bounds", &physarumConfig.highlightBounds );
 		ImGui::End();
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
@@ -476,6 +479,7 @@ public:
 			glUniform1i( glGetUniformLocation( shader, "densityThreshold" ), physarumConfig.densityThreshold );
 			glUniform1i( glGetUniformLocation( shader, "noiseFloor" ), physarumConfig.noiseFloor );
 			glUniform1i( glGetUniformLocation( shader, "accumulate" ), physarumConfig.accumulate );
+			glUniform1i( glGetUniformLocation( shader, "highlightBounds" ), physarumConfig.highlightBounds );
 
 			textureManager.BindImageForShader( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "1" : "0" ), "continuum", shader, 2 );
 

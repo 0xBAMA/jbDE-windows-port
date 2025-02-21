@@ -49,9 +49,9 @@
 			"numAgents": 1048576
 		},
 		"Physarum3D": {
-			"dimensionX": 512,
-			"dimensionY": 512,
-			"dimensionZ": 512,
+			"dimensionX": 1024,
+			"dimensionY": 1024,
+			"dimensionZ": 256,
 			"numAgents": 10000000
 		},
 		"ProjectedFramebuffers": {

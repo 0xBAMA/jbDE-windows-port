@@ -26,6 +26,8 @@ uniform bool accumulate;
 uniform int densityThreshold;
 uniform int noiseFloor;
 
+uniform bool highlightBounds;
+
 #include "consistentPrimitives.glsl.h"
 #include "mathUtils.h"
 
@@ -114,7 +116,9 @@ void main () {
 			}
 		}
 
-		color.r += 0.01f;
+		if ( highlightBounds ) {
+			color.r += 0.01f;
+		}
 	}
 
 	vec4 previousColor = imageLoad( accumulatorTexture, ivec2( gl_GlobalInvocationID.xy ) );
