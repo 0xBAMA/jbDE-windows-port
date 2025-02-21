@@ -528,6 +528,19 @@ target_link_libraries( CantorDust
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Neural net stuff for identifying handwritten characters from the MNIST dataset
+# =================================================================================================
+add_executable( MNIST
+	src/projects/SignalProcessing/MNIST/main.cc
+)
+
+target_link_libraries( MNIST
+	PUBLIC
+	engineBase
+)
+
 # =================================================================================================
 # generalizing Adam7 to arbitrary size neighborhoods
 # =================================================================================================
