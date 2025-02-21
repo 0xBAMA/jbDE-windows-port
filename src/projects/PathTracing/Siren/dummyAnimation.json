@@ -1,0 +1,16 @@
+{
+	"setup":{
+		"numFrames":1,
+		"numSamples":100
+	},
+	"0":{
+		"numSamples":0,
+		"FoV":1.0,
+		"skylightColor":{
+			"r":1.0,
+			"g":0.2,
+			"b":0.5
+		},
+		"thinLensEnable":true
+	}
+}

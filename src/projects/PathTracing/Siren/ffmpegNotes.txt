@@ -1,0 +1,15 @@
+ffmpeg command
+	ffmpeg -framerate 60 -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p out.mp4
+
+to reverse the video
+	ffmpeg -i originalVideo.mp4 -vf reverse reversedVideo.mp4
+
+to stitch together
+put the following into a text file e.g. videos.txt
+	file 'outStitched.mp4'
+	file 'outStitched.mp4'
+	file 'outStitched.mp4'
+	file 'outStitched.mp4'
+
+then run the command
+	ffmpeg -f concat -i videos.txt -c copy outStitched4.mp4

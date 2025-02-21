@@ -168,6 +168,17 @@ target_link_libraries( SpaceGame
 	engineBase
 )
 
+# =================================================================================================
+# Siren
+# =================================================================================================
+add_executable( Siren
+	src/projects/PathTracing/Siren/main.cc
+)
+
+target_link_libraries( Siren
+	PUBLIC
+	engineBase
+)
 
 # =================================================================================================
 # realtime caustics experiment
