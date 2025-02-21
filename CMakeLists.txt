@@ -8,7 +8,8 @@ set( CMAKE_CXX_STANDARD_REQUIRED True )
 
 # Add Debug and Release build configurations
 # set( CMAKE_CXX_FLAGS_DEBUG "-g" )
-set( CMAKE_CXX_FLAGS_RELEASE "-O4" )
+# set( CMAKE_CXX_FLAGS_RELEASE "-O4" )
+set( CMAKE_CXX_FLAGS_RELEASE "/O2" )
 
 set( CMAKE_BUILD_TYPE Release )
 
