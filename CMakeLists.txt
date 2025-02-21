@@ -517,6 +517,20 @@ target_link_libraries( ChorizoSoftbody
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Trying to implement slow-scan television (SSTV)
+# =================================================================================================
+add_executable( Spectrogram
+	src/projects/SignalProcessing/Spectrogram/main.cc
+)
+
+target_link_libraries( Spectrogram
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf
