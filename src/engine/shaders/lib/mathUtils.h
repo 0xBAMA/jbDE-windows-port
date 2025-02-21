@@ -18,7 +18,9 @@ float RangeRemapValue ( float value, float inLow, float inHigh, float outLow, fl
 #define saturate(x) clamp(x, 0, 1)
 #endif
 
-#define UINT_MAX 4294967295U
+#ifndef UINT_MAX
+#define UINT_MAX (0xFFFFFFFF-1)
+#endif
 
 #ifndef PI_DEFINED
 #define PI_DEFINED
