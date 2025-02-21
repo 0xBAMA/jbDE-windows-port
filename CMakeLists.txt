@@ -210,6 +210,17 @@ target_link_libraries( Caustic
 	engineBase
 )
 
+# =================================================================================================
+# Icarus
+# =================================================================================================
+add_executable( Icarus
+	src/projects/PathTracing/Icarus/main.cc
+)
+
+target_link_libraries( Icarus
+	PUBLIC
+	engineBase
+)
 
 # =================================================================================================
 add_executable( CATable
