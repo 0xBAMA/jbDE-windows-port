@@ -30,7 +30,7 @@
 #include <vector>
 
 // fftw3 include
-//#include "../utils/fftw-3.3.10/api/fftw3.h"
+#include "../utils/fftw-3.3.10/api/fftw3.h"
 
 // iostream stuff
 using std::cerr;
@@ -196,6 +196,6 @@ using XMLDocument = tinyxml2::XMLDocument;
 #include "../utils/happly/happly.h"
 
 // tinyBVH software BVH build/traversal
- //#include "../utils/tinybvh/tiny_bvh.h"
+ #include "../utils/tinybvh/tiny_bvh.h"
 
 #endif
