@@ -52,6 +52,9 @@ void engineBase::SendTonemappingParameters ( const bool passthrough ) {
 	glUniform1i( glGetUniformLocation( shader, "enableVignette" ), tonemap.enableVignette );
 	glUniform1f( glGetUniformLocation( shader, "vignettePower" ), tonemap.vignettePower );
 
+	// problematic if missing
+	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 2 );
+
 	// bypass/passthrough
 	glUniform1i( glGetUniformLocation( shader, "passthrough" ), passthrough );
 }
