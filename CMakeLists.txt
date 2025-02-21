@@ -375,6 +375,19 @@ target_link_libraries( ChorizoForest
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# SoftBodies (CPU) using the Chorizo renderer
+# =================================================================================================
+add_executable( ChorizoSoftbody
+	src/projects/Impostors/ChorizoSoftbody/main.cc
+	src/projects/Impostors/ChorizoSoftbody/model.cc
+)
+
+target_link_libraries( ChorizoSoftbody
+	PUBLIC
+	engineBase
+)
 # Messing with 2D IFS
 # https://flam3.com/flame_draves.pdf
 # https://www.cs.uaf.edu/~olawlor/papers/2011/ifs/lawlor_ifs_2011.pdf
