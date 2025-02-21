@@ -353,6 +353,18 @@ target_link_libraries( VoxelSpace_Physarum
 )
 
 # =================================================================================================
+# Vertexture
+# =================================================================================================
+add_executable( Vertexture
+	src/projects/Impostors/Vertexture/main.cc
+)
+
+target_link_libraries( Vertexture
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
 # VertextureClassic
 # =================================================================================================
 add_executable( VertextureClassic

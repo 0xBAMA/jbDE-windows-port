@@ -110,7 +110,7 @@
 			}
 		},
 		"Vertexture": {
-			"Guys": 0,
+			"Guys": 64,
 			"Lights": 64,
 			"Lights Max Brightness": 0.02,
 			"Lights Min Brightness": 0.005,
