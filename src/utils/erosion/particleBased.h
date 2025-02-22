@@ -9,14 +9,14 @@ public:
 	particleEroder () {}
 
 	// functions
-	void InitWithDiamondSquare () {
+	void InitWithDiamondSquare ( const uint32_t dim = 1024 ) {
 		long unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 
 		std::default_random_engine engine{ seed };
 		std::uniform_real_distribution< float > distribution{ 0.0f, 1.0f };
 
 		// todo: make this variable ( data array cannot be variable size in c++ )
-		const uint32_t dim = 1024;
+		// const uint32_t dim = 1024;
 		// const uint32_t dim = 4096;
 
 	// #define TILE
