@@ -276,7 +276,6 @@ public:
 			if ( inputHandler.getState( KEY_PAGEDOWN ) )	physarumConfig.viewerPosition += scalar * physarumConfig.viewerBasisY;
 			if ( inputHandler.getState( KEY_PAGEUP ) )		physarumConfig.viewerPosition -= scalar * physarumConfig.viewerBasisY;
 
-
 			if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
 				CompileShaders();
 			}

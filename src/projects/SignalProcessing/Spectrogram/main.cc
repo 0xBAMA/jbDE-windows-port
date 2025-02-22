@@ -60,10 +60,10 @@ public:
 			opts.textureType	= GL_TEXTURE_2D;
 			textureManager.Add( "Waterfall", opts );
 
-			// string filename = string( "../../Documents/dennisMorrowMonoFloat.wav" );
 			// string filename = string( "../../Documents/cave14.wav" );
 			// string filename = string( "../../Documents/resultpele.wav" );
-			string filename = string( "../../Documents/groupB.wav" );
+			// string filename = string( "../../Documents/groupB.wav" );
+			string filename = string( "../../Documents/dennisMorrowMonoFloat.wav" );
 
 			if ( SDL_LoadWAV( filename.c_str(), &wavSpec, &wavDataBuffer, &wavLengthBytes ) == NULL ) {
 				cout << "\nCould not open test wav: " << SDL_GetError() << newline;
@@ -78,8 +78,10 @@ public:
 				cout << "\tBits Per Sample:\t" << ( int ) SDL_AUDIO_BITSIZE( wavSpec.format ) << newline;
 				cout << "\tChannels:\t\t" << ( int ) wavSpec.channels << newline;
 
-				// create the audio stream, to pull data from - SDL3 changes the interface a bit https://examples.libsdl.org/SDL3/audio/03-load-wav/
+				// create the audio stream, to pull data from -
 				// streamBufferAnalyze = SDL_NewAudioStream( AUDIO_F32, 1, 48000, AUDIO_F32, 1, 48000 );
+
+				// SDL3 changes the interface a bit https://examples.libsdl.org/SDL3/audio/03-load-wav/
 				streamBufferAnalyze = SDL_OpenAudioDeviceStream( SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK , &wavSpec, NULL, NULL );
 				int rc = SDL_PutAudioStreamData( streamBufferAnalyze, wavDataBuffer, wavLengthBytes );
 				if ( rc == -1 ) {
@@ -90,9 +92,10 @@ public:
 				// SDL_AudioDeviceID dev = SDL_OpenAudioDevice( NULL, 0, &wavSpec, NULL, 0 );
 				// SDL_QueueAudio( dev, wavDataBuffer, wavLengthBytes );
 				// SDL_PauseAudioDevice( dev, 0 );
+
 				SDL_ResumeAudioStreamDevice( streamBufferAnalyze );
 
-				// free the data - is this needed?
+				// free the data
 				SDL_free( wavDataBuffer );
 			}
 		}
@@ -204,24 +207,19 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
+		static float data[ N ];
+
 		/* // SDL2 Version
 		// get the data out of the audio stream
-		static float data[ N ];
 		int gotten = SDL_GetAudioStreamData(streamBufferAnalyze, data, sizeof(data));
 		if ( gotten == -1 ) {
 			cout << "Uhoh, failed to get converted data: " << SDL_GetError() << newline;
 		}
 		*/
 
-		static float data[ N ];
-		SDL_GetAudioStreamData( streamBufferAnalyze, ( void* ) data, ( int ) sizeof( data ) );
-
-		// for ( int i = 0; i < N; i++ )
-		// 	cout << data[ i ] << " ";
-		// cout << endl;
-
 		if ( SDL_GetAudioStreamAvailable( streamBufferAnalyze ) < ( int ) sizeof( data ) ) {
-			SDL_PutAudioStreamData( streamBufferAnalyze, data, wavLengthBytes );
+			SDL_GetAudioStreamData( streamBufferAnalyze, ( void* ) data, ( int ) sizeof( data ) );
+			// SDL_PutAudioStreamData( streamBufferAnalyze, data, wavLengthBytes );
 		} else {
 			cout << "Uhoh, failed to get converted data: " << SDL_GetError() << newline;
 		}
@@ -230,7 +228,6 @@ public:
 			inputData[ i ][ 0 ] = data[ i ];
 			inputData[ i ][ 1 ] = 0.0f;
 		}
-
 		fftw_execute( p );
 
 		// put it in the buffer for the shader to read ( note use of double precision on CPU, single on GPU )
