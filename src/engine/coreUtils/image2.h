@@ -485,29 +485,31 @@ public:
 		remapOperation_t rangeType = AUTONORMALIZE;
 		float	rangeStartLow	= 0.0f, rangeStartHigh	= 0.0f;
 		float	rangeEndLow		= 0.0f, rangeEndHigh	= 0.0f;
+
+		rangeRemapInputs_t () {}
+		rangeRemapInputs_t ( remapOperation_t set ) {
+			rangeType = set;
+		}
 	};
 
 	// remap a single value from [inLow, inHigh] to [outLow, outHigh]
 	imageType RangeRemapValue ( imageType value, imageType inLow, imageType inHigh, imageType outLow, imageType outHigh ) const {
-		return outLow + ( value - inLow ) * ( outHigh - outLow ) / ( inHigh - inLow );
+		return outLow + ( outHigh - outLow ) * ( ( value - inLow ) / ( inHigh - inLow ) );
+	}
+
+	void Autonormalize () {
+		rangeRemapInputs_t settings[ numChannels ];
+		for ( uint8_t c{ 0 }; c < numChannels; c++ ) {
+			settings[ c ].rangeType = HARDCLIP;
+			settings[ c ].rangeStartLow = GetPixelMin( ( channel ) c );
+			settings[ c ].rangeStartHigh = GetPixelMax( ( channel ) c );
+			settings[ c ].rangeEndLow = 0.0f;
+			settings[ c ].rangeEndHigh = 1.0f;
+		}
+		RangeRemap( settings );
 	}
 
 	void RangeRemap ( rangeRemapInputs_t in [ numChannels ] ) {
-		bool recursive = false;
-		for ( uint8_t c { 0 }; c < numChannels; c++ ) {
-			if ( in[ c ].rangeType == AUTONORMALIZE ) {
-				recursive = true;
-				// do the work to find the range
-				in[ c ].rangeType = HARDCLIP;
-				in[ c ].rangeStartLow = GetPixelMin( ( channel ) c );
-				in[ c ].rangeStartHigh = GetPixelMax( ( channel ) c );
-				in[ c ].rangeEndLow = 0.0f;
-				in[ c ].rangeEndHigh = 1.0f;
-				cout << "remapping from " << in[ c ].rangeStartLow << " : " << in[ c ].rangeStartHigh << " to 0.0 : 1.0" << endl;
-			}
-		}
-		if ( recursive ) { RangeRemap( in ); }
-
 		// now everything should have a valid config - do the range remapping for each channel
 		for ( uint32_t y { 0 }; y < height; y++ ) {
 			for ( uint32_t x { 0 }; x < width; x++ ) {
@@ -522,20 +524,25 @@ public:
 
 						case HARDCLIP: {
 
-							// imageType temp = colorRead[ c ];
-							colorRead[ c ] = std::clamp(
-								RangeRemapValue(
-									colorRead[ c ],
-									in[ c ].rangeStartLow,
-									in[ c ].rangeStartHigh,
-									in[ c ].rangeEndLow,
-									in[ c ].rangeEndHigh
-								),
-								in[ c ].rangeEndLow,
-								in[ c ].rangeEndHigh );
+							imageType temp = colorRead[ c ];
+							colorRead[ c ] = RangeRemapValue(
+												colorRead[ c ],
+												in[ c ].rangeStartLow,
+												in[ c ].rangeStartHigh,
+												in[ c ].rangeEndLow,
+												in[ c ].rangeEndHigh
+											);
+
+							// for autonormalize, this should not be possible... why is it happening?
+							// if ( colorRead[ c ] != std::clamp( colorRead[ c ], in[ c ].rangeEndLow, in[ c ].rangeEndHigh ) ) {
+								// cout << "Remapping " << temp << " from " << in[ c ].rangeStartLow << " : " << in[ c ].rangeStartHigh << " to " << in[ c ].rangeEndLow << " : " << in[ c ].rangeEndHigh << " gives " << colorRead[ c ] << endl;
+								// cout << "We clipped at " << x << " " << y << " with a value of " << temp << endl;
+							//}
+
 							// if ( temp != colorRead[ c ] ) {
-								// cout << "Remapping " << temp << " from " << in[ c ].rangeStartLow << " : " << in[ c ].rangeStartHigh << " to 0.0 : 1.0f gives " << colorRead[ c ] << endl;
+								// cout << "Remapping " << temp << " from " << in[ c ].rangeStartLow << " : " << in[ c ].rangeStartHigh << " to " << in[ c ].rangeEndLow << " : " << in[ c ].rangeEndHigh << " gives " << colorRead[ c ] << endl;
 							// }
+
 							// if ( colorRead[ c ] == in[ c ].rangeEndLow ) {
 								// cout << "Remapping " << temp << " from " << in[ c ].rangeStartLow << " : " << in[ c ].rangeStartHigh << " to 0.0 : 1.0f gives " << colorRead[ c ] << endl;
 							// }
@@ -1054,7 +1061,7 @@ public:
 	}
 
 	imageType GetPixelMin ( channel in ) const {
-		imageType currentMin = std::numeric_limits< imageType >::max();
+		imageType currentMin = GetAtXY( 0, 0 )[ in ];
 		for ( uint32_t y { 0 }; y < height; y++ ) {
 			for ( uint32_t x { 0 }; x < width; x++ ) {
 				currentMin = std::min( GetAtXY( x, y )[ in ], currentMin );
@@ -1064,7 +1071,7 @@ public:
 	}
 
 	imageType GetPixelMax ( channel in ) const {
-		imageType currentMax = std::numeric_limits< imageType >::min();
+		imageType currentMax = GetAtXY( 0, 0 )[ in ];
 		for ( uint32_t y { 0 }; y < height; y++ ) {
 			for ( uint32_t x { 0 }; x < width; x++ ) {
 				currentMax = std::max( GetAtXY( x, y )[ in ], currentMax );
