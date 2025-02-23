@@ -607,3 +607,15 @@ target_link_libraries( LineSpam
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Grass rendering
+# =================================================================================================
+add_executable( Silage
+	src/projects/Silage/main.cc
+)
+
+target_link_libraries( Silage
+	PUBLIC
+	engineBase
+)
