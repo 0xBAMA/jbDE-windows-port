@@ -15,6 +15,10 @@ set( CMAKE_CXX_FLAGS_RELEASE "/O2" )
 set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" )
 set( CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" )
 
+# I think opening the console is breaking steam deck usage... not sure how to disable
+# set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS /SUBSYSTEM:WINDOWS )
+# set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS /SUBSYSTEM:CONSOLE )
+
 set( CMAKE_BUILD_TYPE Release )
 
 add_definitions( "-DCMAKE_BUILD_TYPE=Release" )
