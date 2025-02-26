@@ -159,14 +159,14 @@ using glm::normalize;
 // templated diamond square heightmap generation
 #include "../utils/noise/diamondSquare/diamond_square.h"
 
+// bringing the old perlin implementation back
+#include "../utils/noise/perlin.h"
+
 // particle based erosion
 #include "../utils/erosion/particleBased.h"
 
 // Brent Werness' Voxel Automata Terrain, ported to C++
 #include "../utils/noise/VAT/VAT.h"
-
-// bringing the old perlin implementation back
-#include "../utils/noise/perlin.h"
 
 // config struct, tonemapping struct
 #include "./dataStructs.h"
