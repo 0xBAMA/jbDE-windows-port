@@ -56,9 +56,15 @@ void main () {
 		// update the origin
 		r.O.xyz += r.D.xyz * d;
 
-		// refract the ray
-		r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.2f );
-		r.rD.xyz = tinybvh_safercp( r.D.xyz );
+		// skirts - shoot a ray directly upwards, and if it hits, we should take the sphere hit and quit
+		Ray skirtCheckRay;
+		skirtCheckRay.O.xyz = r.O.xyz + 0.00001f * r.D.xyz;
+		skirtCheckRay.D.xyz = vec3( 0.0f, 0.0f, -1.0f );
+		skirtCheckRay.rD.xyz = tinybvh_safercp( skirtCheckRay.D.xyz );
+		skirtCheckRay.hit = traverse_cwbvh( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, skirtCheckRay.rD.xyz, 1e30f );
+		if ( skirtCheckRay.hit.x < iSphere( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, normal2, 1.0f ) ) {
+			color = vec3( 0.01f );
+		} else {
 
 		// traverse the BVH
 		r.hit = traverse_cwbvh( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
