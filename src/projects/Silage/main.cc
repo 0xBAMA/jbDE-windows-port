@@ -6,7 +6,17 @@ public:
 	~engineDemo () { Quit(); }
 
 	// application data
-	tinybvh::BVH bvh;
+	tinybvh::BVH8_CWBVH bvh;
+
+	// node and triangle data specifically for the BVH
+	GLuint cwbvhNodesDataBuffer;
+	GLuint cwbvhTrisDataBuffer;
+
+	// vertex data for the individual triangles, in a usable format
+	GLuint triangleData;
+
+	// view parameters
+	float scale = 3.0f;
 
 	void OnInit () {
 		ZoneScoped;
