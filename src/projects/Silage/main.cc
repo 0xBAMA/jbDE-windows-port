@@ -29,12 +29,19 @@ public:
 
 			particleEroder p;
 			p.InitWithDiamondSquare( size );
-			for ( int i = 0; i < 20; i++ )
-				p.Erode( 5000 ), cout << "step " << i << " / 20" << endl;
+
+			// probably copy original model image here, so we can compute height deltas, determine areas where sediment would collect
+			Image_1F modelCache( p.model );
+
+			const int numSteps = 10;
+			for ( int i = 0; i < numSteps; i++ )
+				p.Erode( 5000 ), cout << "\rstep " << i << " / " << numSteps;
+			cout << "\rerosion step finished          " << endl;
 			p.model.Autonormalize();
 
 			// build the triangle list
 			std::vector< tinybvh::bvhvec4 > triangles;
+			std::vector< float > heightDeltas;
 
 			for ( uint32_t y = 0; y < p.model.Width() - 1; y++ ) {
 				for ( uint32_t x = 0; x < p.model.Height() - 1; x++ ) {
@@ -55,6 +62,19 @@ public:
 						p.model.GetAtXY( x + 1, y + 1 )[ red ]  // D
 					);
 
+					vec4 heightValuesPreErode = vec4(
+						modelCache.GetAtXY( x, y )[ red ], // A
+						modelCache.GetAtXY( x + 1, y )[ red ], // B
+						modelCache.GetAtXY( x, y + 1 )[ red ], // C
+						modelCache.GetAtXY( x + 1, y + 1 )[ red ]  // D
+					);
+
+					//heightDeltas.push_back( ( ( heightValues.r + heightValues.g + heightValues.b + heightValues.a ) / 4.0f ) -
+					//	( ( heightValuesPreErode.r + heightValuesPreErode.g + heightValuesPreErode.b + heightValuesPreErode.a ) / 4.0f ) );
+
+					float heightValue = ( heightValues.r + heightValues.g + heightValues.b + heightValues.a ) / 4.0f;
+					heightDeltas.push_back( heightValue );
+
 					vec4 xPositions = vec4(
 						RangeRemap( x, 0, p.model.Width(), -1.0f, 1.0f ),
 						RangeRemap( x + 1, 0, p.model.Width(), -1.0f, 1.0f ),
@@ -70,24 +90,24 @@ public:
 					);
 
 					// ADC
-					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, 0.0f ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, 0.0f ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, 0.0f ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, heightValue ) );
 
 					// ABD
-					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, 0.0f ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, 0.0f ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, 0.0f ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, heightValue ) );
+					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
 				}
 			}
 
 			// consider adding skirts... or maybe just reject backface hits
 
 			// build the BVH from the triangle list
-			bvh.Build( &triangles[ 0 ], triangles.size() / 3 );
+			bvh.BuildHQ( &triangles[ 0 ], triangles.size() / 3 );
 
 			// test some rays
-			Image_4F output( 640, 360 );
+			Image_4F output( 1920, 1080 );
 			int maxSteps = 0;
 			for ( int x = 0; x < output.Width(); x++ ) {
 				for ( int y = 0; y < output.Height(); y++ ) {
@@ -107,16 +127,16 @@ public:
 					maxSteps = std::max( steps, maxSteps );
 					// printf( "std: nearest intersection: %f (found in %i traversal steps).\n", ray.hit.t, steps );
 
-					color_4F col;
-					col[ red ] = 0.0f;
-					col[ green ] = steps / 64.0f;
-					col[ blue ] = steps / 64.0f;
-					col[ alpha ] = 255.0f;
-
 					if ( ray.hit.t < BVH_FAR ) {
-						col[ red ] = exp( -0.03f * ray.hit.t );
+						float heightDelta = heightDeltas[ ray.hit.prim / 2 ];
+
+						color_4F color;
+
+						color[ red ] = color[ green ] = color[ blue ] = heightDelta;
+						color[ alpha ] = 1.0f;
+
+						output.SetAtXY( x, y, color );
 					}
-					output.SetAtXY( x, y, col );
 				}
 			}
 			output.Save( "test.png" );
