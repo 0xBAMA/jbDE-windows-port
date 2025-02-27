@@ -1,5 +1,13 @@
 #include "../../engine/engine.h"
 
+int bitfieldExtract ( int a, int b, int c ) {
+	int mask = ~( 0xffffffff << c );
+	if ( b > 0 )
+		return ( a >> ( b - 1 ) ) & mask;
+	else
+		return a & mask;
+}
+
 class engineDemo final : public engineBase { // sample derived from base engine class
 public:
 	engineDemo () { Init(); OnInit(); PostInit(); }
@@ -21,6 +29,14 @@ public:
 				// something like bin/imageProcess <json path>, and have that json specify source file, a list of ops, and destination path
 
 			// =============================================================================================================
+
+			int num = 0xFFDD1100;
+			cout << "starting with a number " << num << newline;
+			cout << bitfieldExtract( num, 0, 8 ) << newline;
+			cout << bitfieldExtract( num, 8, 8 ) << newline;
+			cout << bitfieldExtract( num, 16, 8 ) << newline;
+			cout << bitfieldExtract( num, 24, 8 ) << newline;
+			cout << endl;
 
 		// // messing with data moshing
 		// 	Image_4F testImage;
