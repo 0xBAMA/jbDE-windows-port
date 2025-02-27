@@ -87,7 +87,7 @@ void main () {
 		}
 	}
 
-	if ( !hit ) {
-		imageStore( accumulatorTexture, writeLoc, vec4( vec3( 0.0f ), 1.0f ) );
-	}
+	// add blending with history
+	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
+	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, 0.7f ) );
 }
