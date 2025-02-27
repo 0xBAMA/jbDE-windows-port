@@ -29,15 +29,19 @@ public:
 
 			particleEroder p;
 			p.InitWithDiamondSquare( size );
+			//p.InitWithPerlin( size ); // this sucks, needs work
 
 			// probably copy original model image here, so we can compute height deltas, determine areas where sediment would collect
 			Image_1F modelCache( p.model );
 
-			const int numSteps = 10;
+			const int numSteps = 100;
 			for ( int i = 0; i < numSteps; i++ )
 				p.Erode( 5000 ), cout << "\rstep " << i << " / " << numSteps;
 			cout << "\rerosion step finished          " << endl;
 			p.model.Autonormalize();
+
+			// I want to do something to remove abnormally brighter pixels...
+				// if a pixel is much brighter than neighbors, take the average of the neigbors
 
 			// build the triangle list
 			std::vector< tinybvh::bvhvec4 > triangles;

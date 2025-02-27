@@ -9,6 +9,19 @@ public:
 	particleEroder () {}
 
 	// functions
+	void InitWithPerlin( const uint32_t dim = 1024 ) {
+		PerlinNoise p;
+		rng zOffsetPick = rng( -1.0f, 1.0f );
+		float zOffset = zOffsetPick();
+		float zOffset2 = zOffsetPick();
+		model = Image_1F( dim, dim );
+		for ( uint32_t y = 0; y < dim; y++ ) {
+			for ( uint32_t x = 0; x < dim; x++ ) {
+				model.SetAtXY( x, y, color_1F( { float( p.noise( 0.003f * x, 0.003f * y, zOffset ) * p.noise( 0.001f * x, 0.001f * y, zOffset2 ) ) } ) );
+			}
+		}
+	}
+
 	void InitWithDiamondSquare ( const uint32_t dim = 1024 ) {
 		long unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 

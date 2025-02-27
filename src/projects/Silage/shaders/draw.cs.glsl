@@ -66,7 +66,7 @@ void main () {
 			color = vec3( 0.01f );
 		} else {
 			// refract the ray
-			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.2f );
+			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.4f );
 			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 			// traverse the BVH
@@ -89,7 +89,7 @@ void main () {
 				Ray shadowRay;
 				shadowRay.O.xyz = r.O.xyz + r.D.xyz * r.hit.x * 0.99999f;
 				shadowRay.D.xyz = lightDirection;
-				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz );
+				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz ); // last argument for traverse_cwbvh is a max distance, maybe useful for simplifying this
 				bool inShadow = ( traverse_cwbvh( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f ) );
 
 				// solving for the normal vector
