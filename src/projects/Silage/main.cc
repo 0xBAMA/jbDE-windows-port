@@ -231,6 +231,9 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}

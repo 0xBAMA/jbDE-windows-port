@@ -28,15 +28,19 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
+uniform ivec2 noiseOffset;
 //=============================================================================================================================
 vec3 erot( vec3 p, vec3 ax, float ro ) {
 	return mix( dot( ax, p ) * ax, p, cos( ro ) ) + cross( ax, p ) * sin( ro );
+}
+vec4 blue() {
+	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
 //=============================================================================================================================
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
-	vec2 centeredUV = ( ( vec2( writeLoc ) + vec2( 0.5f ) ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
+	vec2 centeredUV = ( ( vec2( writeLoc ) + blue().xy ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
 	centeredUV.y *= ( float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x ) );
 
 	// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
@@ -66,7 +70,7 @@ void main () {
 			color = vec3( 0.01f );
 		} else {
 			// refract the ray
-			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.4f );
+			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.3f );
 			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 			// traverse the BVH
