@@ -23,8 +23,7 @@ public:
 		{
 			Block Start( "Additional User Init" );
 
-			// something to put some basic data in the accumulator texture
-			shaders[ "Dummy Draw" ] = computeShader( "../src/projects/Silage/shaders/draw.cs.glsl" ).shaderHandle;
+			CompileShaders();
 
 			uint32_t size = 1024;
 
@@ -124,10 +123,17 @@ public:
 		}
 	}
 
+	void CompileShaders () {
+		shaders[ "Draw" ] = computeShader( "../src/projects/Silage/shaders/draw.cs.glsl" ).shaderHandle;
+	}
+
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
+		if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
+			CompileShaders();
+		}
 
 	}
 
