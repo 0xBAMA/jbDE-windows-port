@@ -65,31 +65,41 @@ void main () {
 		if ( skirtCheckRay.hit.x < iSphere( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, normal2, 1.0f ) ) {
 			color = vec3( 0.01f );
 		} else {
+			// refract the ray
+			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.2f );
+			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
-		// traverse the BVH
-		r.hit = traverse_cwbvh( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+			// traverse the BVH
+			r.hit = traverse_cwbvh( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
 
-		// get a second hit with the sphere
-		// float d2 = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
+			// get a second hit with the sphere
+			float d2 = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
 
-		if ( r.hit.x < 1e30f ) {
-			hit = true;
-			// write the data to the image
-			// imageStore( accumulatorTexture, writeLoc, vec4( vec3( exp( -0.01 * r.hit.x ), 0.0f, 0.0f ) + vec3( triangleData[ 3 * floatBitsToUint( r.hit.w ) ].w ), 1.0f ) );
-			// imageStore( accumulatorTexture, writeLoc, vec4( vec3( pow( triangleData[ 3 * floatBitsToUint( r.hit.w ) ].w, 2.0f ) ), 1.0f ) );
+			// which is closer?
+			float dCloser = min( d2, r.hit.x );
+			vec3 fogTerm = exp( 0.5f * dCloser ) * vec3( 0.01f, 0.05f, 0.0618f );
 
-			uint vertexIdx = 3 * floatBitsToUint( r.hit.w );
-			vec3 vertex0 = triangleData[ vertexIdx + 0 ].xyz;
-			vec3 vertex1 = triangleData[ vertexIdx + 1 ].xyz;
-			vec3 vertex2 = triangleData[ vertexIdx + 2 ].xyz;
-			// vec3 I = O4.xyz + t * D;
-			vec3 N = normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
+			if ( r.hit.x < 1e30f && r.hit.x == dCloser ) {
+				uint vertexIdx = 3 * floatBitsToUint( r.hit.w );
+				vec3 vertex0 = triangleData[ vertexIdx + 0 ].xyz;
+				vec3 vertex1 = triangleData[ vertexIdx + 1 ].xyz;
+				vec3 vertex2 = triangleData[ vertexIdx + 2 ].xyz;
 
-			float NdotL = dot( N, vec3( 1.0f, 1.0f, 0.0f ) );
-			
-			bool frontFace = dot( N, r.D.xyz ) < 0.0f;
-			vec3 baseColor = frontFace ? vec3( 1.0f, 1.0f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f );
-			imageStore( accumulatorTexture, writeLoc, vec4( NdotL * baseColor, 1.0f ) );
+				// determining shadow contribution
+				Ray shadowRay;
+				shadowRay.O.xyz = r.O.xyz + r.D.xyz * r.hit.x * 0.99999f;
+				shadowRay.D.xyz = lightDirection;
+				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz );
+				bool inShadow = ( traverse_cwbvh( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f ) );
+
+				// solving for the normal vector
+				vec3 N = normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
+				bool frontFace = dot( N, r.D.xyz ) < 0.0f;
+
+				color = fogTerm + ( inShadow ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) ) * 0.616f * vec3( 0.0f, 1.0f, 0.0f );
+			} else {
+				color = fogTerm;
+			}
 		}
 	}
 
