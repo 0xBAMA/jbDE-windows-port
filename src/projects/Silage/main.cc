@@ -135,6 +135,23 @@ public:
 			CompileShaders();
 		}
 
+		SDL_Event event;
+		SDL_PumpEvents();
+		while ( SDL_PollEvent( &event ) ) {
+			ImGui_ImplSDL3_ProcessEvent( &event ); // imgui event handling
+			pQuit = config.oneShot || // swap out the multiple if statements for a big chained boolean setting the value of pQuit
+				( event.type == SDL_EVENT_QUIT ) ||
+				( event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID( window.window ) ) ||
+				( event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE && SDL_GetModState() & SDL_KMOD_SHIFT );
+			if ( ( event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE ) || ( event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_X1 ) ) {
+				quitConfirm = !quitConfirm; // this has to stay because it doesn't seem like ImGui::IsKeyReleased is stable enough to use
+			}
+
+			// handling scrolling
+			if ( event.type == SDL_EVENT_MOUSE_WHEEL && !ImGui::GetIO().WantCaptureMouse ) {
+				scale = std::clamp( scale - event.wheel.y * ( ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 0.07f : 0.01f ), 0.005f, 5.0f );
+			}
+		}
 	}
 
 	void ImguiPass () {
@@ -161,8 +178,14 @@ public:
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			glUseProgram( shaders[ "Dummy Draw" ] );
-			glUniform1f( glGetUniformLocation( shaders[ "Dummy Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			const GLuint shader = shaders[ "Draw" ];
+			glUseProgram( shader );
+
+			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
+			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -170,13 +193,14 @@ public:
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
 			scopedTimer Start( "Postprocess" );
 			bindSets[ "Postprocessing" ].apply();
-			glUseProgram( shaders[ "Tonemap" ] );
+			const GLuint shader = shaders[ "Tonemap" ];
+			glUseProgram( shader );
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		{ // text rendering timestamp - required texture binds are handled internally
+		{ // text rendering timestamp - required texture binds/shader stuff is handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Clear();
 			textRenderer.Update( ImGui::GetIO().DeltaTime );
