@@ -7,6 +7,7 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
 float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x < -1e-12f ? ( 1.0f / x ) : 1e30f ); }
+vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
 //=============================================================================================================================
 struct Ray {
 	// data is defined here as 16-byte values to encourage the compilers
@@ -38,7 +39,7 @@ void main () {
 	Ray r;
 	r.O.xyz = invBasis * vec3( scale * centeredUV, -2.0f );
 	r.D.xyz = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0 ) );
-	r.rD.xyz = vec3( tinybvh_safercp( r.D.x ), tinybvh_safercp( r.D.y ), tinybvh_safercp( r.D.z ) );
+	r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 	// do a ray-sphere test, refract and update origin
 	vec3 normal = vec3( 0.0f );
@@ -52,7 +53,7 @@ void main () {
 
 		// refract the ray
 		r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.2f );
-		r.rD.xyz = vec3( tinybvh_safercp( r.D.x ), tinybvh_safercp( r.D.y ), tinybvh_safercp( r.D.z ) );
+		r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 		// traverse the BVH
 		r.hit = traverse_cwbvh( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
