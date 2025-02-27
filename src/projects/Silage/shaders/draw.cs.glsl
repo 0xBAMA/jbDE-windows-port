@@ -29,6 +29,10 @@ uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
 //=============================================================================================================================
+vec3 erot( vec3 p, vec3 ax, float ro ) {
+	return mix( dot( ax, p ) * ax, p, cos( ro ) ) + cross( ax, p ) * sin( ro );
+}
+//=============================================================================================================================
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
@@ -42,10 +46,11 @@ void main () {
 	r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 	// do a ray-sphere test, refract and update origin
-	vec3 normal = vec3( 0.0f );
+	vec3 normal = vec3( 0.0f ), normal2 = normal, normal3 = normal;
 	float d = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
 
-	bool hit = false;
+	vec3 color = vec3( 0.0f );
+	const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f  ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
 
 	if ( d != MAX_DIST_CP ) {
 		// update the origin
