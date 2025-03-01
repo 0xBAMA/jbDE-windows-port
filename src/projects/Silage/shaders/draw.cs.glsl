@@ -21,8 +21,31 @@ layout( binding = 0, std430 ) readonly buffer cwbvhNodesBuffer { vec4 cwbvhNodes
 layout( binding = 1, std430 ) readonly buffer cwbvhTrisBuffer { vec4 cwbvhTris[]; };
 // vertex data for the individual triangles' vertices, in a usable format ( .w can be used to pack more data )
 layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangleData[]; };
+
+// second set, for the grass blades
+layout( binding = 3, std430 ) readonly buffer cwbvhNodesBuffer2 { vec4 cwbvhNodes2[]; };
+layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2[]; };
 //=============================================================================================================================
+#define NODEBUFFER cwbvhNodes
+#define TRIBUFFER cwbvhTris
+#define TRAVERSALFUNC traverse_cwbvh_terrain
+
 #include "traverse.h" // all support code for CWBVH8 traversal
+
+#undef NODEBUFFER
+#undef TRIBUFFER
+#undef TRAVERSALFUNC
+
+#define NODEBUFFER cwbvhNodes2
+#define TRIBUFFER cwbvhTris2
+#define TRAVERSALFUNC traverse_cwbvh_grass
+
+#include "traverse.h" // all support code for CWBVH8 traversal
+
+#undef NODEBUFFER
+#undef TRIBUFFER
+#undef TRAVERSALFUNC
+
 #include "consistentPrimitives.glsl.h" // ray-sphere
 //=============================================================================================================================
 uniform mat3 invBasis;
@@ -37,6 +60,16 @@ vec4 blue() {
 	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
 //=============================================================================================================================
+// proposed interface for the BVH stuff, #define buffer names then #undef to reset
+
+// #define for first set of buffers
+	// first BVH test function
+// #undefs
+
+// #define for second set of buffers
+	// second BVH test function
+// #undefs
+//=============================================================================================================================
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
@@ -46,7 +79,7 @@ void main () {
 	// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
 	Ray r;
 	r.O.xyz = invBasis * vec3( scale * centeredUV, -2.0f );
-	r.D.xyz = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0 ) );
+	r.D.xyz = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
 	r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 	// do a ray-sphere test, refract and update origin
@@ -54,7 +87,7 @@ void main () {
 	float d = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
 
 	vec3 color = vec3( 0.0f );
-	const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f  ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
+	const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
 
 	if ( d != MAX_DIST_CP ) {
 		// update the origin
@@ -65,7 +98,7 @@ void main () {
 		skirtCheckRay.O.xyz = r.O.xyz + 0.00001f * r.D.xyz;
 		skirtCheckRay.D.xyz = vec3( 0.0f, 0.0f, -1.0f );
 		skirtCheckRay.rD.xyz = tinybvh_safercp( skirtCheckRay.D.xyz );
-		skirtCheckRay.hit = traverse_cwbvh( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, skirtCheckRay.rD.xyz, 1e30f );
+		skirtCheckRay.hit = traverse_cwbvh_terrain( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, skirtCheckRay.rD.xyz, 1e30f );
 		if ( skirtCheckRay.hit.x < iSphere( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, normal2, 1.0f ) ) {
 			color = vec3( 0.01f );
 		} else {
@@ -74,7 +107,7 @@ void main () {
 			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 			// traverse the BVH
-			r.hit = traverse_cwbvh( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+			r.hit = traverse_cwbvh_terrain( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
 
 			// get a second hit with the sphere
 			float d2 = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
@@ -94,7 +127,7 @@ void main () {
 				shadowRay.O.xyz = r.O.xyz + r.D.xyz * r.hit.x * 0.99999f;
 				shadowRay.D.xyz = lightDirection;
 				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz ); // last argument for traverse_cwbvh is a max distance, maybe useful for simplifying this
-				bool inShadow = ( traverse_cwbvh( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f ) );
+				bool inShadow = ( traverse_cwbvh_terrain( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f ) );
 
 				// solving for the normal vector
 				vec3 N = normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );

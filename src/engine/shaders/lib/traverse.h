@@ -4,24 +4,6 @@
 // BVH traversal stack size 
 #define STACK_SIZE 32
 
-// I'm working on an AMD GPU right now
-#define ISAMD
-
-// Low-level optimizations for specific platforms
-#ifdef ISINTEL // Iris Xe, Arc, ..
-// #define USE_VLOAD_VSTORE
-#define SIMD_AABBTEST
-#elif defined ISNVIDIA // 2080, 3080, 4080, ..
-#define USE_VLOAD_VSTORE
-// #define SIMD_AABBTEST
-#elif defined ISAMD
-#define USE_VLOAD_VSTORE
-// #define SIMD_AABBTEST
-#else // unkown GPU
-// #define USE_VLOAD_VSTORE
-#define SIMD_AABBTEST
-#endif
-
 // ============================================================================
 //
 //        T R A V E R S E _ C W B V H
@@ -29,70 +11,63 @@
 // ============================================================================
 
 // preliminaries
+#ifndef TINYBVH_SUPPORT_FUNCS
+#define TINYBVH_SUPPORT_FUNCS
+	uint bfind( const uint v ) { // glsl alternative for CUDA's native bfind
+		return findMSB( v );
+	}
 
-uint bfind( const uint v ) { // glsl alternative for CUDA's native bfind
-	return findMSB( v );
-}
+	uint popc( const uint v ) { return bitCount( v ); }
+	float _native_fma( const float a, const float b, const float c ) { return a * b + c; }
+	float fmin_fmin( const float a, const float b, const float c ) { return min( min( a, b ), c ); }
+	float fmax_fmax( const float a, const float b, const float c ) { return max( max( a, b ), c ); }
 
-uint popc( const uint v ) { return bitCount( v ); }
-float _native_fma( const float a, const float b, const float c ) { return a * b + c; }
-float fmin_fmin( const float a, const float b, const float c ) { return min( min( a, b ), c ); }
-float fmax_fmax( const float a, const float b, const float c ) { return max( max( a, b ), c ); }
+	#define STACK_POP(X) { X = stack[--stackPtr]; }
+	#define STACK_PUSH(X) { stack[stackPtr++] = X; }
 
-#define STACK_POP(X) { X = stack[--stackPtr]; }
-#define STACK_PUSH(X) { stack[stackPtr++] = X; }
+	uint sign_extend_s8x4( const uint i ) {
+		// docs: "with the given parameters, prmt will extend the sign to all bits in a byte."
+		const uint b0 = ( ( i & 0x80000000u ) != 0 ) ? 0xff000000u : 0u;
+		const uint b1 = ( ( i & 0x00800000u ) != 0 ) ? 0x00ff0000u : 0u;
+		const uint b2 = ( ( i & 0x00008000u ) != 0 ) ? 0x0000ff00u : 0u;
+		const uint b3 = ( ( i & 0x00000080u ) != 0 ) ? 0x000000ffu : 0u;
+		return b0 + b1 + b2 + b3; // probably can do better than this.
+	}
 
-uint sign_extend_s8x4( const uint i ) {
-	// docs: "with the given parameters, prmt will extend the sign to all bits in a byte."
-	const uint b0 = ( ( i & 0x80000000u ) != 0 ) ? 0xff000000u : 0u;
-	const uint b1 = ( ( i & 0x00800000u ) != 0 ) ? 0x00ff0000u : 0u;
-	const uint b2 = ( ( i & 0x00008000u ) != 0 ) ? 0x0000ff00u : 0u;
-	const uint b3 = ( ( i & 0x00000080u ) != 0 ) ? 0x000000ffu : 0u;
-	return b0 + b1 + b2 + b3; // probably can do better than this.
-}
+	#define UPDATE_HITMASK hitmask = (child_bits4 & 255) << (bit_index4 & 31)
+	#define UPDATE_HITMASK0 hitmask |= (child_bits4 & 255) << (bit_index4 & 31)
+	#define UPDATE_HITMASK1 hitmask |= ((child_bits4 >> 8) & 255) << ((bit_index4 >> 8) & 31);
+	#define UPDATE_HITMASK2 hitmask |= ((child_bits4 >> 16) & 255) << ((bit_index4 >> 16) & 31);
+	#define UPDATE_HITMASK3 hitmask |= (child_bits4 >> 24) << (bit_index4 >> 24);
 
-#define UPDATE_HITMASK hitmask = (child_bits4 & 255) << (bit_index4 & 31)
-#define UPDATE_HITMASK0 hitmask |= (child_bits4 & 255) << (bit_index4 & 31)
-#define UPDATE_HITMASK1 hitmask |= ((child_bits4 >> 8) & 255) << ((bit_index4 >> 8) & 31);
-#define UPDATE_HITMASK2 hitmask |= ((child_bits4 >> 16) & 255) << ((bit_index4 >> 16) & 31);
-#define UPDATE_HITMASK3 hitmask |= (child_bits4 >> 24) << (bit_index4 >> 24);
+	// signed version
+	ivec4 as_char4 ( float x ) {
+		int src = floatBitsToInt( x );
+		return ivec4( // bitfieldExtract should sign extend, as appropriate
+			bitfieldExtract( src, 0, 8 ),
+			bitfieldExtract( src, 8, 8 ),
+			bitfieldExtract( src, 16, 8 ),
+			bitfieldExtract( src, 24, 8 )
+		);
+	}
 
-// signed version
-ivec4 as_char4 ( float x ) {
-	int src = floatBitsToInt( x );
-	return ivec4( // bitfieldExtract should sign extend, as appropriate
-		bitfieldExtract( src, 0, 8 ),
-		bitfieldExtract( src, 8, 8 ),
-		bitfieldExtract( src, 16, 8 ),
-		bitfieldExtract( src, 24, 8 )
-	);
-}
-
-// unsigned version
-uvec4 as_uchar4 ( float x ) {
-	uint src = floatBitsToUint( x );
-	return uvec4(
-		bitfieldExtract( src, 0, 8 ),
-		bitfieldExtract( src, 8, 8 ),
-		bitfieldExtract( src, 16, 8 ),
-		bitfieldExtract( src, 24, 8 )
-	);
-}
-
-#ifdef SIMD_AABBTEST
-#define float3or4 vec4
-#else
-#define float3or4 vec3
+	// unsigned version
+	uvec4 as_uchar4 ( float x ) {
+		uint src = floatBitsToUint( x );
+		return uvec4(
+			bitfieldExtract( src, 0, 8 ),
+			bitfieldExtract( src, 8, 8 ),
+			bitfieldExtract( src, 16, 8 ),
+			bitfieldExtract( src, 24, 8 )
+		);
+	}
+	#define float3or4 vec3
 #endif
 
 // kernel
 // based on CUDA code by AlanWBFT https://github.com/AlanIWBFT
 
-#ifdef SIMD_AABBTEST
-vec4 traverse_cwbvh( const vec4 O, const vec4 D, const vec4 rD, const float t )
-#else
-vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
-#endif
+vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 {
 	// initialize ray
 	vec4 hit;
@@ -115,24 +90,20 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 				const uint slot_index = ( child_bit_index - 24 ) ^ ( octinv4 & 255 );
 				const uint relative_index = popc( imask & ~( 0xFFFFFFFF << slot_index ) );
 				const uint child_node_index = ( child_node_base_index + relative_index ) * 5;
-				vec4 n0 = cwbvhNodes[ child_node_index + 0 ], n1 = cwbvhNodes[ child_node_index + 1 ];
-				vec4 n2 = cwbvhNodes[ child_node_index + 2 ], n3 = cwbvhNodes[ child_node_index + 3 ];
-				vec4 n4 = cwbvhNodes[ child_node_index + 4 ];
+				vec4 n0 = NODEBUFFER[ child_node_index + 0 ], n1 = NODEBUFFER[ child_node_index + 1 ];
+				vec4 n2 = NODEBUFFER[ child_node_index + 2 ], n3 = NODEBUFFER[ child_node_index + 3 ];
+				vec4 n4 = NODEBUFFER[ child_node_index + 4 ];
 				const ivec4 e = as_char4( n0.w );
 				ngroup.x = floatBitsToUint( n1.x ), tgroup = uvec2( floatBitsToUint( n1.y ), 0 );
 				uint hitmask = 0;
-#ifdef SIMD_AABBTEST
-				const vec4 idir4 = vec4( uintBitsToFloat( ( e.x + 127 ) << 23 ) * rD.x,
-					uintBitsToFloat( ( e.y + 127 ) << 23 ) * rD.y, uintBitsToFloat( ( e.z + 127 ) << 23 ) * rD.z, 1 );
-				const vec4 orig4 = ( n0 - O ) * rD;
-#else
+
 				const float idirx = uintBitsToFloat( uint( ( e.x + 127 ) << 23 ) ) * rD.x;
 				const float idiry = uintBitsToFloat( uint( ( e.y + 127 ) << 23 ) ) * rD.y;
 				const float idirz = uintBitsToFloat( uint( ( e.z + 127 ) << 23 ) ) * rD.z;
 				const float origx = ( n0.x - O.x ) * rD.x;
 				const float origy = ( n0.y - O.y ) * rD.y;
 				const float origz = ( n0.z - O.z ) * rD.z;
-#endif
+		
 				{	// first 4
 					const uint meta4 = floatBitsToUint( n1.z ), is_inner4 = ( meta4 & ( meta4 << 1 ) ) & 0x10101010;
 					const uint inner_mask4 = sign_extend_s8x4( is_inner4 << 3 );
@@ -142,23 +113,6 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 					const vec4 loy4 = vec4( as_uchar4( rD.y < 0 ? n4.x : n2.z ) ), hiy4 = vec4( as_uchar4( rD.y < 0 ? n2.z : n4.x ) );
 					const vec4 loz4 = vec4( as_uchar4( rD.z < 0 ? n4.z : n3.x ) ), hiz4 = vec4( as_uchar4( rD.z < 0 ? n3.x : n4.z ) );
 					{
-#ifdef SIMD_AABBTEST
-						const vec4 tminx4 = lox4 * idir4.xxxx + orig4.xxxx, tmaxx4 = hix4 * idir4.xxxx + orig4.xxxx;
-						const vec4 tminy4 = loy4 * idir4.yyyy + orig4.yyyy, tmaxy4 = hiy4 * idir4.yyyy + orig4.yyyy;
-						const vec4 tminz4 = loz4 * idir4.zzzz + orig4.zzzz, tmaxz4 = hiz4 * idir4.zzzz + orig4.zzzz;
-						const float cmina = max( max( max( tminx4.x, tminy4.x ), tminz4.x ), 0 );
-						const float cmaxa = min( min( min( tmaxx4.x, tmaxy4.x ), tmaxz4.x ), tmax );
-						const float cminb = max( max( max( tminx4.y, tminy4.y ), tminz4.y ), 0 );
-						const float cmaxb = min( min( min( tmaxx4.y, tmaxy4.y ), tmaxz4.y ), tmax );
-						if ( cmina <= cmaxa ) UPDATE_HITMASK;
-						if ( cminb <= cmaxb ) UPDATE_HITMASK1;
-						const float cminc = max( max( max( tminx4.z, tminy4.z ), tminz4.z ), 0 );
-						const float cmaxc = min( min( min( tmaxx4.z, tmaxy4.z ), tmaxz4.z ), tmax );
-						const float cmind = max( max( max( tminx4.w, tminy4.w ), tminz4.w ), 0 );
-						const float cmaxd = min( min( min( tmaxx4.w, tmaxy4.w ), tmaxz4.w ), tmax );
-						if ( cminc <= cmaxc ) UPDATE_HITMASK2;
-						if ( cmind <= cmaxd ) UPDATE_HITMASK3;
-#else
 						float tminx0 = _native_fma( lox4.x, idirx, origx ), tminx1 = _native_fma( lox4.y, idirx, origx );
 						float tminy0 = _native_fma( loy4.x, idiry, origy ), tminy1 = _native_fma( loy4.y, idiry, origy );
 						float tminz0 = _native_fma( loz4.x, idirz, origz ), tminz1 = _native_fma( loz4.y, idirz, origz );
@@ -183,7 +137,6 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 						n1.y = min( fmin_fmin( tmaxx1, tmaxy1, tmaxz1 ), tmax );
 						if ( n0.x <= n0.y ) UPDATE_HITMASK2;
 						if ( n1.x <= n1.y ) UPDATE_HITMASK3;
-#endif
 					}
 				}
 				{	// second 4
@@ -195,23 +148,6 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 					const vec4 loy4 = vec4( as_uchar4( rD.y < 0 ? n4.y : n2.w ) ), hiy4 = vec4( as_uchar4( rD.y < 0 ? n2.w : n4.y ) );
 					const vec4 loz4 = vec4( as_uchar4( rD.z < 0 ? n4.w : n3.y ) ), hiz4 = vec4( as_uchar4( rD.z < 0 ? n3.y : n4.w ) );
 					{
-#ifdef SIMD_AABBTEST
-						const vec4 tminx4 = lox4 * idir4.xxxx + orig4.xxxx, tmaxx4 = hix4 * idir4.xxxx + orig4.xxxx;
-						const vec4 tminy4 = loy4 * idir4.yyyy + orig4.yyyy, tmaxy4 = hiy4 * idir4.yyyy + orig4.yyyy;
-						const vec4 tminz4 = loz4 * idir4.zzzz + orig4.zzzz, tmaxz4 = hiz4 * idir4.zzzz + orig4.zzzz;
-						const float cmina = max( max( max( tminx4.x, tminy4.x ), tminz4.x ), 0 );
-						const float cmaxa = min( min( min( tmaxx4.x, tmaxy4.x ), tmaxz4.x ), tmax );
-						const float cminb = max( max( max( tminx4.y, tminy4.y ), tminz4.y ), 0 );
-						const float cmaxb = min( min( min( tmaxx4.y, tmaxy4.y ), tmaxz4.y ), tmax );
-						if ( cmina <= cmaxa ) UPDATE_HITMASK0;
-						if ( cminb <= cmaxb ) UPDATE_HITMASK1;
-						const float cminc = max( max( max( tminx4.z, tminy4.z ), tminz4.z ), 0 );
-						const float cmaxc = min( min( min( tmaxx4.z, tmaxy4.z ), tmaxz4.z ), tmax );
-						const float cmind = max( max( max( tminx4.w, tminy4.w ), tminz4.w ), 0 );
-						const float cmaxd = min( min( min( tmaxx4.w, tmaxy4.w ), tmaxz4.w ), tmax );
-						if ( cminc <= cmaxc ) UPDATE_HITMASK2;
-						if ( cmind <= cmaxd ) UPDATE_HITMASK3;
-#else
 						float tminx0 = _native_fma( lox4.x, idirx, origx ), tminx1 = _native_fma( lox4.y, idirx, origx );
 						float tminy0 = _native_fma( loy4.x, idiry, origy ), tminy1 = _native_fma( loy4.y, idiry, origy );
 						float tminz0 = _native_fma( loz4.x, idirz, origz ), tminz1 = _native_fma( loz4.y, idirz, origz );
@@ -236,7 +172,6 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 						n1.y = min( fmin_fmin( tmaxx1, tmaxy1, tmaxz1 ), tmax );
 						if ( n0.x <= n0.y ) UPDATE_HITMASK2;
 						if ( n1.x <= n1.y ) UPDATE_HITMASK3;
-#endif
 					}
 				}
 				ngroup.y = ( hitmask & 0xFF000000 ) | ( floatBitsToUint( n0.w ) >> 24 ), tgroup.y = hitmask & 0x00FFFFFF;
@@ -248,27 +183,27 @@ vec4 traverse_cwbvh( const vec3 O, const vec3 D, const vec3 rD, const float t )
 			// "Fast Ray-Triangle Intersections by Coordinate Transformation"
 			// Baldwin & Weber, 2016.
 			const uint triangleIndex = bfind( tgroup.y ), triAddr = tgroup.x + triangleIndex * 4;
-			const vec4 T2 = cwbvhTris[ triAddr + 2 ];
+			const vec4 T2 = TRIBUFFER[ triAddr + 2 ];
 			const float transS = T2.x * O.x + T2.y * O.y + T2.z * O.z + T2.w;
 			const float transD = T2.x * D.x + T2.y * D.y + T2.z * D.z;
 			const float d = -transS / transD;
 			tgroup.y -= 1 << triangleIndex;
 			if ( d <= 0 || d >= tmax ) continue;
-			const vec4 T0 = cwbvhTris[ triAddr + 0 ];
-			const vec4 T1 = cwbvhTris[ triAddr + 1 ];
+			const vec4 T0 = TRIBUFFER[ triAddr + 0 ];
+			const vec4 T1 = TRIBUFFER[ triAddr + 1 ];
 			const float3or4 I = O + d * D;
 			const float u = T0.x * I.x + T0.y * I.y + T0.z * I.z + T0.w;
 			const float v = T1.x * I.x + T1.y * I.y + T1.z * I.z + T1.w;
 			const bool hit = u >= 0 && v >= 0 && u + v < 1;
-			if ( hit ) uv = vec2( u, v ), tmax = d, hitAddr = floatBitsToUint( cwbvhTris[ triAddr + 3 ].w );
+			if ( hit ) uv = vec2( u, v ), tmax = d, hitAddr = floatBitsToUint( TRIBUFFER[ triAddr + 3 ].w );
 #else
 			// Moller-Trumbore intersection; triangles are stored as 3x16 bytes,
 			// with the original primitive index in the (otherwise unused) w
 			// component of vertex 0.
 			const uint triangleIndex = bfind( tgroup.y ), triAddr = tgroup.x + triangleIndex * 3;
-			const vec3 e1 = cwbvhTris[ triAddr ].xyz;
-			const vec3 e2 = cwbvhTris[ triAddr + 1 ].xyz;
-			const vec4 v0 = cwbvhTris[ triAddr + 2 ];
+			const vec3 e1 = TRIBUFFER[ triAddr ].xyz;
+			const vec3 e2 = TRIBUFFER[ triAddr + 1 ].xyz;
+			const vec4 v0 = TRIBUFFER[ triAddr + 2 ];
 			tgroup.y -= 1 << triangleIndex;
 			const vec3 r = cross( D.xyz, e1 );
 			const float a = dot( e2, r );
