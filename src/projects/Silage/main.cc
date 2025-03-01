@@ -155,16 +155,19 @@ public:
 			glBufferData( GL_SHADER_STORAGE_BUFFER, bvh.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) bvh.bvh8Data, GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
 			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
+			cout << "CWBVH8 Node data is " << GetWithThousandsSeparator( bvh.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, bvh.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) bvh.bvh8Tris, GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
 			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
+			cout << "CWBVH8 Triangle data is " << GetWithThousandsSeparator( bvh.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleData );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, triangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &triangles[ 0 ], GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
 			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Triangle Data" ).c_str() );
+			cout << "Triangle test data is " << GetWithThousandsSeparator( triangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 		}
 	}
 
