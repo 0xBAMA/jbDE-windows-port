@@ -385,8 +385,8 @@ ivec2 map3DPointTo2D( vec3 p ) {
 	p = tridentMatrix * p;
 
 	return ivec2(
-		RangeRemapValue( p.x + offset.x * scale, -ratio, ratio, 0.0f, float( is.x ) ) + NormalizedRandomFloat(),
-		RangeRemapValue( p.y + offset.y * scale, -1.0f, 1.0f, 0.0f, float( is.y ) ) + NormalizedRandomFloat() );
+		RangeRemapValue( p.x + offset.x * scale, -1.0f, 1.0f, 0.0f, float( is.x ) ) + NormalizedRandomFloat(),
+		RangeRemapValue( p.y + offset.y * scale, -ratio, ratio, 0.0f, float( is.y ) ) + NormalizedRandomFloat() );
 }
 
 uniform int initMode;
