@@ -26,10 +26,13 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 layout( binding = 3, std430 ) readonly buffer cwbvhNodesBuffer2 { vec4 cwbvhNodes2[]; };
 layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2[]; };
 //=============================================================================================================================
+#include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
+
 #define NODEBUFFER cwbvhNodes
 #define TRIBUFFER cwbvhTris
 #define TRAVERSALFUNC traverse_cwbvh_terrain
 
+#define CUSTOMLEAFTEST // testing
 #include "traverse.h" // all support code for CWBVH8 traversal
 
 #undef NODEBUFFER
@@ -45,8 +48,6 @@ layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2
 #undef NODEBUFFER
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
-
-#include "consistentPrimitives.glsl.h" // ray-sphere
 //=============================================================================================================================
 uniform mat3 invBasis;
 uniform float time;

@@ -178,25 +178,6 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 			}
 		} else tgroup = ngroup, ngroup = uvec2( 0u );
 		while ( tgroup.y != 0 ) {
-#ifdef CWBVH_COMPRESSED_TRIS
-			// Fast intersection of triangle data for the algorithm in:
-			// "Fast Ray-Triangle Intersections by Coordinate Transformation"
-			// Baldwin & Weber, 2016.
-			const uint triangleIndex = bfind( tgroup.y ), triAddr = tgroup.x + triangleIndex * 4;
-			const vec4 T2 = TRIBUFFER[ triAddr + 2 ];
-			const float transS = T2.x * O.x + T2.y * O.y + T2.z * O.z + T2.w;
-			const float transD = T2.x * D.x + T2.y * D.y + T2.z * D.z;
-			const float d = -transS / transD;
-			tgroup.y -= 1 << triangleIndex;
-			if ( d <= 0 || d >= tmax ) continue;
-			const vec4 T0 = TRIBUFFER[ triAddr + 0 ];
-			const vec4 T1 = TRIBUFFER[ triAddr + 1 ];
-			const float3or4 I = O + d * D;
-			const float u = T0.x * I.x + T0.y * I.y + T0.z * I.z + T0.w;
-			const float v = T1.x * I.x + T1.y * I.y + T1.z * I.z + T1.w;
-			const bool hit = u >= 0 && v >= 0 && u + v < 1;
-			if ( hit ) uv = vec2( u, v ), tmax = d, hitAddr = floatBitsToUint( TRIBUFFER[ triAddr + 3 ].w );
-#else
 			// Moller-Trumbore intersection; triangles are stored as 3x16 bytes,
 			// with the original primitive index in the (otherwise unused) w
 			// component of vertex 0.
@@ -205,25 +186,54 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 			const vec3 e2 = TRIBUFFER[ triAddr + 1 ].xyz;
 			const vec4 v0 = TRIBUFFER[ triAddr + 2 ];
 			tgroup.y -= 1 << triangleIndex;
-			const vec3 r = cross( D.xyz, e1 );
-			const float a = dot( e2, r );
-			if ( abs( a ) < 0.0000001f )
-				continue;
-			const float f = 1 / a;
-			const vec3 s = O.xyz - v0.xyz;
-			const float u = f * dot( s, r );
-			if ( u < 0 || u > 1 )
-				continue;
-			const vec3 q = cross( s, e2 );
-			const float v = f * dot( D.xyz, q );
-			if ( v < 0 || u + v > 1 )
-				continue;
-			const float d = f * dot( e1, q );
-			if ( d <= 0.0f || d >= tmax )
-				continue;
-			uv = vec2( u, v ), tmax = d;
-			hitAddr = floatBitsToUint( v0.w );
-#endif
+			#ifndef CUSTOMLEAFTEST
+				const vec3 r = cross( D.xyz, e1 );
+				const float a = dot( e2, r );
+				if ( abs( a ) < 0.0000001f )
+					continue;
+				const float f = 1 / a;
+				const vec3 s = O.xyz - v0.xyz;
+				const float u = f * dot( s, r );
+				if ( u < 0 || u > 1 )
+					continue;
+				const vec3 q = cross( s, e2 );
+				const float v = f * dot( D.xyz, q );
+				if ( v < 0 || u + v > 1 )
+					continue;
+				const float d = f * dot( e1, q );
+				if ( d <= 0.0f || d >= tmax )
+					continue;
+				uv = vec2( u, v ), tmax = d;
+				hitAddr = floatBitsToUint( v0.w );
+			#else
+				// blade index, max distance, and solved UV... todo
+				// CUSTOMLEAFTEST( floatBitsToUint( v0.w ), tmax, uv );
+
+				// testing with ray-box from consistentPrimitives.h.glsl
+				vec3 mins, maxs;
+
+				// edges are precomputed, above - restore
+				const vec3 v1 = e1 + v0.xyz; // edge1 = vertex1 - vertex0
+				const vec3 v2 = e2 + v0.xyz; // edge2 = vertex2 - vertex0
+
+				mins.x = min( min( v0.x, v1.x ), v2.x );
+				mins.y = min( min( v0.y, v1.y ), v2.y );
+				mins.z = min( min( v0.z, v1.z ), v2.z );
+
+				maxs.x = max( max( v0.x, v1.x ), v2.x );
+				maxs.y = max( max( v0.y, v1.y ), v2.y );
+				maxs.z = max( max( v0.z, v1.z ), v2.z );
+
+				const vec3 boxSize = abs( maxs - mins );
+				const vec3 center = ( mins + maxs ) / 2.0f;
+
+				vec3 normal;
+				float d = iBoxOffset( O, D, normal, boxSize, center );
+				if ( d <= 0.0f || d >= tmax )
+					continue;
+				uv = vec2( 0.0f ), tmax = d;
+				hitAddr = floatBitsToUint( v0.w );
+			#endif
 		}
 		if ( ngroup.y <= 0x00FFFFFF ) {
 			if ( stackPtr > 0 ) {
