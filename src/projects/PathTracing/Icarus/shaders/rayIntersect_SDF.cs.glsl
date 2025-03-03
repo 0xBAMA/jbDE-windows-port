@@ -307,6 +307,17 @@ float deGAZ2(vec3 p){
   vec3 col = vec3(0.082,0.647,0.894);
   return tet(p,vec3(1),1.8);
 }
+
+  float detrimental(vec3 p){
+    float s=2., l=0.;
+    p=abs(p);
+    for(int j=0;j++<8;)
+      p=-sign(p)*(abs(abs(abs(p)-2.)-1.)-1.),
+      p*=l=-1.3/dot(p,p),
+      p-=.15, s*=l;
+    return length(p)/s;
+  }
+
 //=============================================================================================================================
 const float raymarchMaxDistance = 1000.0f;
 const float raymarchUnderstep = 0.9f;
@@ -340,22 +351,22 @@ float de ( vec3 p ) {
 
 	{
 		const float scale = 2.0f;
-		const float d = max( fBox( p, bboxSize ), deKali( p * scale ) / scale );
+		const float d = max( fBox( p, bboxSize ), detrimental( p * scale ) / scale );
 		// const float d = deGAZ( p * scale ) / scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = ( NormalizedRandomFloat() < 0.3f ) ? DIFFUSE : MIRROR;
-			hitColor = checkerBoard( 10.0f, p ) ? vec3( nvidia ) : mix( vec3( 0.618f ), blood * 0.5f, vec3( 0.5f ) + ( curlNoise( p ).r + 1.0f ) * 0.1f );
-
+			hitSurfaceType = ( NormalizedRandomFloat() < 0.1f ) ? DIFFUSE : MIRROR;
+			// hitColor = checkerBoard( 10.0f, p ) ? vec3( nvidia ) : mix( vec3( 0.618f ), blood * 0.5f, vec3( 0.5f ) + ( curlNoise( p ).r + 1.0f ) * 0.1f );
+			hitColor = checkerBoard( 0.5f, p ) ? nvidia : carrot;
 	
-			if ( mod( p.y, 0.75f ) < 0.1f ) {
-				hitSurfaceType = EMISSIVE;
-				hitColor = vec3( 1.0f );
-			}
+			// if ( mod( p.y, 0.75f ) < 0.1f ) {
+				// hitSurfaceType = EMISSIVE;
+				// hitColor = vec3( 1.0f );
+			// }
 		}
 	}
 
-	{
+	/* {
 		// const float d = fBox( p - vec3( 0.0f, 1.5f, 0.0f ), bboxSize / 5.0f );
 		const float d = fBox( p, vec3( 0.1f, 10.0f, 0.1f ) );
 		sceneDist = min( sceneDist, d );
@@ -363,7 +374,7 @@ float de ( vec3 p ) {
 			hitSurfaceType = EMISSIVE;
 			hitColor = vec3( 3.0f );
 		}
-	}
+	} */
 
 	// {
 	// 	const float d = -fBox( p, bboxSize );
