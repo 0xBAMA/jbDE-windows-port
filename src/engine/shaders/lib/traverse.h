@@ -229,6 +229,7 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 
 				vec3 normal;
 				float d = iBoxOffset( O, D, normal, boxSize, center );
+
 				if ( d <= 0.0f || d >= tmax )
 					continue;
 				uv = vec2( 0.0f ), tmax = d;

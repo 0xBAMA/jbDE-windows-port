@@ -32,22 +32,28 @@ layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2
 #define TRIBUFFER cwbvhTris
 #define TRAVERSALFUNC traverse_cwbvh_terrain
 
-#define CUSTOMLEAFTEST // testing
 #include "traverse.h" // all support code for CWBVH8 traversal
 
 #undef NODEBUFFER
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
+
+/* what is the return type? */ leafTestFunc ( /* what is the parameterization? rO, rD, index of leaf node */ ) {
+	// test against N triangles for one blade of grass
+}
 
 #define NODEBUFFER cwbvhNodes2
 #define TRIBUFFER cwbvhTris2
 #define TRAVERSALFUNC traverse_cwbvh_grass
+#define CUSTOMLEAFTEST leafTestFunc
 
 #include "traverse.h" // all support code for CWBVH8 traversal
 
 #undef NODEBUFFER
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
+#undef CUSTOMLEAFTEST
+
 //=============================================================================================================================
 uniform mat3 invBasis;
 uniform float time;
