@@ -34,14 +34,27 @@ public:
 			// probably copy original model image here, so we can compute height deltas, determine areas where sediment would collect
 			Image_1F modelCache( p.model );
 
-			const int numSteps = 100;
+			const int numSteps = 10;
 			for ( int i = 0; i < numSteps; i++ )
 				p.Erode( 5000 ), cout << "\rstep " << i << " / " << numSteps;
 			cout << "\rerosion step finished          " << endl;
 			p.model.Autonormalize();
 
+			/* variance clamping... something
 			// I want to do something to remove abnormally brighter pixels...
 				// if a pixel is much brighter than neighbors, take the average of the neigbors
+			for ( uint32_t y = 0; y < p.model.Width(); y++ ) {
+				for ( uint32_t x = 0; x < p.model.Height(); x++ ) {
+					// grab pixel height
+
+					// grab 8 samples of neighbor height
+						// std deviation? need to detect edges and skip them because they will have bad data, 0's
+					
+					// if pixel height is significantly different than the average of the neighbors
+
+				}
+			}
+			*/
 
 			// build the triangle list
 			std::vector< tinybvh::bvhvec4 > triangles;
