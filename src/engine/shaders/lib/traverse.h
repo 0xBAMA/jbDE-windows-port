@@ -206,6 +206,20 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 				uv = vec2( u, v ), tmax = d;
 				hitAddr = floatBitsToUint( v0.w );
 			#else
+				// const uint index = floatBitsToUint( v0.w );
+
+				// test needs O, D, index as 
+
+				// need bool hit...
+				// need closest hit distance
+				// need triangle UV
+				// need triangle index, within the blade
+				// need blade index, within the field
+
+
+
+
+
 				// blade index, max distance, and solved UV... todo
 				// CUSTOMLEAFTEST( floatBitsToUint( v0.w ), tmax, uv );
 

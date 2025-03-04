@@ -25,6 +25,7 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 // second set, for the grass blades
 layout( binding = 3, std430 ) readonly buffer cwbvhNodesBuffer2 { vec4 cwbvhNodes2[]; };
 layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2[]; };
+layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangleData2[]; }; // todo
 //=============================================================================================================================
 #include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
 
@@ -38,14 +39,14 @@ layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
 
-/* what is the return type? */ leafTestFunc ( /* what is the parameterization? rO, rD, index of leaf node */ ) {
+// /* what is the return type? */ leafTestFunc ( /* what is the parameterization? rO, rD, index of leaf node */ ) {
 	// test against N triangles for one blade of grass
-}
+// }
 
 #define NODEBUFFER cwbvhNodes2
 #define TRIBUFFER cwbvhTris2
 #define TRAVERSALFUNC traverse_cwbvh_grass
-#define CUSTOMLEAFTEST leafTestFunc
+#define CUSTOMLEAFTEST // leafTestFunc
 
 #include "traverse.h" // all support code for CWBVH8 traversal
 
@@ -60,22 +61,12 @@ uniform float time;
 uniform float scale;
 uniform ivec2 noiseOffset;
 //=============================================================================================================================
-vec3 erot( vec3 p, vec3 ax, float ro ) {
+vec3 erot( vec3 p, vec3 ax, float ro ) { // https://suricrasia.online/blog/shader-functions/
 	return mix( dot( ax, p ) * ax, p, cos( ro ) ) + cross( ax, p ) * sin( ro );
 }
 vec4 blue() {
 	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
-//=============================================================================================================================
-// proposed interface for the BVH stuff, #define buffer names then #undef to reset
-
-// #define for first set of buffers
-	// first BVH test function
-// #undefs
-
-// #define for second set of buffers
-	// second BVH test function
-// #undefs
 //=============================================================================================================================
 void main () {
 	// pixel location
@@ -106,42 +97,60 @@ void main () {
 		skirtCheckRay.D.xyz = vec3( 0.0f, 0.0f, -1.0f );
 		skirtCheckRay.rD.xyz = tinybvh_safercp( skirtCheckRay.D.xyz );
 		skirtCheckRay.hit = traverse_cwbvh_terrain( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, skirtCheckRay.rD.xyz, 1e30f );
+		
 		if ( skirtCheckRay.hit.x < iSphere( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, normal2, 1.0f ) ) {
+			// this is the area "below" the ground
 			color = vec3( 0.01f );
 		} else {
+
 			// refract the ray
 			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.3f );
 			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
-			// traverse the BVH
-			r.hit = traverse_cwbvh_terrain( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+			// traverse the terrain BVH
+			vec4 terrainHit = traverse_cwbvh_terrain( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+
+			// traverse the grass BVH
+			vec4 grassHit = traverse_cwbvh_grass( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
 
 			// get a second hit with the sphere
-			float d2 = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
+			float dSphereBackface = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
 
 			// which is closer?
-			float dCloser = min( d2, r.hit.x );
+			float dCloser = min( dSphereBackface, min( terrainHit.x, grassHit.x ) );
 			vec3 fogTerm = exp( 0.5f * dCloser ) * vec3( 0.01f, 0.05f, 0.0618f );
 
-			if ( r.hit.x < 1e30f && r.hit.x == dCloser ) {
-				uint vertexIdx = 3 * floatBitsToUint( r.hit.w );
+			// if we hit the terrain or grass before the sphere
+			if ( ( terrainHit.x < 1e30f || grassHit.x < 1e30f ) && ( terrainHit.x == dCloser || grassHit.x == dCloser ) ) {
+
+				uint vertexIdx = 3 * floatBitsToUint( terrainHit.w );
 				vec3 vertex0 = triangleData[ vertexIdx + 0 ].xyz;
 				vec3 vertex1 = triangleData[ vertexIdx + 1 ].xyz;
 				vec3 vertex2 = triangleData[ vertexIdx + 2 ].xyz;
 
 				// determining shadow contribution
 				Ray shadowRay;
-				shadowRay.O.xyz = r.O.xyz + r.D.xyz * r.hit.x * 0.99999f;
+				shadowRay.O.xyz = r.O.xyz + r.D.xyz * dCloser * 0.99999f;
 				shadowRay.D.xyz = lightDirection;
 				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz ); // last argument for traverse_cwbvh is a max distance, maybe useful for simplifying this
-				bool inShadow = ( traverse_cwbvh_terrain( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f ) );
+
+				float sphereD = iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f );
+				bool inShadow = ( ( traverse_cwbvh_terrain( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD )
+					|| ( traverse_cwbvh_grass( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD ) );
 
 				// solving for the normal vector
 				vec3 N = normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
 				bool frontFace = dot( N, r.D.xyz ) < 0.0f;
 
-				color = fogTerm + ( inShadow ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) ) * 0.616f * vec3( 0.0f, 1.0f, 0.0f );
+				bool grassCloser = ( grassHit.x < terrainHit.x );
+				vec3 baseColor = ( grassCloser ? vec3( 0.1f ) : vec3( 0.0f, 1.0f, 0.0f ) );
+
+				float shadowTerm = ( ( inShadow || grassCloser ) ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) );
+
+				color = fogTerm + shadowTerm * baseColor;
+
 			} else {
+				// we just want to use the fog color
 				color = fogTerm;
 			}
 		}
