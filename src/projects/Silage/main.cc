@@ -12,9 +12,14 @@ public:
 	// node and triangle data specifically for the BVH
 	GLuint cwbvhNodesDataBuffer;
 	GLuint cwbvhTrisDataBuffer;
+	// the set for the grass
+	GLuint cwbvhNodesDataBuffer_grass;
+	GLuint cwbvhTrisDataBuffer_grass;
 
 	// vertex data for the individual triangles, in a usable format
 	GLuint triangleData;
+	// and for the grass (also includes additional data)
+	GLuint triangleData_grass;
 
 	// view parameters
 	float scale = 3.0f;
@@ -141,7 +146,7 @@ public:
 					tinybvh::bvhvec3 D( direction.x, direction.y, direction.z );
 					tinybvh::Ray ray( O, D );
 
-					int steps = bvh.Intersect( ray );
+					int steps = terrainBVH.Intersect( ray );
 					maxSteps = std::max( steps, maxSteps );
 					// printf( "std: nearest intersection: %f (found in %i traversal steps).\n", ray.hit.t, steps );
 
@@ -182,6 +187,54 @@ public:
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
 			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Terrain Triangle Data" ).c_str() );
 			cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		// creating the same set of buffers for the grass
+
+			glGenBuffers( 1, &cwbvhNodesDataBuffer_grass );
+			glGenBuffers( 1, &cwbvhTrisDataBuffer_grass );
+			glGenBuffers( 1, &triangleData_grass );
+
+			// choosing grass locations
+			std::vector< tinybvh::bvhvec4 > grassTriangles;
+
+			rng pick = rng( -1.0f, 1.0f );
+			float boxSize = 0.001f;
+			float zMultiplier = 20.0f;
+			for ( int i = 0; i < 10000; i++ ) {
+
+				// shooting a ray from above
+				tinybvh::bvhvec3 O( pick(), pick(), 3.0f );
+				tinybvh::bvhvec3 D( 0.0f, 0.0f, -1.0f );
+				tinybvh::Ray ray( O, D );
+
+				int steps = terrainBVH.Intersect( ray );
+				if ( ray.hit.t < BVH_FAR ) {
+					
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + boxSize, O.y, 3.0f - ray.hit.t + zMultiplier * boxSize, 0.0f ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x - boxSize, O.y + boxSize, 3.0f - ray.hit.t, 0.0f ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x, O.y - boxSize, 3.0f - ray.hit.t - zMultiplier * boxSize, 0.0f ) );
+				}
+			}
+
+			grassBVH.BuildHQ( &grassTriangles[ 0 ], grassTriangles.size() / 3 );
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer_grass );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, grassBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) grassBVH.bvh8Data, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, cwbvhNodesDataBuffer_grass );
+			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer_grass, -1, string( "Grass CWBVH Node Data" ).c_str() );
+			cout << "Grass CWBVH8 Node Data is " << GetWithThousandsSeparator( grassBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer_grass );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, grassBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) grassBVH.bvh8Tris, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, cwbvhTrisDataBuffer_grass );
+			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer_grass, -1, string( "Grass CWBVH Tri Data" ).c_str() );
+			cout << "Grass CWBVH8 Triangle Data is " << GetWithThousandsSeparator( grassBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleData_grass );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, grassTriangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &grassTriangles[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 5, triangleData_grass );
+			glObjectLabel( GL_BUFFER, triangleData_grass, -1, string( "Actual Grass Triangle Data" ).c_str() );
+			cout << "Grass Triangle Test Data is " << GetWithThousandsSeparator( grassTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 		}
 	}
 
