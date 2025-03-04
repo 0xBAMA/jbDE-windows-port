@@ -46,7 +46,7 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #define NODEBUFFER cwbvhNodes2
 #define TRIBUFFER cwbvhTris2
 #define TRAVERSALFUNC traverse_cwbvh_grass
-#define CUSTOMLEAFTEST // leafTestFunc
+// #define CUSTOMLEAFTEST // leafTestFunc
 
 #include "traverse.h" // all support code for CWBVH8 traversal
 
@@ -104,7 +104,7 @@ void main () {
 		} else {
 
 			// refract the ray
-			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.3f );
+			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.4f );
 			r.rD.xyz = tinybvh_safercp( r.D.xyz );
 
 			// traverse the terrain BVH
@@ -134,18 +134,23 @@ void main () {
 				shadowRay.D.xyz = lightDirection;
 				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz ); // last argument for traverse_cwbvh is a max distance, maybe useful for simplifying this
 
+				vertexIdx = 3 * floatBitsToUint( grassHit.w );
+				vec3 vertex0g = triangleData2[ vertexIdx + 0 ].xyz;
+				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
+				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
+
 				float sphereD = iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f );
 				bool inShadow = ( ( traverse_cwbvh_terrain( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD )
 					|| ( traverse_cwbvh_grass( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD ) );
 
+				bool grassCloser = ( grassHit.x < terrainHit.x );
+				vec3 baseColor = ( grassCloser ? vec3( 0.7f, 0.3f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f ) );
+
 				// solving for the normal vector
-				vec3 N = normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
+				vec3 N = grassCloser ? normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ) : normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
 				bool frontFace = dot( N, r.D.xyz ) < 0.0f;
 
-				bool grassCloser = ( grassHit.x < terrainHit.x );
-				vec3 baseColor = ( grassCloser ? vec3( 0.1f ) : vec3( 0.0f, 1.0f, 0.0f ) );
-
-				float shadowTerm = ( ( inShadow || grassCloser ) ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) );
+				float shadowTerm = ( ( inShadow ) ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) );
 
 				color = fogTerm + shadowTerm * baseColor;
 
