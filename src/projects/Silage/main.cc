@@ -6,7 +6,8 @@ public:
 	~engineDemo () { Quit(); }
 
 	// application data
-	tinybvh::BVH8_CWBVH bvh;
+	tinybvh::BVH8_CWBVH terrainBVH;
+	tinybvh::BVH8_CWBVH grassBVH;
 
 	// node and triangle data specifically for the BVH
 	GLuint cwbvhNodesDataBuffer;
@@ -57,7 +58,7 @@ public:
 			*/
 
 			// build the triangle list
-			std::vector< tinybvh::bvhvec4 > triangles;
+			std::vector< tinybvh::bvhvec4 > terrainTriangles;
 			std::vector< float > heightDeltas;
 
 			for ( uint32_t y = 0; y < p.model.Width() - 1; y++ ) {
@@ -107,21 +108,21 @@ public:
 					);
 
 					// ADC
-					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, heightValue ) );
 
 					// ABD
-					triangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, heightValue ) );
-					triangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, heightValue ) );
+					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
 				}
 			}
 
 			// consider adding skirts... or maybe just reject backface hits
 
 			// build the BVH from the triangle list
-			bvh.BuildHQ( &triangles[ 0 ], triangles.size() / 3 );
+			terrainBVH.BuildHQ( &terrainTriangles[ 0 ], terrainTriangles.size() / 3 );
 
 			// test some rays
 			Image_4F output( 1920, 1080 );
@@ -165,22 +166,22 @@ public:
 			glGenBuffers( 1, &triangleData );
 
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, bvh.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) bvh.bvh8Data, GL_DYNAMIC_COPY );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Data, GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
-			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
-			cout << "CWBVH8 Node data is " << GetWithThousandsSeparator( bvh.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "Terrain CWBVH Node Data" ).c_str() );
+			cout << "Terrain CWBVH8 Node Data is " << GetWithThousandsSeparator( terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, bvh.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) bvh.bvh8Tris, GL_DYNAMIC_COPY );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Tris, GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
-			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
-			cout << "CWBVH8 Triangle data is " << GetWithThousandsSeparator( bvh.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "Terrain CWBVH Tri Data" ).c_str() );
+			cout << "Terrain CWBVH8 Triangle Data is " << GetWithThousandsSeparator( terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleData );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, triangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &triangles[ 0 ], GL_DYNAMIC_COPY );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &terrainTriangles[ 0 ], GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
-			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Triangle Data" ).c_str() );
-			cout << "Triangle test data is " << GetWithThousandsSeparator( triangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Terrain Triangle Data" ).c_str() );
+			cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 		}
 	}
 
