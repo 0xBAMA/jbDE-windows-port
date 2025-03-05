@@ -199,9 +199,11 @@ public:
 			std::vector< tinybvh::bvhvec4 > grassTriangles;
 
 			rng pick = rng( -1.0f, 1.0f );
+			rng adjust = rng( 0.8f, 1.618f );
 			float boxSize = 0.001f;
 			float zMultiplier = 20.0f;
-			for ( int i = 0; i < 10000; i++ ) {
+			PerlinNoise per;
+			for ( int i = 0; i < 1000000; i++ ) {
 
 				// shooting a ray from above
 				tinybvh::bvhvec3 O( pick(), pick(), 3.0f );
@@ -209,11 +211,18 @@ public:
 				tinybvh::Ray ray( O, D );
 
 				int steps = terrainBVH.Intersect( ray );
-				if ( ray.hit.t < BVH_FAR ) {
-					
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x + boxSize, O.y, 3.0f - ray.hit.t + zMultiplier * boxSize, 0.0f ) );
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x - boxSize, O.y + boxSize, 3.0f - ray.hit.t, 0.0f ) );
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x, O.y - boxSize, 3.0f - ray.hit.t - zMultiplier * boxSize, 0.0f ) );
+
+				glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) ); // basisX is the axis, therefore remains untransformed
+
+				if ( ray.hit.t < BVH_FAR ) { // also add a distance check, make sure we don't create blades outside the sphere
+					float zMul = zMultiplier * adjust() * per.noise( 0.1f * O.x, 0.1f * O.y, 0.0f );
+					vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
+					vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
+					vec3 offset2 = ( rot * vec4( 0.0f, -boxSize, -zMul * boxSize, 0.0f ) ).xyz();
+
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, 0.0f ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, 0.0f ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, 0.0f ) );
 				}
 			}
 
