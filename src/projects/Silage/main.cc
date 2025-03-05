@@ -203,7 +203,9 @@ public:
 			float boxSize = 0.001f;
 			float zMultiplier = 20.0f;
 			PerlinNoise per;
-			for ( int i = 0; i < 1000000; i++ ) {
+
+			// effectively just rejection sampling
+			while ( ( grassTriangles.size() / 3 ) < 1000000 ) {
 
 				// shooting a ray from above
 				tinybvh::bvhvec3 O( pick(), pick(), 3.0f );
@@ -214,7 +216,8 @@ public:
 
 				glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) ); // basisX is the axis, therefore remains untransformed
 
-				if ( ray.hit.t < BVH_FAR ) { // also add a distance check, make sure we don't create blades outside the sphere
+				// good hit on terrain, and it is inside the snowglobe
+				if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < 1.0f ) {
 					float zMul = zMultiplier * adjust() * per.noise( 0.1f * O.x, 0.1f * O.y, 0.0f );
 					vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
 					vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
@@ -302,7 +305,7 @@ public:
 		ImGui::SameLine();
 		ImGui::Text( "%fs", time );
 		if ( update ) {
-			time += 0.01f;
+			time += 0.001f;
 		}
 		ImGui::End();
 	}
