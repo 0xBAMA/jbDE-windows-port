@@ -60,15 +60,43 @@ uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
 uniform ivec2 noiseOffset;
+
 //=============================================================================================================================
-vec3 erot( vec3 p, vec3 ax, float ro ) { // https://suricrasia.online/blog/shader-functions/
+
+// vector axis/angle rotation, from https://suricrasia.online/blog/shader-functions/
+vec3 erot( vec3 p, vec3 ax, float ro ) {
 	return mix( dot( ax, p ) * ax, p, cos( ro ) ) + cross( ax, p ) * sin( ro );
 }
+
+// blue noise helper
 vec4 blue() {
 	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
+
+// terrain trace helper
+vec4 terrainTrace ( vec3 origin, vec3 direction ) {
+	return traverse_cwbvh_terrain( origin, direction, tinybvh_safercp( direction ), 1e30f );
+}
+
+// grass trace helper
+vec4 grassTrace ( vec3 origin, vec3 direction ) {
+	return traverse_cwbvh_terrain( origin, direction, tinybvh_safercp( direction ), 1e30f );
+}
+
+// sphere trace helper
+vec4 sphereTrace ( vec3 origin, vec3 direction ) {
+	vec3 normal;
+	float d = iSphere( origin, direction, normal, 1.0f );
+	// same as the grass/terrain, x is distance, yzw in this case is normal
+	return vec4( d, normal );
+}
+
 //=============================================================================================================================
+
 void main () {
+
+// this is ugly as shit, needs a rewrite - would like to base it more on the more polished Voraldo13 raymarch code
+
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 	vec2 centeredUV = ( ( vec2( writeLoc ) + blue().xy ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
