@@ -23,6 +23,7 @@ public:
 
 	// view parameters
 	float scale = 3.0f;
+	float time = 0.0f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -285,6 +286,16 @@ public:
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
 
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
+
+		ImGui::Begin( "Controls" );
+		static bool update = true;
+		ImGui::Checkbox( "Update", &update );
+		ImGui::SameLine();
+		ImGui::Text( "%fs", time );
+		if ( update ) {
+			time += 0.01f;
+		}
+		ImGui::End();
 	}
 
 	void ComputePasses () {
@@ -299,7 +310,7 @@ public:
 			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
-			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "time" ), time );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
