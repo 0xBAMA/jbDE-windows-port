@@ -94,8 +94,58 @@ vec4 sphereTrace ( vec3 origin, vec3 direction ) {
 //=============================================================================================================================
 
 void main () {
+	// solve for jittered pixel uv
 
-// this is ugly as shit, needs a rewrite - would like to base it more on the more polished Voraldo13 raymarch code
+	// initialize color value
+
+	// initial ray-sphere test against snowglobe
+
+	// if the sphere test hits
+
+		// update ray origin
+
+		// shoot a ray straight upwards
+
+		// if you hit the ground
+
+			// pixel gets skirts color
+
+		// else
+
+			// refract the ray based on the sphere hit normal
+
+			// update ray origin and direction
+
+			// get new intersections with the intersectors
+				// terrain
+				// grass
+				// sphere
+
+			// solve for minimum of the three distances
+
+			// compute the fog term based on this minimum distance
+
+			// if the sphere is not the closest of the three
+
+				// TODO: depth term, normal, position, is now known, so we can write this to another target for SSAO
+
+				// pull the vertex data for the hit triangle
+
+				// solve for normal, frontface
+
+				// shadow rays in the light direction
+					// terrain
+					// grass
+					// sphere
+
+				// resolve final color ( N dot L term, shadow term, , etc )
+
+			// else
+
+				// take fog term
+
+	// load previous color and blend with the result, write back to accumulator
+
 
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
