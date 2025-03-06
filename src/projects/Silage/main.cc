@@ -285,7 +285,7 @@ public:
 		// TODO: setup inputHandler_t interface to something more like this
 		ImVec2 currentMouseDrag = ImGui::GetMouseDragDelta( 0 );
 		ImGui::ResetMouseDragDelta();
-		uvOffset += ivec2( currentMouseDrag.x, currentMouseDrag.y );
+		uvOffset -= ivec2( currentMouseDrag.x, currentMouseDrag.y );
 
 		SDL_Event event;
 		SDL_PumpEvents();
@@ -345,6 +345,7 @@ public:
 
 			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "time" ), time );
 
