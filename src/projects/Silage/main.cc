@@ -49,7 +49,7 @@ public:
 			p.model.Autonormalize();
 
 			/* variance clamping... something
-			// I want to do something to remove abnormally brighter pixels...
+			// I want to do something to remove abnormally brighter pixels... this is relevant for high iteration counts on the erosion, for some reason
 				// if a pixel is much brighter than neighbors, take the average of the neigbors
 			for ( uint32_t y = 0; y < p.model.Width(); y++ ) {
 				for ( uint32_t x = 0; x < p.model.Height(); x++ ) {
@@ -219,17 +219,25 @@ public:
 
 			rng pick = rng( -1.0f, 1.0f );
 			rng adjust = rng( 0.8f, 1.618f );
+			rng palettePick = rng( 0.0f, 1.0f );
+			rng clip = rng( 0.0f, 0.5f );
 			float boxSize = 0.001f;
 			float zMultiplier = 20.0f;
 			PerlinNoise per;
 
+			palette::PickRandomPalette( true );
+
 			// effectively just rejection sampling
-			while ( ( grassTriangles.size() / 3 ) < 1000000 ) {
+			while ( ( grassTriangles.size() / 3 ) < 2000000 ) {
 
 				// shooting a ray from above
 				tinybvh::bvhvec3 O( pick(), pick(), 3.0f );
 				tinybvh::bvhvec3 D( 0.0f, 0.0f, -1.0f );
 				tinybvh::Ray ray( O, D );
+
+				// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
+				float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) - clip();
+				if ( noiseRead < 0.0f ) continue;
 
 				int steps = terrainBVH.Intersect( ray );
 
@@ -237,14 +245,15 @@ public:
 
 				// good hit on terrain, and it is inside the snowglobe
 				if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < 1.0f ) {
-					float zMul = zMultiplier * adjust() * per.noise( 0.1f * O.x, 0.1f * O.y, 0.0f );
+					float zMul = zMultiplier * adjust() * noiseRead;
 					vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
 					vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
 					vec3 offset2 = ( rot * vec4( 0.0f, -boxSize, -zMul * boxSize, 0.0f ) ).xyz();
+					vec3 color = palette::paletteRef( palettePick() );
 
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, 0.0f ) );
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, 0.0f ) );
-					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, 0.0f ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, color.x ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, color.y ) );
+					grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, color.z ) );
 				}
 			}
 

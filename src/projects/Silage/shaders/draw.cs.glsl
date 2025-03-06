@@ -164,8 +164,7 @@ void main () {
 				vec3 vertex0g = triangleData2[ vertexIdx + 0 ].xyz;
 				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
-				float greenValue = triangleData2[ vertexIdx + 1 ].w;
-				float redValue = triangleData2[ vertexIdx + 0 ].w;
+				vec3 grassColor = vec3( triangleData2[ vertexIdx + 0 ].w, triangleData2[ vertexIdx + 1 ].w, triangleData2[ vertexIdx + 2 ].w );
 
 				// solve for normal, frontface
 				vec3 normal = vec3( 0.0f );
@@ -195,9 +194,7 @@ void main () {
 				bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
 
 				// resolve final color ( N dot L diffuse term * shadow term + fog term )
-				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( 0.3f, 0.7f, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
-				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( redValue, greenValue, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
-				// vec3 baseColor = ( ( frontFace ) ? vec3( 0.3f, 0.7f, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
+				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
 				float shadowTerm = ( ( inShadow ) ? 0.1f : 1.0f ) * clamp( dot( frontFace ? normal : -normal, lightDirection ), 0.01f, 1.0f );
 
 				color = fogTerm + shadowTerm * baseColor;
