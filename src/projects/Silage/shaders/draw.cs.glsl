@@ -99,8 +99,8 @@ void main () {
 	// solve for jittered pixel uv, aspect ratio adjust
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 	const vec2 is = vec2( imageSize( accumulatorTexture ).xy );
-	vec2 uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + blue().xy ) / is ) - vec2( 0.5f ) );
-	uv.y *= float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x );
+	vec2 uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + blue().xy - vec2( 0.5f ) ) / is ) - vec2( 0.5f ) );
+	uv.y *= -float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x );
 
 	// initialize color value
 	vec3 color = vec3( 0.0f );
