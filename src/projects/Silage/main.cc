@@ -68,6 +68,15 @@ public:
 			std::vector< tinybvh::bvhvec4 > terrainTriangles;
 			std::vector< float > heightDeltas;
 
+			auto boundsCheck = [] ( tinybvh::bvhvec4 A, tinybvh::bvhvec4 B, tinybvh::bvhvec4 C ) -> bool {
+				const vec3 center = vec3( 0.0f );
+				const float radiusWithPad = 1.01f; // 1% pad
+
+				return	distance( vec3( A.x, A.y, A.z ), center ) < radiusWithPad &&
+						distance( vec3( B.x, B.y, B.z ), center ) < radiusWithPad &&
+						distance( vec3( C.x, C.y, C.z ), center ) < radiusWithPad;
+			};
+
 			for ( uint32_t y = 0; y < p.model.Width() - 1; y++ ) {
 				for ( uint32_t x = 0; x < p.model.Height() - 1; x++ ) {
 					// four corners of a square
@@ -114,15 +123,24 @@ public:
 						RangeRemap( y + 1, 0, p.model.Height(), -1.0f, 1.0f )
 					);
 
+					tinybvh::bvhvec4 A = tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue );
+					tinybvh::bvhvec4 B = tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, heightValue );
+					tinybvh::bvhvec4 C = tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, heightValue );
+					tinybvh::bvhvec4 D = tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue );
+
 					// ADC
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.z, yPositions.z, heightValues.z, heightValue ) );
+					if ( boundsCheck( A, D, C ) ) {
+						terrainTriangles.push_back( A );
+						terrainTriangles.push_back( D );
+						terrainTriangles.push_back( C );
+					}
 
 					// ABD
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.x, yPositions.x, heightValues.x, heightValue ) );
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.y, yPositions.y, heightValues.y, heightValue ) );
-					terrainTriangles.push_back( tinybvh::bvhvec4( xPositions.w, yPositions.w, heightValues.w, heightValue ) );
+					if ( boundsCheck( A, B, D ) ) {
+						terrainTriangles.push_back( A );
+						terrainTriangles.push_back( B );
+						terrainTriangles.push_back( D );
+					}
 				}
 			}
 
