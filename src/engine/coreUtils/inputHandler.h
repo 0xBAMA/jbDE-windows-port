@@ -354,6 +354,8 @@ struct inputHandler_t {
 		}
 	}
 
+	// Imgui's getMouseDragDelta, resetMouseDragDelta is a good interface
+
 	const ivec2 getMousePos () const {
 		return stateBuffer[ currentOffset ].mousePosition;
 	}

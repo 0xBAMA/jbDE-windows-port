@@ -24,6 +24,7 @@ public:
 	// view parameters
 	float scale = 3.0f;
 	float time = 0.0f;
+	ivec2 uvOffset = ivec2( 0.0f );
 
 	void OnInit () {
 		ZoneScoped;
@@ -262,6 +263,11 @@ public:
 		if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
 			CompileShaders();
 		}
+
+		// TODO: setup inputHandler_t interface to something more like this
+		ImVec2 currentMouseDrag = ImGui::GetMouseDragDelta( 0 );
+		ImGui::ResetMouseDragDelta();
+		uvOffset += ivec2( currentMouseDrag.x, currentMouseDrag.y );
 
 		SDL_Event event;
 		SDL_PumpEvents();

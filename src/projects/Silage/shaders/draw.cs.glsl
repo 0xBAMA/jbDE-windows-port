@@ -56,10 +56,12 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #undef CUSTOMLEAFTEST
 
 //=============================================================================================================================
+
 uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
 uniform ivec2 noiseOffset;
+uniform ivec2 uvOffset;
 
 //=============================================================================================================================
 
@@ -149,7 +151,7 @@ void main () {
 
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
-	vec2 centeredUV = ( ( vec2( writeLoc ) + blue().xy ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
+	vec2 centeredUV = ( ( vec2( writeLoc + uvOffset ) + blue().xy ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
 	centeredUV.y *= ( float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x ) );
 
 	// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
