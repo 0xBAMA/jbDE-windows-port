@@ -24,7 +24,7 @@ public:
 	// view parameters
 	float scale = 3.0f;
 	float time = 0.0f;
-	ivec2 uvOffset = ivec2( 0.0f );
+	vec2 uvOffset = vec2( 0.0f );
 
 	void OnInit () {
 		ZoneScoped;
@@ -285,7 +285,7 @@ public:
 		// TODO: setup inputHandler_t interface to something more like this
 		ImVec2 currentMouseDrag = ImGui::GetMouseDragDelta( 0 );
 		ImGui::ResetMouseDragDelta();
-		uvOffset -= ivec2( currentMouseDrag.x, currentMouseDrag.y );
+		uvOffset -= vec2( currentMouseDrag.x, currentMouseDrag.y );
 
 		SDL_Event event;
 		SDL_PumpEvents();
@@ -301,7 +301,9 @@ public:
 
 			// handling scrolling
 			if ( event.type == SDL_EVENT_MOUSE_WHEEL && !ImGui::GetIO().WantCaptureMouse ) {
+				float scaleCache = scale;
 				scale = std::clamp( scale - event.wheel.y * ( ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 0.07f : 0.01f ), 0.005f, 5.0f );
+				uvOffset = uvOffset * ( scaleCache / scale ); // adjust offset by the ratio, keeps center intact
 			}
 		}
 	}
