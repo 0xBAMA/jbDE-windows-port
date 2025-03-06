@@ -1,7 +1,7 @@
 // #define CWBVH_COMPRESSED_TRIS // sync with tiny_bvh.h
 // #define BVH4_GPU_COMPRESSED_TRIS // sync with tiny_bvh.h
 
-// BVH traversal stack size 
+// BVH traversal stack size
 #define STACK_SIZE 32
 
 // ============================================================================

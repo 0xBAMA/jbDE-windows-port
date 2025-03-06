@@ -9,13 +9,6 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x < -1e-12f ? ( 1.0f / x ) : 1e30f ); }
 vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
 //=============================================================================================================================
-struct Ray {
-	// data is defined here as 16-byte values to encourage the compilers
-	// to fetch 16 bytes at a time: 12 (so, 8 + 4) will be slower.
-	vec4 O, D, rD; // 48 byte - rD is reciprocal direction
-	vec4 hit; // 16 byte
-};
-//=============================================================================================================================
 // node and triangle data specifically for the BVH
 layout( binding = 0, std430 ) readonly buffer cwbvhNodesBuffer { vec4 cwbvhNodes[]; };
 layout( binding = 1, std430 ) readonly buffer cwbvhTrisBuffer { vec4 cwbvhTris[]; };
