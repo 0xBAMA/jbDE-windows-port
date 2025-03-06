@@ -102,151 +102,116 @@ void main () {
 	vec2 uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + blue().xy - vec2( 0.5f ) ) / is ) - vec2( 0.5f ) );
 	uv.y *= -float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x );
 
+	// TODO: DoF calculation...
+		// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
+
 	// initialize color value
 	vec3 color = vec3( 0.0f );
 
+	// initial ray origin and direction
+	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
+	vec3 rayDirection = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
+
 	// initial ray-sphere test against snowglobe
+	vec4 initialSphereTest = sphereTrace( rayOrigin, rayDirection );
 
 	// if the sphere test hits
+	if ( initialSphereTest.x != MAX_DIST_CP ) {
 
 		// update ray origin
+		rayOrigin += rayDirection * initialSphereTest.x;
 
-		// shoot a ray straight upwards
+		// shoot a ray straight upwards... why is this negative? need to visualize positions and fix up some stuff
+		vec3 skirtCheckOrigin = rayOrigin + 0.00001f * rayDirection;
+		vec3 skirtCheckDirection = vec3( 0.0f, 0.0f, -1.0f );
+		vec4 skirtCheckTerrain = terrainTrace( skirtCheckOrigin, skirtCheckDirection );
+		vec4 skirtCheckSphere = sphereTrace( skirtCheckOrigin, skirtCheckDirection );
 
 		// if you hit the ground
+		if ( skirtCheckTerrain.x < skirtCheckSphere.x ) {
 
-			// pixel gets skirts color
-
-		// else
-
-			// refract the ray based on the sphere hit normal
-
-			// update ray origin and direction
-
-			// get new intersections with the intersectors
-				// terrain
-				// grass
-				// sphere
-
-			// solve for minimum of the three distances
-
-			// compute the fog term based on this minimum distance
-
-			// if the sphere is not the closest of the three
-
-				// TODO: depth term, normal, position, is now known, so we can write this to another target for SSAO
-
-				// pull the vertex data for the hit triangle
-
-				// solve for normal, frontface
-
-				// shadow rays in the light direction
-					// terrain
-					// grass
-					// sphere
-
-				// resolve final color ( N dot L term, shadow term, , etc )
-
-			// else
-
-				// take fog term
-
-	// load previous color and blend with the result, write back to accumulator
-
-
-	// pixel location
-	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
-	vec2 centeredUV = ( ( vec2( writeLoc + uvOffset ) + blue().xy ) / vec2( imageSize( accumulatorTexture ).xy ) ) - vec2( 0.5f );
-	centeredUV.y *= ( float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x ) );
-
-	// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
-	Ray r;
-	r.O.xyz = invBasis * vec3( scale * centeredUV, -2.0f );
-	r.D.xyz = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
-	r.rD.xyz = tinybvh_safercp( r.D.xyz );
-
-	// do a ray-sphere test, refract and update origin
-	vec3 normal = vec3( 0.0f ), normal2 = normal, normal3 = normal;
-	float d = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
-
-	vec3 color = vec3( 0.0f );
-	const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
-
-	if ( d != MAX_DIST_CP ) {
-		// update the origin
-		r.O.xyz += r.D.xyz * d;
-
-		// skirts - shoot a ray directly upwards, and if it hits, we should take the sphere hit and quit
-		Ray skirtCheckRay;
-		skirtCheckRay.O.xyz = r.O.xyz + 0.00001f * r.D.xyz;
-		skirtCheckRay.D.xyz = vec3( 0.0f, 0.0f, -1.0f );
-		skirtCheckRay.rD.xyz = tinybvh_safercp( skirtCheckRay.D.xyz );
-		skirtCheckRay.hit = traverse_cwbvh_terrain( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, skirtCheckRay.rD.xyz, 1e30f );
-		
-		if ( skirtCheckRay.hit.x < iSphere( skirtCheckRay.O.xyz, skirtCheckRay.D.xyz, normal2, 1.0f ) ) {
-			// this is the area "below" the ground
+			// pixel gets skirts color... probably parameterize this
 			color = vec3( 0.01f );
+
 		} else {
 
-			// refract the ray
-			r.D.xyz = refract( r.D.xyz, normal, 1.0f / 1.4f );
-			r.rD.xyz = tinybvh_safercp( r.D.xyz );
+			// refract the ray based on the sphere hit normal... probably also parameterize IoR
+			rayDirection = refract( rayDirection, initialSphereTest.yzw, 1.0f / 1.4f );
 
-			// traverse the terrain BVH
-			vec4 terrainHit = traverse_cwbvh_terrain( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+			// get new intersections with the intersectors
+			vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain
+			vec4 grassPrimaryHit = grassTrace( rayOrigin, rayDirection );		// grass
+			vec4 spherePrimaryHit = sphereTrace( rayOrigin, rayDirection );		// sphere
 
-			// traverse the grass BVH
-			vec4 grassHit = traverse_cwbvh_grass( r.O.xyz, r.D.xyz, r.rD.xyz, 1e30f );
+			// solve for minimum of the three distances
+			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
 
-			// get a second hit with the sphere
-			float dSphereBackface = iSphere( r.O.xyz, r.D.xyz, normal, 1.0f );
+			// compute the fog term based on this minimum distance
+			vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
 
-			// which is closer?
-			float dCloser = min( dSphereBackface, min( terrainHit.x, grassHit.x ) );
-			vec3 fogTerm = exp( 0.5f * dCloser ) * vec3( 0.01f, 0.05f, 0.0618f );
+			// if the sphere is not the closest of the three, we hit some surface
+			// if ( dClosest != spherePrimaryHit.x ) {
+			if ( ( terrainPrimaryHit.x < 1e30f || grassPrimaryHit.x < 1e30f ) && ( terrainPrimaryHit.x == dClosest || grassPrimaryHit.x == dClosest ) ) {
 
-			// if we hit the terrain or grass before the sphere
-			if ( ( terrainHit.x < 1e30f || grassHit.x < 1e30f ) && ( terrainHit.x == dCloser || grassHit.x == dCloser ) ) {
+				// pull the vertex data for the hit terrain/grass triangles
+				uint vertexIdx = 3 * floatBitsToUint( terrainPrimaryHit.w );
+				vec3 vertex0t = triangleData[ vertexIdx + 0 ].xyz;
+				vec3 vertex1t = triangleData[ vertexIdx + 1 ].xyz;
+				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
 
-				uint vertexIdx = 3 * floatBitsToUint( terrainHit.w );
-				vec3 vertex0 = triangleData[ vertexIdx + 0 ].xyz;
-				vec3 vertex1 = triangleData[ vertexIdx + 1 ].xyz;
-				vec3 vertex2 = triangleData[ vertexIdx + 2 ].xyz;
-
-				// determining shadow contribution
-				Ray shadowRay;
-				shadowRay.O.xyz = r.O.xyz + r.D.xyz * dCloser * 0.99999f;
-				shadowRay.D.xyz = lightDirection;
-				shadowRay.rD.xyz = tinybvh_safercp( shadowRay.D.xyz ); // last argument for traverse_cwbvh is a max distance, maybe useful for simplifying this
-
-				vertexIdx = 3 * floatBitsToUint( grassHit.w );
+				// the indexing for grass will change once grass blades have multiple tris
+				vertexIdx = 3 * floatBitsToUint( grassPrimaryHit.w );
 				vec3 vertex0g = triangleData2[ vertexIdx + 0 ].xyz;
 				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
+				float greenValue = triangleData2[ vertexIdx + 1 ].w;
+				float redValue = triangleData2[ vertexIdx + 0 ].w;
 
-				float sphereD = iSphere( shadowRay.O.xyz, shadowRay.D.xyz, normal3, 1.0f );
-				bool inShadow = ( ( traverse_cwbvh_terrain( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD )
-					|| ( traverse_cwbvh_grass( shadowRay.O.xyz, shadowRay.D.xyz, shadowRay.rD.xyz, 1e30f ).x < sphereD ) );
+				// solve for normal, frontface
+				vec3 normal = vec3( 0.0f );
+				if ( terrainPrimaryHit.x < grassPrimaryHit.x ) {
+					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
+				} else {
+					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ); // use grass data
+				}
 
-				bool grassCloser = ( grassHit.x < terrainHit.x );
-				vec3 baseColor = ( grassCloser ? vec3( 0.7f, 0.3f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f ) );
+				// I need to make sure that this is correct
+				bool frontFace = dot( normal, rayDirection ) < 0.0f;
 
-				// solving for the normal vector
-				vec3 N = grassCloser ? normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ) : normalize( cross( vertex1 - vertex0, vertex2 - vertex0 ) );
-				bool frontFace = dot( N, r.D.xyz ) < 0.0f;
+				// TODO: depth, normal, position, is now known, so we can write this to another target for SSAO
+					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
+					// RT deferred will be much more efficient than the equivalent raster operation, I think... single set of results written per pixel
 
-				float shadowTerm = ( ( inShadow ) ? 0.01f : clamp( dot( ( frontFace ? N : -N ), lightDirection ), 0.01f, 1.0f ) );
+				// TODO: better controls, CPU side definition of light direction
+				const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
+
+				// test shadow rays in the light direction
+				rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
+				vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirection );	// terrain
+				vec4 grassShadowHit = grassTrace( rayOrigin, lightDirection );		// grass
+				vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirection );	// sphere
+
+				// resolve whether we hit an occluder before leaving the sphere
+				bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+
+				// resolve final color ( N dot L diffuse term * shadow term + fog term )
+				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( 0.3f, 0.7f, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
+				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( redValue, greenValue, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
+				// vec3 baseColor = ( ( frontFace ) ? vec3( 0.3f, 0.7f, 0.0f ) : vec3( 1.0f ) ); // placeholder... want vertex colors
+				float shadowTerm = ( ( inShadow ) ? 0.1f : 1.0f ) * clamp( dot( frontFace ? normal : -normal, lightDirection ), 0.01f, 1.0f );
 
 				color = fogTerm + shadowTerm * baseColor;
 
 			} else {
-				// we just want to use the fog color
+
+				// just take the fog term
 				color = fogTerm;
+
 			}
 		}
 	}
 
-	// add blending with history
+	// load previous color and blend with the result, write back to accumulator
 	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
 	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, 0.7f ) );
 }
