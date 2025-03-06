@@ -82,7 +82,7 @@ vec4 terrainTrace ( vec3 origin, vec3 direction ) {
 
 // grass trace helper
 vec4 grassTrace ( vec3 origin, vec3 direction ) {
-	return traverse_cwbvh_terrain( origin, direction, tinybvh_safercp( direction ), 1e30f );
+	return traverse_cwbvh_grass( origin, direction, tinybvh_safercp( direction ), 1e30f );
 }
 
 // sphere trace helper
