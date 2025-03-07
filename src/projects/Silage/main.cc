@@ -25,6 +25,7 @@ public:
 	float scale = 3.0f;
 	vec2 thetaPhi_lightDirection = vec2( 0.0f, 0.0f );
 	vec2 uvOffset = vec2( 0.0f );
+	float blendAmount = 0.75f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -367,6 +368,7 @@ public:
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
 			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 			vec3 lightDirection = GetLightDirection();
 			glUniform3f( glGetUniformLocation( shader, "lightDirection" ), lightDirection.x, lightDirection.y, lightDirection.z );

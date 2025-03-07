@@ -53,6 +53,7 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
+uniform float blendAmount;
 uniform ivec2 noiseOffset;
 uniform ivec2 uvOffset;
 uniform vec3 lightDirection;
@@ -200,5 +201,5 @@ void main () {
 
 	// load previous color and blend with the result, write back to accumulator
 	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, 0.7f ) );
+	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
 }
