@@ -142,7 +142,8 @@ void main () {
 			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
 
 			// compute the fog term based on this minimum distance - this is where the volumetrics would need to go
-			vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
+			// vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
+			vec3 fogTerm = vec3( 0.0f );
 
 			// if the sphere is not the closest of the three, we hit some surface
 			if ( dClosest != spherePrimaryHit.x ) {
@@ -186,7 +187,7 @@ void main () {
 
 				// resolve final color ( N dot L diffuse term * shadow term + fog term )
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
-				float shadowTerm = ( ( inShadow ) ? 0.1f : 1.0f ) * clamp( dot( frontFace ? normal : -normal, lightDirection ), 0.01f, 1.0f );
+				float shadowTerm = ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( frontFace ? normal : -normal, lightDirection ), 0.01f, 1.0f );
 
 				color = fogTerm + shadowTerm * baseColor;
 

@@ -615,11 +615,11 @@ target_link_libraries( LineSpam
 # =================================================================================================
 # Grass rendering
 # =================================================================================================
-add_executable( Silage
-	src/projects/Silage/main.cc
+add_executable( Verdure
+	src/projects/Verdure/main.cc
 )
 
-target_link_libraries( Silage
+target_link_libraries( Verdure
 	PUBLIC
 	engineBase
 )

@@ -1,9 +1,9 @@
 #include "../../engine/engine.h"
 
-class engineDemo final : public engineBase { // sample derived from base engine class
+class Verdure final : public engineBase { // sample derived from base engine class
 public:
-	engineDemo () { Init(); OnInit(); PostInit(); }
-	~engineDemo () { Quit(); }
+	Verdure () { Init(); OnInit(); PostInit(); }
+	~Verdure () { Quit(); }
 
 	// application data
 	tinybvh::BVH8_CWBVH terrainBVH;
@@ -23,9 +23,12 @@ public:
 
 	// view parameters
 	float scale = 3.0f;
-	vec2 thetaPhi_lightDirection = vec2( 0.0f, 0.0f );
-	vec2 uvOffset = vec2( 0.0f );
 	float blendAmount = 0.75f;
+
+	vec2 thetaPhi_lightDirection = vec2( 0.0f, 0.0f );
+	float lightJitter = 0.0f;
+
+	vec2 uvOffset = vec2( 0.0f );
 
 	// parameters for the palette
 	int selectedPalette = 0;
@@ -59,8 +62,8 @@ public:
 	}
 
 	void CompileShaders () {
-		shaders[ "Draw" ] = computeShader( "../src/projects/Silage/shaders/draw.cs.glsl" ).shaderHandle;
-		// shaders[ "Grass" ] = computeShader( "../src/projects/Silage/shaders/grass.cs.glsl" ).shaderHandle;
+		shaders[ "Draw" ] = computeShader( "../src/projects/Verdure/shaders/draw.cs.glsl" ).shaderHandle;
+		// shaders[ "Grass" ] = computeShader( "../src/projects/Verdure/shaders/grass.cs.glsl" ).shaderHandle;
 	}
 
 	void GenerateLandscape () {
@@ -102,7 +105,7 @@ public:
 
 		auto boundsCheck = [] ( tinybvh::bvhvec4 A, tinybvh::bvhvec4 B, tinybvh::bvhvec4 C ) -> bool {
 			const vec3 center = vec3( 0.0f );
-			const float radiusWithPad = 1.01f; // 1% pad
+			const float radiusWithPad = 1.05f; // 5% pad
 
 			return	distance( vec3( A.x, A.y, A.z ), center ) < radiusWithPad &&
 					distance( vec3( B.x, B.y, B.z ), center ) < radiusWithPad &&
@@ -253,7 +256,8 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
+			// float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
+			float noiseRead = 1.0f;
 			if ( noiseRead < 0.0f ) continue;
 
 			int steps = terrainBVH.Intersect( ray );
@@ -261,7 +265,7 @@ public:
 			glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) ); // basisX is the axis, therefore remains untransformed
 
 			// good hit on terrain, and it is inside the snowglobe
-			if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < 1.0f ) {
+			if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < 1.05f ) {
 				float zMul = zMultiplier * adjust() * noiseRead;
 				vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
 				vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
@@ -300,9 +304,10 @@ public:
 
 	vec3 GetLightDirection () {
 		// adding a bit of jitter to these parameters, and blending very strongly with the might be an interesting way to resolve soft shadows
+		rngN jitter = rngN( 0.0f, lightJitter );
 		vec3 dir = vec3( 1.0f, 0.0f, 0.0f );
-		dir = glm::rotate( dir, thetaPhi_lightDirection.y, glm::vec3( 0.0f, 1.0f, 0.0f ) );
-		dir = glm::rotate( dir, thetaPhi_lightDirection.x, glm::vec3( 0.0f, 0.0f, 1.0f ) );
+		dir = glm::rotate( dir, thetaPhi_lightDirection.y + jitter(), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+		dir = glm::rotate( dir, thetaPhi_lightDirection.x + jitter(), glm::vec3( 0.0f, 0.0f, 1.0f ) );
 		return dir;
 	}
 
@@ -362,6 +367,7 @@ public:
 		ImGui::Begin( "Controls" );
 		ImGui::SliderFloat( "Theta", &thetaPhi_lightDirection.x, -pi, pi );
 		ImGui::SliderFloat( "Phi", &thetaPhi_lightDirection.y, -pi / 2.0f, pi / 2.0f );
+		ImGui::SliderFloat( "Light Jitter", &lightJitter, 0.0f, 1.0f );
 		ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.999f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
 		// regen model dialog
@@ -537,7 +543,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
-	engineDemo engineInstance;
+	Verdure engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }
