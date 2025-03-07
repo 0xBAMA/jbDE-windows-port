@@ -27,6 +27,11 @@ public:
 	vec2 uvOffset = vec2( 0.0f );
 	float blendAmount = 0.75f;
 
+	// parameters for the palette
+	int selectedPalette = 0;
+	float paletteMin = 0.0f;
+	float paletteMax = 1.0f;
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -43,6 +48,10 @@ public:
 			glGenBuffers( 1, &cwbvhNodesDataBuffer_grass );
 			glGenBuffers( 1, &cwbvhTrisDataBuffer_grass );
 			glGenBuffers( 1, &triangleData_grass );
+
+			// picking an initial palette
+			palette::PickRandomPalette( true );
+			selectedPalette = palette::PaletteIndex;
 
 			// generate the ground, grass, and buffer it to the GPU
 			GenerateLandscape();
@@ -227,13 +236,13 @@ public:
 
 		rng pick = rng( -1.0f, 1.0f );
 		rng adjust = rng( 0.8f, 1.618f );
-		rng palettePick = rng( 0.0f, 1.0f );
+		rng palettePick = rng( paletteMin, paletteMax );
 		rng clip = rng( 0.0f, 0.5f );
 		float boxSize = 0.001f;
 		float zMultiplier = 20.0f;
 		PerlinNoise per;
 
-		palette::PickRandomPalette( true );
+		palette::PaletteIndex = selectedPalette;
 
 		// effectively just rejection sampling
 		while ( ( grassTriangles.size() / 3 ) < 2000000 ) {
