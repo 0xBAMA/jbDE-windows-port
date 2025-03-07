@@ -140,12 +140,11 @@ void main () {
 			// solve for minimum of the three distances
 			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
 
-			// compute the fog term based on this minimum distance
+			// compute the fog term based on this minimum distance - this is where the volumetrics would need to go
 			vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
 
 			// if the sphere is not the closest of the three, we hit some surface
-			// if ( dClosest != spherePrimaryHit.x ) {
-			if ( ( terrainPrimaryHit.x < 1e30f || grassPrimaryHit.x < 1e30f ) && ( terrainPrimaryHit.x == dClosest || grassPrimaryHit.x == dClosest ) ) {
+			if ( dClosest != spherePrimaryHit.x ) {
 
 				// pull the vertex data for the hit terrain/grass triangles
 				uint vertexIdx = 3 * floatBitsToUint( terrainPrimaryHit.w );
@@ -171,7 +170,7 @@ void main () {
 				// I need to make sure that this is correct
 				bool frontFace = dot( normal, rayDirection ) < 0.0f;
 
-				// TODO: depth, normal, position, is now known, so we can write this to another target for SSAO
+				// TODO: depth, normal, position, are all now known, so we can write this to another target for SSAO
 					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
 					// RT deferred will be much more efficient than the equivalent raster operation, I think... single set of results written per pixel
 
