@@ -292,9 +292,11 @@ public:
 		}
 
 		// TODO: setup inputHandler_t interface to something more like this
-		ImVec2 currentMouseDrag = ImGui::GetMouseDragDelta( 0 );
-		ImGui::ResetMouseDragDelta();
-		uvOffset -= vec2( currentMouseDrag.x, currentMouseDrag.y );
+		if ( !ImGui::GetIO().WantCaptureMouse ) {
+			ImVec2 currentMouseDrag = ImGui::GetMouseDragDelta( 0 );
+			ImGui::ResetMouseDragDelta();
+			uvOffset -= vec2( currentMouseDrag.x, currentMouseDrag.y );
+		}
 
 		SDL_Event event;
 		SDL_PumpEvents();
