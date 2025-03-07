@@ -23,7 +23,7 @@ public:
 
 	// view parameters
 	float scale = 3.0f;
-	float time = 0.0f;
+	vec2 thetaPhi_lightDirection = vec2( 0.0f, 0.0f );
 	vec2 uvOffset = vec2( 0.0f );
 
 	void OnInit () {
@@ -281,6 +281,11 @@ public:
 
 	void CompileShaders () {
 		shaders[ "Draw" ] = computeShader( "../src/projects/Silage/shaders/draw.cs.glsl" ).shaderHandle;
+	vec3 GetLightDirection () {
+		vec3 dir = vec3( 1.0f, 0.0f, 0.0f );
+		dir = glm::rotate( dir, thetaPhi_lightDirection.y, glm::vec3( 0.0f, 1.0f, 0.0f ) );
+		dir = glm::rotate( dir, thetaPhi_lightDirection.x, glm::vec3( 0.0f, 0.0f, 1.0f ) );
+		return dir;
 	}
 
 	void HandleCustomEvents () {
@@ -337,13 +342,8 @@ public:
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 
 		ImGui::Begin( "Controls" );
-		static bool update = true;
-		ImGui::Checkbox( "Update", &update );
-		ImGui::SameLine();
-		ImGui::Text( "%fs", time );
-		if ( update ) {
-			time += 0.001f;
-		}
+		ImGui::SliderFloat( "Theta", &thetaPhi_lightDirection.x, -pi, pi );
+		ImGui::SliderFloat( "Phi", &thetaPhi_lightDirection.y, -pi / 2.0f, pi / 2.0f );
 		ImGui::End();
 	}
 
@@ -360,7 +360,9 @@ public:
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
 			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
-			glUniform1f( glGetUniformLocation( shader, "time" ), time );
+			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			vec3 lightDirection = GetLightDirection();
+			glUniform3f( glGetUniformLocation( shader, "lightDirection" ), lightDirection.x, lightDirection.y, lightDirection.z );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );

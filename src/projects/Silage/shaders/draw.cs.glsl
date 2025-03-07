@@ -55,6 +55,7 @@ uniform float time;
 uniform float scale;
 uniform ivec2 noiseOffset;
 uniform ivec2 uvOffset;
+uniform vec3 lightDirection;
 
 //=============================================================================================================================
 
@@ -173,9 +174,6 @@ void main () {
 				// TODO: depth, normal, position, is now known, so we can write this to another target for SSAO
 					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
 					// RT deferred will be much more efficient than the equivalent raster operation, I think... single set of results written per pixel
-
-				// TODO: better controls, CPU side definition of light direction
-				const vec3 lightDirection = erot( normalize( vec3( 1.0f, 1.0f, -1.0f ) ), vec3( 0.0f, 0.0f, 1.0f ), time );
 
 				// test shadow rays in the light direction
 				rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
