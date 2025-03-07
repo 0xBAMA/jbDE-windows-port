@@ -244,7 +244,7 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) - clip();
+			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
 			if ( noiseRead < 0.0f ) continue;
 
 			int steps = terrainBVH.Intersect( ray );
