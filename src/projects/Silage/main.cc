@@ -166,6 +166,7 @@ public:
 		// build the BVH from the triangle list
 		terrainBVH.BuildHQ( &terrainTriangles[ 0 ], terrainTriangles.size() / 3 );
 
+		/*
 		// test some rays
 		Image_4F output( 1920, 1080 );
 		int maxSteps = 0;
@@ -200,6 +201,7 @@ public:
 			}
 		}
 		output.Save( "test.png" );
+		*/
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Data, GL_DYNAMIC_COPY );
