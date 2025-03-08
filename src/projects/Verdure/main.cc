@@ -66,6 +66,11 @@ public:
 
 			// generate the ground, grass, and buffer it to the GPU
 			GenerateLandscape();
+
+			// initial pump of the light direction queue
+			for ( int i = 0; i < 16; i++ ) {
+				PushLightDirections();
+			}
 		}
 	}
 
@@ -311,13 +316,16 @@ public:
 		cout << "Operation Complete in " << msTaken / 1000.0f << " seconds" << endl;
 	}
 
-	vec3 GetLightDirection () {
-		// adding a bit of jitter to these parameters, and blending very strongly with the might be an interesting way to resolve soft shadows
-		rngN jitter = rngN( 0.0f, lightJitter );
-		vec3 dir = vec3( 1.0f, 0.0f, 0.0f );
-		dir = glm::rotate( dir, thetaPhi_lightDirection.y + jitter(), glm::vec3( 0.0f, 1.0f, 0.0f ) );
-		dir = glm::rotate( dir, thetaPhi_lightDirection.x + jitter(), glm::vec3( 0.0f, 0.0f, 1.0f ) );
-		return dir;
+	void PushLightDirections () {
+		// jitter allows for the resolving of soft shadows
+		rngN jitter = rngN( 0.0f, lightJitter[ 0 ] );
+		vec3 dir[ 3 ];
+		for ( int i = 0; i < 3; i++ ) {
+			dir[ i ] = vec3( 1.0f, 0.0f, 0.0f );
+			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].y + jitter(), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].x + jitter(), glm::vec3( 0.0f, 0.0f, 1.0f ) );
+			lightDirectionQueue[ i ].push_back( normalize( dir[ i ] ) );
+		}
 	}
 
 	void HandleCustomEvents () {
@@ -468,8 +476,34 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
-			vec3 lightDirection = GetLightDirection();
-			glUniform3f( glGetUniformLocation( shader, "lightDirection" ), lightDirection.x, lightDirection.y, lightDirection.z );
+			
+			// get a new light direction in the list... get rid of the last one
+			PushLightDirections();
+			lightDirectionQueue[ 0 ].pop_front();
+			lightDirectionQueue[ 1 ].pop_front();
+			lightDirectionQueue[ 2 ].pop_front();
+
+			// construct a vector of the data to send to GPU
+			vec3 lightDirections0[ 16 ];
+			vec3 lightDirections1[ 16 ];
+			vec3 lightDirections2[ 16 ];
+			for ( int i = 0; i < 16; i++ ) {
+				lightDirections0[ i ] = lightDirectionQueue[ 0 ][ i ];
+				lightDirections1[ i ] = lightDirectionQueue[ 1 ][ i ];
+				lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
+			}
+
+			// Key Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );
+			glUniform4f( glGetUniformLocation( shader, "lightColor0" ), lightColors[ 0 ].x, lightColors[ 0 ].y, lightColors[ 0 ].z, lightBrightness[ 0 ] );
+
+			// Fill Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections1" ), 16, glm::value_ptr( lightDirections1[ 0 ] ) );
+			glUniform4f( glGetUniformLocation( shader, "lightColor1" ), lightColors[ 1 ].x, lightColors[ 1 ].y, lightColors[ 1 ].z, lightBrightness[ 1 ] );
+
+			// Back Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections2" ), 16, glm::value_ptr( lightDirections2[ 0 ] ) );
+			glUniform4f( glGetUniformLocation( shader, "lightColor2" ), lightColors[ 2 ].x, lightColors[ 2 ].y, lightColors[ 2 ].z, lightBrightness[ 2 ] );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
