@@ -21,6 +21,9 @@ public:
 	// and for the grass (also includes additional data)
 	GLuint triangleData_grass;
 
+	// generator parameters
+	float spherePadPercent = 3.0f;
+
 	// view parameters
 	float scale = 3.0f;
 	float blendAmount = 0.75f;
@@ -82,7 +85,7 @@ public:
 		// probably copy original model image here, so we can compute height deltas, determine areas where sediment would collect
 		Image_1F modelCache( p.model );
 
-		const int numSteps = 10;
+		const int numSteps = 20;
 		for ( int i = 0; i < numSteps; i++ )
 			p.Erode( 5000 ), cout << "\rstep " << i << " / " << numSteps;
 		cout << "\rerosion step finished          " << endl;
@@ -108,9 +111,9 @@ public:
 		std::vector< tinybvh::bvhvec4 > terrainTriangles;
 		std::vector< float > heightDeltas;
 
-		auto boundsCheck = [] ( tinybvh::bvhvec4 A, tinybvh::bvhvec4 B, tinybvh::bvhvec4 C ) -> bool {
+		auto boundsCheck = [=] ( tinybvh::bvhvec4 A, tinybvh::bvhvec4 B, tinybvh::bvhvec4 C ) -> bool {
 			const vec3 center = vec3( 0.0f );
-			const float radiusWithPad = 1.05f; // 5% pad
+			const float radiusWithPad = 1.0f + 0.01f * spherePadPercent; // padding to avoid edge issues
 
 			return	distance( vec3( A.x, A.y, A.z ), center ) < radiusWithPad &&
 					distance( vec3( B.x, B.y, B.z ), center ) < radiusWithPad &&
@@ -261,16 +264,17 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			// float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
-			float noiseRead = 1.0f;
-			if ( noiseRead < 0.0f ) continue;
+			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + clip();
+			// float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f );
+			// float noiseRead = 1.0f;
+			if ( noiseRead < 0.01f ) continue;
 
 			int steps = terrainBVH.Intersect( ray );
 
 			glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) ); // basisX is the axis, therefore remains untransformed
 
 			// good hit on terrain, and it is inside the snowglobe
-			if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < 1.05f ) {
+			if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < ( 1.0f + 0.01f * spherePadPercent ) ) {
 				float zMul = zMultiplier * adjust() * noiseRead;
 				vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
 				vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
