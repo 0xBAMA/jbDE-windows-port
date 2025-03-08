@@ -151,6 +151,7 @@ void main () {
 
 			// compute the fog term based on this minimum distance - this is where the volumetrics would need to go
 			// vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
+			// vec3 fogTerm = exp( -0.001f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
 			vec3 fogTerm = vec3( 0.0f );
 
 			// if the sphere is not the closest of the three, we hit some surface
