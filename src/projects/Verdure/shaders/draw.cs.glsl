@@ -56,7 +56,21 @@ uniform float scale;
 uniform float blendAmount;
 uniform ivec2 noiseOffset;
 uniform ivec2 uvOffset;
-uniform vec3 lightDirection;
+
+// enable flags
+uniform bvec3 enable;
+
+// Key Light
+uniform vec3 lightDirections0[ 16 ];
+uniform vec4 lightColor0;
+
+// Fill Light
+uniform vec3 lightDirections1[ 16 ];
+uniform vec4 lightColor1;
+
+// Back Light
+uniform vec3 lightDirections2[ 16 ];
+uniform vec4 lightColor2;
 
 //=============================================================================================================================
 // bayer matrix for indexing into the queues
