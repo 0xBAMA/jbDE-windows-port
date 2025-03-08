@@ -200,20 +200,55 @@ void main () {
 					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
 					// RT deferred will be much more efficient than the equivalent raster operation, I think... single set of results written per pixel
 
+				// based on the x and y pixel locations, index into the list of light directions
+				const int idx = bayerMatrix[ ( writeLoc.x % 4 ) + ( writeLoc.y % 4 ) * 4 ];
+
 				// test shadow rays in the light direction
 				rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
-				vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirection );	// terrain
-				vec4 grassShadowHit = grassTrace( rayOrigin, lightDirection );		// grass
-				vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirection );	// sphere
 
-				// resolve whether we hit an occluder before leaving the sphere
-				bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+				vec3 overallLightContribution = vec3( 0.0f );
 
-				// resolve final color ( N dot L diffuse term * shadow term + fog term )
+				if ( enable.x ) { // first light - "key light"
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );	// terrain
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );		// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );	// sphere
+
+					// resolve whether we hit an occluder before leaving the sphere
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+
+					// resolve color contribution ( N dot L diffuse term * shadow term )
+					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
+				}
+
+				if ( enable.y ) { // second light - "fill light"
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );	// terrain
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );		// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );	// sphere
+
+					// resolve whether we hit an occluder before leaving the sphere
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+
+					// resolve color contribution ( N dot L diffuse term * shadow term )
+					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
+				}
+
+				if ( enable.z ) { // third light - "back light"
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );	// terrain
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );		// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );	// sphere
+
+					// resolve whether we hit an occluder before leaving the sphere
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+
+					// resolve color contribution ( N dot L diffuse term * shadow term )
+					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
+				}
+
+				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
-				float shadowTerm = ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( frontFace ? normal : -normal, lightDirection ), 0.01f, 1.0f );
 
-				color = fogTerm + shadowTerm * baseColor;
+				// add fog contribution to the final color
+				color = fogTerm + overallLightContribution * baseColor;
 
 			} else {
 
