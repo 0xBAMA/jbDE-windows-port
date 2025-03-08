@@ -59,6 +59,14 @@ uniform ivec2 uvOffset;
 uniform vec3 lightDirection;
 
 //=============================================================================================================================
+// bayer matrix for indexing into the queues
+const int bayerMatrix[ 16 ] = int [] (
+	 0,  8,  2, 10,
+	12,  4, 14,  6,
+	 3, 11,  1,  9,
+	15,  7, 13,  5
+);
+//=============================================================================================================================
 
 // vector axis/angle rotation, from https://suricrasia.online/blog/shader-functions/
 vec3 erot( vec3 p, vec3 ax, float ro ) {

@@ -24,11 +24,16 @@ public:
 	// view parameters
 	float scale = 3.0f;
 	float blendAmount = 0.75f;
-
-	vec2 thetaPhi_lightDirection = vec2( 0.0f, 0.0f );
-	float lightJitter = 0.0f;
-
 	vec2 uvOffset = vec2( 0.0f );
+
+	// parameters for 3 lights
+	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
+	float lightJitter[ 3 ] = { 0.0f };
+	vec3 lightColors[ 3 ] = { vec3( 1.0f ) };
+	float lightBrightness[ 3 ] = { 1.0f };
+
+	// the running deque of jittered light positions
+	std::deque< vec3 >lightDirectionQueue[ 3 ];
 
 	// parameters for the palette
 	int selectedPalette = 0;
