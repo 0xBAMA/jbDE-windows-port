@@ -34,6 +34,7 @@ public:
 	float lightJitter[ 3 ] = { 0.0f };
 	vec3 lightColors[ 3 ] = { vec3( 1.0f ) };
 	float lightBrightness[ 3 ] = { 1.0f };
+	ivec3 lightEnable = ivec3( 1 );
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -385,6 +386,8 @@ public:
 		ImGui::SeparatorText( "Lights" );
 		ImGui::Text( " " );
 		ImGui::Text( "Key Light" );
+		ImGui::SameLine();
+		ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
 		ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -pi, pi );
 		ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -pi / 2.0f, pi / 2.0f );
 		ImGui::SliderFloat( "Jitter##key", &lightJitter[ 0 ], 0.0f, 0.3f );
@@ -393,6 +396,8 @@ public:
 
 		ImGui::Text( " " );
 		ImGui::Text( "Fill Light" );
+		ImGui::SameLine();
+		ImGui::Checkbox( "Enable##fill", ( bool* ) &lightEnable.y );
 		ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -pi, pi );
 		ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -pi / 2.0f, pi / 2.0f );
 		ImGui::SliderFloat ( "Jitter##fill", &lightJitter[ 1 ], 0.0f, 0.3f );
@@ -401,6 +406,8 @@ public:
 
 		ImGui::Text( " " );
 		ImGui::Text( "Back Light" );
+		ImGui::SameLine();
+		ImGui::Checkbox( "Enable##back", ( bool* ) &lightEnable.z );
 		ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -pi, pi );
 		ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -pi / 2.0f, pi / 2.0f );
 		ImGui::SliderFloat ( "Jitter##back", &lightJitter[ 2 ], 0.0f, 0.3f );
@@ -516,6 +523,9 @@ public:
 				lightDirections1[ i ] = lightDirectionQueue[ 1 ][ i ];
 				lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
 			}
+
+			// Light enable flags
+			glUniform3iv( glGetUniformLocation( shader, "enable" ), 1, ( const GLint* ) &lightEnable );
 
 			// Key Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );
