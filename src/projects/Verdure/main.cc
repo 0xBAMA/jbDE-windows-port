@@ -319,12 +319,16 @@ public:
 
 	void PushLightDirections () {
 		// jitter allows for the resolving of soft shadows
-		rngN jitter = rngN( 0.0f, lightJitter[ 0 ] );
+		rngN jitter[ 3 ] = {
+			rngN( 0.0f, lightJitter[ 0 ] ),
+			rngN( 0.0f, lightJitter[ 1 ] ),
+			rngN( 0.0f, lightJitter[ 2 ] )
+		};
 		vec3 dir[ 3 ];
 		for ( int i = 0; i < 3; i++ ) {
 			dir[ i ] = vec3( 1.0f, 0.0f, 0.0f );
-			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].y + jitter(), glm::vec3( 0.0f, 1.0f, 0.0f ) );
-			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].x + jitter(), glm::vec3( 0.0f, 0.0f, 1.0f ) );
+			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].y + jitter[ i ](), glm::vec3( 0.0f, 1.0f, 0.0f ) );
+			dir[ i ] = glm::rotate( dir[ i ], thetaPhi_lightDirection[ i ].x + jitter[ i ](), glm::vec3( 0.0f, 0.0f, 1.0f ) );
 			lightDirectionQueue[ i ].push_back( normalize( dir[ i ] ) );
 		}
 	}
