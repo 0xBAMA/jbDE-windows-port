@@ -179,6 +179,7 @@ void main () {
 
 				// I need to make sure that this is correct
 				bool frontFace = dot( normal, rayDirection ) < 0.0f;
+				normal = frontFace ? normal : -normal;
 
 				// TODO: depth, normal, position, are all now known, so we can write this to another target for SSAO
 					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
