@@ -382,14 +382,38 @@ public:
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 
 		ImGui::Begin( "Controls" );
-		ImGui::SliderFloat( "Theta", &thetaPhi_lightDirection.x, -pi, pi );
-		ImGui::SliderFloat( "Phi", &thetaPhi_lightDirection.y, -pi / 2.0f, pi / 2.0f );
-		ImGui::SliderFloat( "Light Jitter", &lightJitter, 0.0f, 1.0f );
+		ImGui::SeparatorText( "Lights" );
+		ImGui::Text( " " );
+		ImGui::Text( "Key Light" );
+		ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -pi, pi );
+		ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -pi / 2.0f, pi / 2.0f );
+		ImGui::SliderFloat( "Jitter##key", &lightJitter[ 0 ], 0.0f, 0.3f );
+		ImGui::ColorEdit3( "Color##key", ( float* ) &lightColors[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+		ImGui::SliderFloat( "Brightness##key", &lightBrightness[ 0 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+		ImGui::Text( " " );
+		ImGui::Text( "Fill Light" );
+		ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -pi, pi );
+		ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -pi / 2.0f, pi / 2.0f );
+		ImGui::SliderFloat ( "Jitter##fill", &lightJitter[ 1 ], 0.0f, 0.3f );
+		ImGui::ColorEdit3( "Color##fill", ( float* ) &lightColors[ 1 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+		ImGui::SliderFloat( "Brightness##fill", &lightBrightness[ 1 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+		ImGui::Text( " " );
+		ImGui::Text( "Back Light" );
+		ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -pi, pi );
+		ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -pi / 2.0f, pi / 2.0f );
+		ImGui::SliderFloat ( "Jitter##back", &lightJitter[ 2 ], 0.0f, 0.3f );
+		ImGui::ColorEdit3( "Color##back", ( float* ) &lightColors[ 2 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+		ImGui::SliderFloat( "Brightness##back", &lightBrightness[ 2 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+		ImGui::Text( " " );
+		ImGui::SeparatorText( "Frame Parameters" );
 		ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.999f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
 		// regen model dialog
 		ImGui::Text( " " );
-		ImGui::Separator();
+		ImGui::SeparatorText( "Generator" );
 		if ( ImGui::Button( "Regen" ) ) {
 			GenerateLandscape();
 		}
