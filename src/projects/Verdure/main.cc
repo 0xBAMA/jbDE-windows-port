@@ -255,7 +255,7 @@ public:
 		std::vector< tinybvh::bvhvec4 > grassTriangles;
 
 		rng pick = rng( -1.0f, 1.0f );
-		rng adjust = rng( 0.8f, 1.618f );
+		rng adjust = rng( 0.8f, 2.618f );
 		rng palettePick = rng( paletteMin, paletteMax );
 		rng clip = rng( 0.0f, 0.5f );
 		float boxSize = 0.001f;
@@ -273,8 +273,7 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + clip();
-			// float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f );
+			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
 			// float noiseRead = 1.0f;
 			if ( noiseRead < 0.01f ) continue;
 
@@ -407,7 +406,6 @@ public:
 
 		ImGui::Begin( "Controls" );
 		ImGui::SeparatorText( "Lights" );
-		ImGui::Text( " " );
 		ImGui::Text( "Key Light" );
 		ImGui::SameLine();
 		ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
@@ -442,6 +440,7 @@ public:
 		if ( ImGui::Button( "Capture" ) ) {
 			screenshotRequested = true;
 		}
+		ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 		ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 		ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
