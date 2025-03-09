@@ -57,8 +57,8 @@ uniform float blendAmount;
 uniform ivec2 noiseOffset;
 uniform ivec2 uvOffset;
 
-// enable flags
-uniform bvec3 enable;
+// enable flags for the three lights
+uniform bvec3 lightEnable;
 
 // Key Light
 uniform vec3 lightDirections0[ 16 ];
@@ -208,7 +208,7 @@ void main () {
 
 				vec3 overallLightContribution = vec3( 0.0f );
 
-				if ( enable.x ) { // first light - "key light"
+				if ( lightEnable.x ) { // first light - "key light"
 					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );	// sphere
@@ -220,7 +220,7 @@ void main () {
 					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
 				}
 
-				if ( enable.y ) { // second light - "fill light"
+				if ( lightEnable.y ) { // second light - "fill light"
 					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );	// sphere
@@ -232,7 +232,7 @@ void main () {
 					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
 				}
 
-				if ( enable.z ) { // third light - "back light"
+				if ( lightEnable.z ) { // third light - "back light"
 					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );	// sphere

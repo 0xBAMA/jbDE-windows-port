@@ -34,7 +34,7 @@ public:
 	float lightJitter[ 3 ] = { 0.0f };
 	vec3 lightColors[ 3 ] = { vec3( 1.0f ) };
 	float lightBrightness[ 3 ] = { 1.0f };
-	ivec3 lightEnable = ivec3( 1 );
+	ivec3 lightEnable = ivec3( 1, 0, 0 );
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -529,7 +529,7 @@ public:
 			}
 
 			// Light enable flags
-			glUniform3iv( glGetUniformLocation( shader, "enable" ), 1, ( const GLint* ) &lightEnable );
+			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
 
 			// Key Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );
