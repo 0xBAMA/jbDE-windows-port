@@ -333,6 +333,21 @@ public:
 		}
 	}
 
+	void Screenshot( string label, bool srgbConvert, bool fullDepth ) {
+		const GLuint tex = textureManager.Get( label );
+		uvec2 dims = textureManager.GetDimensions( label );
+		std::vector< float > imageBytesToSave;
+		imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+		glBindTexture( GL_TEXTURE_2D, tex );
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+		Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+		if ( srgbConvert == true ) {
+			screenshot.RGBtoSRGB();
+		}
+		const string filename = string( "Verdure-" ) + timeDateString() + string( fullDepth ? ".exr" : ".png" );
+		screenshot.Save( filename, fullDepth ? Image_4F::backend::TINYEXR : Image_4F::backend::LODEPNG );
+	}
+
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
@@ -420,7 +435,9 @@ public:
 
 		ImGui::Text( " " );
 		ImGui::SeparatorText( "Frame Parameters" );
-		ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.999f, "%.5f", ImGuiSliderFlags_Logarithmic );
+		if ( ImGui::Button( "Capture" ) ) {
+			Screenshot( "Accumulator", true, false );
+		}
 
 		// regen model dialog
 		ImGui::Text( " " );
