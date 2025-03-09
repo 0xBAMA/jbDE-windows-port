@@ -30,6 +30,7 @@ public:
 	vec2 uvOffset = vec2( 0.0f );
 	float DoFDistance = 2.0f;
 	float DoFRadius = 10.0f;
+	bool screenshotRequested = false;
 
 	// parameters for 3 lights
 	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
@@ -346,6 +347,7 @@ public:
 		if ( srgbConvert == true ) {
 			screenshot.RGBtoSRGB();
 		}
+		screenshot.FlipVertical();
 		const string filename = string( "Verdure-" ) + timeDateString() + string( fullDepth ? ".exr" : ".png" );
 		screenshot.Save( filename, fullDepth ? Image_4F::backend::TINYEXR : Image_4F::backend::LODEPNG );
 	}
@@ -438,7 +440,7 @@ public:
 		ImGui::Text( " " );
 		ImGui::SeparatorText( "Frame Parameters" );
 		if ( ImGui::Button( "Capture" ) ) {
-			Screenshot( "Accumulator", true, false );
+			screenshotRequested = true;
 		}
 		ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 		ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
@@ -581,6 +583,11 @@ public:
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
+		if ( screenshotRequested ) {
+			screenshotRequested = false;
+			Screenshot( "Display Texture", true, false );
 		}
 
 		{ // text rendering timestamp - required texture binds/shader stuff is handled internally
