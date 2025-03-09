@@ -48,6 +48,7 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #undef TRAVERSALFUNC
 #undef CUSTOMLEAFTEST
 
+#include "random.h"
 //=============================================================================================================================
 
 uniform mat3 invBasis;
@@ -71,6 +72,10 @@ uniform vec4 lightColor1;
 // Back Light
 uniform vec3 lightDirections2[ 16 ];
 uniform vec4 lightColor2;
+
+// DoF parameters
+uniform float DoFRadius;
+uniform float DoFDistance;
 
 //=============================================================================================================================
 // bayer matrix for indexing into the queues
@@ -116,11 +121,11 @@ void main () {
 	// solve for jittered pixel uv, aspect ratio adjust
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 	const vec2 is = vec2( imageSize( accumulatorTexture ).xy );
-	vec2 uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + blue().xy - vec2( 0.5f ) ) / is ) - vec2( 0.5f ) );
-	uv.y *= -float( imageSize( accumulatorTexture ).y ) / float( imageSize( accumulatorTexture ).x );
+	vec2 uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + ( blue().xy - vec2( 0.5f ) ) ) / is ) - vec2( 0.5f ) );
+	uv.y *= -float( is.y ) / float( is.x );
 
-	// TODO: DoF calculation...
-		// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
+	// seeding the RNG
+	seed = writeLoc.x * 6969 + writeLoc.y * 420 + noiseOffset.x * 1313 + noiseOffset.y * 31415;
 
 	// initialize color value
 	vec3 color = vec3( 0.0f );
@@ -128,6 +133,28 @@ void main () {
 	// initial ray origin and direction
 	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
 	vec3 rayDirection = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
+
+	// TODO: DoF calculation...
+		// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
+
+	if ( DoFRadius != 0.0f ) {
+		// compute "perfect" ray
+		vec2 uvNoJitter = scale * ( ( ( vec2( writeLoc + uvOffset ) + ( blue().zw - vec2( 0.5f ) ) ) / is ) - vec2( 0.5f ) );
+		uvNoJitter.y *= -float( is.y ) / float( is.x );
+	
+		vec3 rayOriginNoJitter = invBasis * vec3( uvNoJitter, -2.0f );
+		vec3 rayDirectionNoJitter = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
+
+		// DoF focus distance out along the ray
+		vec3 focusPoint = rayOriginNoJitter + rayDirectionNoJitter * DoFDistance;
+
+		// this is redundant, oh well
+		uv = scale * ( ( ( vec2( writeLoc + uvOffset ) + DoFRadius * ( UniformSampleHexagon( blue().xy ) ) ) / is ) - vec2( 0.5f ) );
+		uv.y *= -float( is.y ) / float( is.x );
+		rayOrigin = invBasis * vec3( uv, -2.0f );
+		rayDirection = normalize( focusPoint - rayOrigin );
+	}
+
 
 	// initial ray-sphere test against snowglobe
 	vec4 initialSphereTest = sphereTrace( rayOrigin, rayDirection );

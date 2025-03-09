@@ -28,6 +28,8 @@ public:
 	float scale = 3.0f;
 	float blendAmount = 0.75f;
 	vec2 uvOffset = vec2( 0.0f );
+	float DoFDistance = 2.0f;
+	float DoFRadius = 10.0f;
 
 	// parameters for 3 lights
 	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
@@ -438,6 +440,8 @@ public:
 		if ( ImGui::Button( "Capture" ) ) {
 			Screenshot( "Accumulator", true, false );
 		}
+		ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
+		ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
 		// regen model dialog
 		ImGui::Text( " " );
@@ -527,6 +531,8 @@ public:
 			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
+			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
+			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 			
 			// get a new light direction in the list... get rid of the last one
