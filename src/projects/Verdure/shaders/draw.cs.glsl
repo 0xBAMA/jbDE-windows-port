@@ -308,7 +308,9 @@ void main () {
 					abs( perlinfbm( rayOrigin + vec3( 0.0f, 0.0f, 0.5f * time ), 3.5f, 3 ) ) ); */
 
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
-				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
+				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( grassPrimaryHit.yz, 1.0f - grassPrimaryHit.y - grassPrimaryHit.z ) : vec3( 1.0f ) ); // visualizing UVs
+				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : vec3( 0.02f, 0.01f, 0.0f ) ); // fade to black at base
+				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
 
 				// add fog contribution to the final color
 				color = fogTerm + overallLightContribution * baseColor;
