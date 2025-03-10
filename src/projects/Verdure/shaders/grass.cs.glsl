@@ -1,5 +1,5 @@
 #version 430
-layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
+layout( local_size_x = 64, local_size_y = 1, local_size_z = 1 ) in;
 //=============================================================================================================================
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
@@ -21,7 +21,7 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 // second set, for the grass blades
 layout( binding = 3, std430 ) readonly buffer cwbvhNodesBuffer2 { vec4 cwbvhNodes2[]; };
 layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2[]; };
-layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangleData2[]; }; // todo
+layout( binding = 5, std430 ) buffer triangleDataBuffer2 { vec4 triangleData2[]; };
 //=============================================================================================================================
 #include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
 #include "noise.h"
@@ -53,6 +53,20 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #undef CUSTOMLEAFTEST
 
 #include "random.h"
+
+//=============================================================================================================================
+// offsetting the blue noise
+uniform vec2 noiseOffset;
+
+// used for sampling the noise
+uniform vec3 noiseOffset0;
+uniform vec3 noiseOffset1;
+uniform vec3 noiseOffset2;
+uniform vec3 noiseScalars;
+
+// used to scale the noise contribution to the grass blades
+uniform vec3 displacementScalars;
+
 //=============================================================================================================================
 // vector axis/angle rotation, from https://suricrasia.online/blog/shader-functions/
 vec3 erot( vec3 p, vec3 ax, float ro ) {
@@ -84,19 +98,21 @@ vec4 sphereTrace ( vec3 origin, vec3 direction ) {
 
 //=============================================================================================================================
 
-// used for sampling the noise
-uniform vec3 noiseOffset;
-uniform vec3 noiseScalars;
-
-// used to scale the noise contribution to the grass blades
-uniform vec3 displacementScalars;
-
-//=============================================================================================================================
-
 void main () {
 	// compute the index into the list of triangle data
+	uint index = ( gl_GlobalInvocationID.x ) + ( 4096 * gl_GlobalInvocationID.y );
 
-	// we need a couple pieces of information
-		// base point
-		// three noise reads, for the displacement on each axis
+// we need a couple pieces of information
+	// base point, from which to displace
+	vec3 basePoint = triangleData2[ 4 * index + 3 ].xyz;
+
+	// three noise reads, for the displacement on each axis
+	vec3 noiseReads = vec3(
+		abs( perlinfbm( basePoint + noiseOffset0 / 5.0f, noiseScalars.x * 5.0f, 1 ) ),
+		abs( perlinfbm( basePoint + noiseOffset1 / 5.0f, noiseScalars.y * 5.0f, 1 ) ),
+		0.0f // abs( perlinfbm( basePoint + noiseOffset2 / 5.0f, noiseScalars.z, 1 ) )
+	);
+
+	// writeback vertex 0's displaced point
+	triangleData2[ 4 * index + 2 ].xyz = basePoint + displacementScalars.xyz * noiseReads;
 }
