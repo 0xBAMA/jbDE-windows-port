@@ -624,7 +624,22 @@ public:
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-		// application-specific update code
+
+		// run the grass update shader for maxGrassBlades
+		const GLuint shader = shaders[ "Grass" ];
+		glUseProgram( shader );
+
+		static rngi noiseOffset = rngi( 0, 512 );
+		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+
+		const float time = SDL_GetTicks() / 100.0f;
+		glUniform3f( glGetUniformLocation( shader, "noiseOffset0" ), 0.0f, 0.0f, time / 10.0f );
+		glUniform3f( glGetUniformLocation( shader, "noiseOffset1" ), 0.0f, time / 9.0f, 0.0f );
+		glUniform3f( glGetUniformLocation( shader, "noiseOffset2" ), time / 13.0f, 0.0f, 0.0f );
+		glUniform3f( glGetUniformLocation( shader, "noiseScalars" ), 1.5f, 2.5f, 3.5f );
+		glUniform3f( glGetUniformLocation( shader, "displacementScalars" ), maxDisplacement, maxDisplacement, 0.0f );
+
+		glDispatchCompute( 64, ( maxGrassBlades + 63 ) / 64, 1 );
 	}
 
 	void OnRender () {
