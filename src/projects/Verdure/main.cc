@@ -42,10 +42,12 @@ public:
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
 
-	// parameters for the palette
+	// parameters for the palette and generator
 	int selectedPalette = 0;
 	float paletteMin = 0.0f;
 	float paletteMax = 1.0f;
+	float maxDisplacement = 0.01f;
+	int maxGrassBlades = 1000000;
 	float heightmapHeightScalar = 1.0f;
 
 	void OnInit () {
@@ -253,7 +255,8 @@ public:
 		cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 		// choosing grass locations
-		std::vector< tinybvh::bvhvec4 > grassTriangles;
+		std::vector< tinybvh::bvhvec4 > grassTrianglesBVH;
+		std::vector< tinybvh::bvhvec4 > grassTriangles; // including a fourth value, with the base point from which to displace
 
 		rng pick = rng( -1.0f, 1.0f );
 		rng adjust = rng( 0.8f, 2.618f );
@@ -266,7 +269,7 @@ public:
 		palette::PaletteIndex = selectedPalette;
 
 		// effectively just rejection sampling
-		while ( ( grassTriangles.size() / 3 ) < 2000000 ) {
+		while ( ( grassTrianglesBVH.size() / 3 ) < maxGrassBlades ) {
 
 			// shooting a ray from above
 			tinybvh::bvhvec3 O( pick(), pick(), 3.0f );
@@ -274,41 +277,59 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) - clip();
+			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + clip();
 			// float noiseRead = 1.0f;
 			if ( noiseRead < 0.01f ) continue;
 
 			int steps = terrainBVH.Intersect( ray );
 
-			glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) ); // basisX is the axis, therefore remains untransformed
+			glm::quat rot = glm::angleAxis( 3.14f * pick(), vec3( 0.0f, 0.0f, 1.0f ) );
 
 			// good hit on terrain, and it is inside the snowglobe
 			if ( ray.hit.t < BVH_FAR && distance( vec3( 0.0f ), vec3( O.x, O.y, 3.0f ) + ray.hit.t * vec3( 0.0f, 0.0f, -1.0f ) ) < ( 1.0f + 0.01f * spherePadPercent ) ) {
+
 				float zMul = zMultiplier * adjust() * noiseRead;
 				vec3 offset0 = ( rot * vec4( boxSize, 0.0f, zMul * boxSize, 0.0f ) ).xyz();
 				vec3 offset1 = ( rot * vec4( -boxSize, boxSize, 0.0f, 0.0f ) ).xyz();
 				vec3 offset2 = ( rot * vec4( 0.0f, -boxSize, -zMul * boxSize, 0.0f ) ).xyz();
 				vec3 color = palette::paletteRef( palettePick() );
 
-				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, color.x ) );
-				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, color.y ) );
-				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, color.z ) );
-				grassTrianglesBVH.push_back( v0 );
-				grassTrianglesBVH.push_back( v1 );
-				grassTrianglesBVH.push_back( v2 );
+				tinybvh::bvhvec4 v0 = tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, color.x );
+				tinybvh::bvhvec4 v1 = tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, color.y );
+				tinybvh::bvhvec4 v2 = tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, color.z );
 
-				float greatestZ = max( max( v0.z, v1.z ), v2.z );
-				if ( v0.z == greatestZ ) {
-					totals.x++; // it's always this one
-				} else if ( v1.z == greatestZ ) {
-					totals.y++;
-				} else if ( v2.z == greatestZ ) {
-					totals.z++;
+				// these need to be placed to also include the displacement sphere
+				{
+					vec3 mins = vec3(  1000.0f );
+					vec3 maxs = vec3( -1000.0f );
+
+					// expand to also include the displacement sphere
+					mins.x = min( min( v0.x, v1.x ), min( v2.x, v0.x - maxDisplacement ) );
+					maxs.x = max( max( v0.x, v1.x ), max( v2.x, v0.x + maxDisplacement ) );
+
+					mins.y = min( min( v0.y, v1.y ), min( v2.y, v0.y - maxDisplacement ) );
+					maxs.y = max( max( v0.y, v1.y ), max( v2.y, v0.y + maxDisplacement ) );
+
+					// mins.z = min( min( v0.z, v1.z ), min( v2.z, v0.z - maxDisplacement ) );
+					// maxs.z = max( max( v0.z, v1.z ), max( v2.z, v0.z + maxDisplacement ) );
+					mins.z = min( min( v0.z, v1.z ), v2.z );
+					maxs.z = max( max( v0.z, v1.z ), v2.z );
+
+				// place a triangle that spans the bounding box
+					grassTrianglesBVH.push_back( tinybvh::bvhvec4( maxs.x, mins.y, maxs.z, 0.0f ) );
+					grassTrianglesBVH.push_back( tinybvh::bvhvec4( mins.x, maxs.y, mins.z, 0.0f ) );
+					grassTrianglesBVH.push_back( tinybvh::bvhvec4( maxs.x, mins.y, mins.z, 0.0f ) );
 				}
+
+				// this is the triangle... plus a cached base point, where noise is sampled + base for displacement
+				grassTriangles.push_back( v0 );
+				grassTriangles.push_back( v1 );
+				grassTriangles.push_back( v2 );
+				grassTriangles.push_back( v2 );
 			}
 		}
 
-		cout << "totals are " << totals.x << ", " << totals.y << ", " << totals.z << endl;
+		grassBVH.BuildHQ( &grassTrianglesBVH[ 0 ], grassTrianglesBVH.size() / 3 );
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer_grass );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, grassBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) grassBVH.bvh8Data, GL_DYNAMIC_COPY );
