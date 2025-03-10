@@ -206,48 +206,25 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 				uv = vec2( u, v ), tmax = d;
 				hitAddr = floatBitsToUint( v0.w );
 			#else
-				// const uint index = floatBitsToUint( v0.w );
 
-				// test needs O, D, index as 
+				float tmaxLocal = tmax;
+				vec2 uvLocal = uv;
+
+				const uint index = floatBitsToUint( v0.w );
+				bool doesHit = CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal );
+
+				if ( doesHit ) {
+					tmax = tmaxLocal;
+					uv = uvLocal;
+					hitAddr = floatBitsToUint( v0.w );
+				}
 
 				// need bool hit...
 				// need closest hit distance
-				// need triangle UV
-				// need triangle index, within the blade
-				// need blade index, within the field
 
-
-
-
-
-				// blade index, max distance, and solved UV... todo
-				// CUSTOMLEAFTEST( floatBitsToUint( v0.w ), tmax, uv );
-
-				// testing with ray-box from consistentPrimitives.h.glsl
-				vec3 mins, maxs;
-
-				// edges are precomputed, above - restore
-				const vec3 v1 = e1 + v0.xyz; // edge1 = vertex1 - vertex0
-				const vec3 v2 = e2 + v0.xyz; // edge2 = vertex2 - vertex0
-
-				mins.x = min( min( v0.x, v1.x ), v2.x );
-				mins.y = min( min( v0.y, v1.y ), v2.y );
-				mins.z = min( min( v0.z, v1.z ), v2.z );
-
-				maxs.x = max( max( v0.x, v1.x ), v2.x );
-				maxs.y = max( max( v0.y, v1.y ), v2.y );
-				maxs.z = max( max( v0.z, v1.z ), v2.z );
-
-				const vec3 boxSize = abs( maxs - mins );
-				const vec3 center = ( mins + maxs ) / 2.0f;
-
-				vec3 normal;
-				float d = iBoxOffset( O, D, normal, boxSize, center );
-
-				if ( d <= 0.0f || d >= tmax )
-					continue;
-				uv = vec2( 0.0f ), tmax = d;
-				hitAddr = floatBitsToUint( v0.w );
+				// need triangle UV ( optional )
+				// need triangle index, within the blade ( pending, currently single triangle )
+				// need blade index, within the field ( this is just triangle index )
 			#endif
 		}
 		if ( ngroup.y <= 0x00FFFFFF ) {

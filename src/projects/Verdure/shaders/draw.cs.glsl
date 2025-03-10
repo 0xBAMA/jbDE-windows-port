@@ -33,14 +33,44 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
 
-// /* what is the return type? */ leafTestFunc ( /* what is the parameterization? rO, rD, index of leaf node */ ) {
-	// test against N triangles for one blade of grass
-// }
-
 #define NODEBUFFER cwbvhNodes2
 #define TRIBUFFER cwbvhTris2
 #define TRAVERSALFUNC traverse_cwbvh_grass
-// #define CUSTOMLEAFTEST // leafTestFunc
+
+bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, inout vec2 uv ) {
+	// test against N triangles for one blade of grass
+		// initially, we will just be doing a single triangle
+
+	const uint baseIndex = 4 * index;
+	vec3 v0 = triangleData2[ baseIndex + 0 ].xyz;
+	vec3 v1 = triangleData2[ baseIndex + 1 ].xyz;
+	vec3 v2 = triangleData2[ baseIndex + 2 ].xyz;
+
+// moller trombore on a dynamic triangle
+	// precompute vectors representing edges
+	const vec3 e1 = v1.xyz - v0.xyz; // edge1 = vertex1 - vertex0
+	const vec3 e2 = v2.xyz - v0.xyz; // edge2 = vertex2 - vertex0
+
+	const vec3 r = cross( direction.xyz, e1 );
+	const float a = dot( e2, r );
+	if ( abs( a ) < 0.0000001f )
+		return false;
+	const float f = 1.0f / a;
+	const vec3 s = origin.xyz - v0.xyz;
+	const float u = f * dot( s, r );
+	if ( u < 0 || u > 1 )
+		return false;
+	const vec3 q = cross( s, e2 );
+	const float v = f * dot( direction.xyz, q );
+	if ( v < 0 || u + v > 1 )
+		return false;
+	const float d = f * dot( e1, q );
+	if ( d <= 0.0f || d >= tmax )
+		return false;
+	uv = vec2( u, v ), tmax = d;
+	return true;
+}
+#define CUSTOMLEAFTEST leafTestFunc
 
 #include "traverse.h" // all support code for CWBVH8 traversal
 
