@@ -80,7 +80,7 @@ public:
 
 	void CompileShaders () {
 		shaders[ "Draw" ] = computeShader( "../src/projects/Verdure/shaders/draw.cs.glsl" ).shaderHandle;
-		// shaders[ "Grass" ] = computeShader( "../src/projects/Verdure/shaders/grass.cs.glsl" ).shaderHandle;
+		shaders[ "Grass" ] = computeShader( "../src/projects/Verdure/shaders/grass.cs.glsl" ).shaderHandle;
 	}
 
 	void GenerateLandscape () {
