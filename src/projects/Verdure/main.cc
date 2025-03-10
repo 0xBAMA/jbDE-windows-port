@@ -46,6 +46,7 @@ public:
 	int selectedPalette = 0;
 	float paletteMin = 0.0f;
 	float paletteMax = 1.0f;
+	float heightmapHeightScalar = 1.0f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -146,14 +147,14 @@ public:
 					p.model.GetAtXY( x + 1,     y )[ red ], // B
 					p.model.GetAtXY(     x, y + 1 )[ red ], // C
 					p.model.GetAtXY( x + 1, y + 1 )[ red ]  // D
-				);
+				) / heightmapHeightScalar;
 
 				vec4 heightValuesPreErode = vec4(
 					modelCache.GetAtXY( x, y )[ red ], // A
 					modelCache.GetAtXY( x + 1, y )[ red ], // B
 					modelCache.GetAtXY( x, y + 1 )[ red ], // C
 					modelCache.GetAtXY( x + 1, y + 1 )[ red ]  // D
-				);
+				) / heightmapHeightScalar;
 
 				heightDeltas.push_back( ( ( heightValues.r + heightValues.g + heightValues.b + heightValues.a ) / 4.0f ) -
 					( ( heightValuesPreErode.r + heightValuesPreErode.g + heightValuesPreErode.b + heightValuesPreErode.a ) / 4.0f ) );
