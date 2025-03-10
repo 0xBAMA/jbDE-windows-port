@@ -236,7 +236,7 @@ void main () {
 				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
 
 				// the indexing for grass will change once grass blades have multiple tris
-				vertexIdx = 3 * floatBitsToUint( grassPrimaryHit.w );
+				vertexIdx = 4 * floatBitsToUint( grassPrimaryHit.w ); // stride of 4, caching the base point in the 4th coordinate
 				vec3 vertex0g = triangleData2[ vertexIdx + 0 ].xyz;
 				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
