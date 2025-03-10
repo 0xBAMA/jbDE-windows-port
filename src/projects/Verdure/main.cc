@@ -292,10 +292,22 @@ public:
 				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, color.x ) );
 				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, color.y ) );
 				grassTriangles.push_back( tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, color.z ) );
+				grassTrianglesBVH.push_back( v0 );
+				grassTrianglesBVH.push_back( v1 );
+				grassTrianglesBVH.push_back( v2 );
+
+				float greatestZ = max( max( v0.z, v1.z ), v2.z );
+				if ( v0.z == greatestZ ) {
+					totals.x++; // it's always this one
+				} else if ( v1.z == greatestZ ) {
+					totals.y++;
+				} else if ( v2.z == greatestZ ) {
+					totals.z++;
+				}
 			}
 		}
 
-		grassBVH.BuildHQ( &grassTriangles[ 0 ], grassTriangles.size() / 3 );
+		cout << "totals are " << totals.x << ", " << totals.y << ", " << totals.z << endl;
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer_grass );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, grassBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) grassBVH.bvh8Data, GL_DYNAMIC_COPY );
