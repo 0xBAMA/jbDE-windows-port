@@ -21,6 +21,7 @@ layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2
 layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangleData2[]; }; // todo
 //=============================================================================================================================
 #include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
+#include "noise.h"
 
 #define NODEBUFFER cwbvhNodes
 #define TRIBUFFER cwbvhTris
@@ -270,6 +271,11 @@ void main () {
 					// resolve color contribution ( N dot L diffuse term * shadow term )
 					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 				}
+
+				/* grassColor = vec3( // testing perlin displacement, visualizing as color
+					abs( perlinfbm( rayOrigin + vec3( 0.0f, 0.5f * time, 0.0f ), 2.5f, 3 ) ),
+					abs( perlinfbm( rayOrigin + vec3( 0.5f * time, 0.0f, 0.0f ), 1.5f, 3 ) ),
+					abs( perlinfbm( rayOrigin + vec3( 0.0f, 0.0f, 0.5f * time ), 3.5f, 3 ) ) ); */
 
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
