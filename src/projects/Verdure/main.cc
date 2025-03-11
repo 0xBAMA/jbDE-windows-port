@@ -304,11 +304,11 @@ public:
 					vec3 maxs = vec3( -1000.0f );
 
 					// expand to also include the displacement sphere
-					mins.x = min( min( v0.x, v1.x ), min( v2.x, v0.x - maxDisplacement ) );
-					maxs.x = max( max( v0.x, v1.x ), max( v2.x, v0.x + maxDisplacement ) );
+					mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - maxDisplacement ) );
+					maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
 
-					mins.y = min( min( v0.y, v1.y ), min( v2.y, v0.y - maxDisplacement ) );
-					maxs.y = max( max( v0.y, v1.y ), max( v2.y, v0.y + maxDisplacement ) );
+					mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - maxDisplacement ) );
+					maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
 
 					// mins.z = min( min( v0.z, v1.z ), min( v2.z, v0.z - maxDisplacement ) );
 					// maxs.z = max( max( v0.z, v1.z ), max( v2.z, v0.z + maxDisplacement ) );
