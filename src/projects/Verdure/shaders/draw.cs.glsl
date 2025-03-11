@@ -22,6 +22,7 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 //=============================================================================================================================
 #include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
 #include "noise.h"
+#include "pbrConstants.glsl"
 
 #define NODEBUFFER cwbvhNodes
 #define TRIBUFFER cwbvhTris
@@ -309,7 +310,8 @@ void main () {
 
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( grassPrimaryHit.yz, 1.0f - grassPrimaryHit.y - grassPrimaryHit.z ) : vec3( 1.0f ) ); // visualizing UVs
-				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : vec3( 0.02f, 0.01f, 0.0f ) ); // fade to black at base
+				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : vec3( 0.02f, 0.01f, 0.0f ) ); // fade to black at base
+				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : tire ); // fade to black at base
 				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
 
 				// add fog contribution to the final color
