@@ -438,118 +438,135 @@ public:
 
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 
+
 		ImGui::Begin( "Controls" );
-		ImGui::SeparatorText( "Lights" );
-		ImGui::Text( "Key Light" );
-		ImGui::SameLine();
-		ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
-		ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -pi, pi );
-		ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -pi / 2.0f, pi / 2.0f );
-		ImGui::SliderFloat( "Jitter##key", &lightJitter[ 0 ], 0.0f, 0.3f );
-		ImGui::ColorEdit3( "Color##key", ( float* ) &lightColors[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
-		ImGui::SliderFloat( "Brightness##key", &lightBrightness[ 0 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+		if ( ImGui::BeginTabBar( "Tab Bar Parent", ImGuiTabBarFlags_None ) ) {
 
-		ImGui::Text( " " );
-		ImGui::Text( "Fill Light" );
-		ImGui::SameLine();
-		ImGui::Checkbox( "Enable##fill", ( bool* ) &lightEnable.y );
-		ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -pi, pi );
-		ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -pi / 2.0f, pi / 2.0f );
-		ImGui::SliderFloat ( "Jitter##fill", &lightJitter[ 1 ], 0.0f, 0.3f );
-		ImGui::ColorEdit3( "Color##fill", ( float* ) &lightColors[ 1 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
-		ImGui::SliderFloat( "Brightness##fill", &lightBrightness[ 1 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			if ( ImGui::BeginTabItem( " Rendering " ) ) {
 
-		ImGui::Text( " " );
-		ImGui::Text( "Back Light" );
-		ImGui::SameLine();
-		ImGui::Checkbox( "Enable##back", ( bool* ) &lightEnable.z );
-		ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -pi, pi );
-		ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -pi / 2.0f, pi / 2.0f );
-		ImGui::SliderFloat ( "Jitter##back", &lightJitter[ 2 ], 0.0f, 0.3f );
-		ImGui::ColorEdit3( "Color##back", ( float* ) &lightColors[ 2 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
-		ImGui::SliderFloat( "Brightness##back", &lightBrightness[ 2 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SeparatorText( "Lights" );
+				ImGui::Text( "Key Light" );
+				ImGui::SameLine();
+				ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
+				ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -pi, pi );
+				ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat( "Jitter##key", &lightJitter[ 0 ], 0.0f, 0.3f );
+				ImGui::ColorEdit3( "Color##key", ( float* ) &lightColors[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+				ImGui::SliderFloat( "Brightness##key", &lightBrightness[ 0 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
-		ImGui::Text( " " );
-		ImGui::SeparatorText( "Frame Parameters" );
-		if ( ImGui::Button( "Capture" ) ) {
-			screenshotRequested = true;
-		}
-		ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
-		ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
-		ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::Text( " " );
+				ImGui::Text( "Fill Light" );
+				ImGui::SameLine();
+				ImGui::Checkbox( "Enable##fill", ( bool* ) &lightEnable.y );
+				ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -pi, pi );
+				ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat ( "Jitter##fill", &lightJitter[ 1 ], 0.0f, 0.3f );
+				ImGui::ColorEdit3( "Color##fill", ( float* ) &lightColors[ 1 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+				ImGui::SliderFloat( "Brightness##fill", &lightBrightness[ 1 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
-		// regen model dialog
-		ImGui::Text( " " );
-		ImGui::SeparatorText( "Generator" );
-		if ( ImGui::Button( "Regen" ) ) {
-			GenerateLandscape();
-		}
-		ImGui::Separator();
-		ImGui::Text( " " );
-		{
-			ImGui::SliderFloat( "Min", &paletteMin, 0.0f, 1.0f );
-			ImGui::SliderFloat( "Max", &paletteMax, 0.0f, 1.0f );
+				ImGui::Text( " " );
+				ImGui::Text( "Back Light" );
+				ImGui::SameLine();
+				ImGui::Checkbox( "Enable##back", ( bool* ) &lightEnable.z );
+				ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -pi, pi );
+				ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat ( "Jitter##back", &lightJitter[ 2 ], 0.0f, 0.3f );
+				ImGui::ColorEdit3( "Color##back", ( float* ) &lightColors[ 2 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+				ImGui::SliderFloat( "Brightness##back", &lightBrightness[ 2 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
-			static std::vector< const char* > paletteLabels;
-			if ( paletteLabels.size() == 0 ) {
-				for ( auto& entry : palette::paletteListLocal ) {
-					// copy to a cstr for use by imgui
-					char* d = new char[ entry.label.length() + 1 ];
-					std::copy( entry.label.begin(), entry.label.end(), d );
-					d[ entry.label.length() ] = '\0';
-					paletteLabels.push_back( d );
+				ImGui::Text( " " );
+				ImGui::SeparatorText( "Frame Parameters" );
+				if ( ImGui::Button( "Capture" ) ) {
+					screenshotRequested = true;
 				}
+				ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
+				ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+				ImGui::EndTabItem();
 			}
 
-			ImGui::Combo( ( string( "Palette## " ) ).c_str(), &selectedPalette, paletteLabels.data(), paletteLabels.size() );
-			bool isUpdated = ImGui::IsItemEdited();
-
-			ImGui::SameLine();
-			if ( ImGui::Button( "Random" ) ) {
-				palette::PickRandomPalette( true );
-				selectedPalette = palette::PaletteIndex;
-			}
-
-			const size_t paletteSize = palette::paletteListLocal[ selectedPalette ].colors.size();
-			ImGui::Text( "  Contains %.3lu colors:", palette::paletteListLocal[ palette::PaletteIndex ].colors.size() );
-			// handle max < min
-			float minVal = paletteMin;
-			float maxVal = paletteMax;
-			float realSelectedMin = std::min( minVal, maxVal );
-			float realSelectedMax = std::max( minVal, maxVal );
-			size_t minShownIdx = std::floor( realSelectedMin * ( paletteSize - 1 ) );
-			size_t maxShownIdx = std::ceil( realSelectedMax * ( paletteSize - 1 ) );
-
-			bool finished = false;
-			for ( int y = 0; y < 8; y++ ) {
-				if ( !finished ) {
-					ImGui::Text( " " );
+			if ( ImGui::BeginTabItem( " Generator " ) ) {
+				// regen model dialog
+				ImGui::SeparatorText( "Settings" );
+				ImGui::SameLine();
+				if ( ImGui::Button( "Regen" ) ) {
+					GenerateLandscape();
 				}
-				for ( int x = 0; x < 32; x++ ) {
-					// terminate when you run out of colors
-					const uint32_t index = x + 32 * y;
-					if ( index >= paletteSize ) {
-						finished = true;
-						// goto terminate;
-					}
-					// show color, or black if past the end of the list
-					ivec4 color = ivec4( 0 );
-					if ( !finished ) {
-						color = ivec4( palette::paletteListLocal[ selectedPalette ].colors[ index ], 255 );
-						// determine if it is in the active range
-						if ( index < minShownIdx || index > maxShownIdx ) {
-							color.a = 64; // dim inactive entries
+				ImGui::Separator();
+				ImGui::Text( " " );
+				{
+					ImGui::SliderFloat( "Min", &paletteMin, 0.0f, 1.0f );
+					ImGui::SliderFloat( "Max", &paletteMax, 0.0f, 1.0f );
+
+					static std::vector< const char* > paletteLabels;
+					if ( paletteLabels.size() == 0 ) {
+						for ( auto& entry : palette::paletteListLocal ) {
+							// copy to a cstr for use by imgui
+							char* d = new char[ entry.label.length() + 1 ];
+							std::copy( entry.label.begin(), entry.label.end(), d );
+							d[ entry.label.length() ] = '\0';
+							paletteLabels.push_back( d );
 						}
 					}
-					if ( color.a != 0 ) {
-						ImGui::SameLine();
-						ImGui::TextColored( ImVec4( color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f ), "@" );
+
+					static int colorLimit = 256;
+					ImGui::SliderInt( "Palette Color Count Limit", &colorLimit, 0, 256 );
+					ImGui::Combo( ( string( "Palette## " ) ).c_str(), &selectedPalette, paletteLabels.data(), paletteLabels.size() );
+					bool isUpdated = ImGui::IsItemEdited();
+
+					ImGui::SameLine();
+					if ( ImGui::Button( "Pick Random" ) ) {
+						do {
+							palette::PickRandomPalette( true );
+							selectedPalette = palette::PaletteIndex;
+						} while ( palette::paletteListLocal[ selectedPalette ].colors.size() > colorLimit );
+					}
+
+					const size_t paletteSize = palette::paletteListLocal[ selectedPalette ].colors.size();
+					ImGui::Text( "  Contains %.3lu colors:", palette::paletteListLocal[ palette::PaletteIndex ].colors.size() );
+					// handle max < min
+					float minVal = paletteMin;
+					float maxVal = paletteMax;
+					float realSelectedMin = std::min( minVal, maxVal );
+					float realSelectedMax = std::max( minVal, maxVal );
+					size_t minShownIdx = std::floor( realSelectedMin * ( paletteSize - 1 ) );
+					size_t maxShownIdx = std::ceil( realSelectedMax * ( paletteSize - 1 ) );
+
+					bool finished = false;
+					for ( int y = 0; y < 8; y++ ) {
+						if ( !finished ) {
+							ImGui::Text( " " );
+						}
+						for ( int x = 0; x < 32; x++ ) {
+							// terminate when you run out of colors
+							const uint32_t index = x + 32 * y;
+							if ( index >= paletteSize ) {
+								finished = true;
+								// goto terminate;
+							}
+							// show color, or black if past the end of the list
+							ivec4 color = ivec4( 0 );
+							if ( !finished ) {
+								color = ivec4( palette::paletteListLocal[ selectedPalette ].colors[ index ], 255 );
+								// determine if it is in the active range
+								if ( index < minShownIdx || index > maxShownIdx ) {
+									color.a = 64; // dim inactive entries
+								}
+							}
+							if ( color.a != 0 ) {
+								ImGui::SameLine();
+								ImGui::TextColored( ImVec4( color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f ), "@" );
+							}
+						}
 					}
 				}
-			}
-		}
 
-		ImGui::End();
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+			ImGui::End();
+		}
 	}
 
 	void ComputePasses () {
