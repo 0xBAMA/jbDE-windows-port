@@ -38,14 +38,15 @@ layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangl
 #define TRIBUFFER cwbvhTris2
 #define TRAVERSALFUNC traverse_cwbvh_grass
 
+vec3 grassColorLeaf = vec3( 0.0f );
 bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, inout vec2 uv ) {
 	// test against N triangles for one blade of grass
 		// initially, we will just be doing a single triangle
 
 	const uint baseIndex = 4 * index;
-	vec3 v0 = triangleData2[ baseIndex + 0 ].xyz;
-	vec3 v1 = triangleData2[ baseIndex + 1 ].xyz;
-	vec3 v2 = triangleData2[ baseIndex + 2 ].xyz;
+	vec4 v0 = triangleData2[ baseIndex + 0 ];
+	vec4 v1 = triangleData2[ baseIndex + 1 ];
+	vec4 v2 = triangleData2[ baseIndex + 2 ];
 
 // moller trombore on a dynamic triangle
 	// precompute vectors representing edges
@@ -69,6 +70,7 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 	if ( d <= 0.0f || d >= tmax )
 		return false;
 	uv = vec2( u, v ), tmax = d;
+	grassColorLeaf = vec3( v0.w, v1.w, v2.w );
 	return true;
 }
 #define CUSTOMLEAFTEST leafTestFunc
@@ -241,7 +243,8 @@ void main () {
 				vec3 vertex0g = triangleData2[ vertexIdx + 0 ].xyz;
 				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
-				vec3 grassColor = vec3( triangleData2[ vertexIdx + 0 ].w, triangleData2[ vertexIdx + 1 ].w, triangleData2[ vertexIdx + 2 ].w );
+				// vec3 grassColor = vec3( triangleData2[ vertexIdx + 0 ].w, triangleData2[ vertexIdx + 1 ].w, triangleData2[ vertexIdx + 2 ].w );
+				vec3 grassColor = grassColorLeaf;
 
 				// solve for normal, frontface
 				vec3 normal = vec3( 0.0f );
