@@ -91,6 +91,7 @@ uniform float scale;
 uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
+uniform float globeIoR;
 
 // enable flags for the three lights
 uniform bvec3 lightEnable;
@@ -213,8 +214,8 @@ void main () {
 
 		} else {
 
-			// refract the ray based on the sphere hit normal... probably also parameterize IoR
-			rayDirection = refract( rayDirection, initialSphereTest.yzw, 1.0f / 1.4f );
+			// refract the ray based on the sphere hit normal
+			rayDirection = refract( rayDirection, initialSphereTest.yzw, 1.0f / globeIoR );
 
 			// get new intersections with the intersectors
 			vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain

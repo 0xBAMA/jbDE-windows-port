@@ -31,6 +31,7 @@ public:
 	float DoFDistance = 2.0f;
 	float DoFRadius = 10.0f;
 	bool screenshotRequested = false;
+	float globeIoR = 1.4f;
 
 	// parameters for 3 lights
 	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
@@ -489,6 +490,7 @@ public:
 				ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 				ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SliderFloat( "Snowglobe IoR", &globeIoR, 0.7f, 2.0f );
 
 				ImGui::EndTabItem();
 			}
@@ -638,6 +640,9 @@ public:
 			// Back Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections2" ), 16, glm::value_ptr( lightDirections2[ 0 ] ) );
 			glUniform4f( glGetUniformLocation( shader, "lightColor2" ), lightColors[ 2 ].x, lightColors[ 2 ].y, lightColors[ 2 ].z, lightBrightness[ 2 ] );
+
+			// snowglobe IoR
+			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
