@@ -619,7 +619,7 @@ public:
 			glUniform4f( glGetUniformLocation( shader, "lightColor2" ), lightColors[ 2 ].x, lightColors[ 2 ].y, lightColors[ 2 ].z, lightBrightness[ 2 ] );
 
 			static rngi noiseOffset = rngi( 0, 512 );
-			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
@@ -667,8 +667,8 @@ public:
 		const GLuint shader = shaders[ "Grass" ];
 		glUseProgram( shader );
 
-		static rngi noiseOffset = rngi( 0, 512 );
-		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 
 		const float time = SDL_GetTicks() / 100.0f;
 		glUniform3f( glGetUniformLocation( shader, "noiseOffset0" ), 0.0f, 0.0f, time / 10.0f );

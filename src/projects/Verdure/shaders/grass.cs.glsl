@@ -56,7 +56,7 @@ layout( binding = 5, std430 ) buffer triangleDataBuffer2 { vec4 triangleData2[];
 
 //=============================================================================================================================
 // offsetting the blue noise
-uniform vec2 noiseOffset;
+uniform vec2 blueNoiseOffset;
 
 // used for sampling the noise
 uniform vec3 noiseOffset0;
@@ -75,7 +75,7 @@ vec3 erot( vec3 p, vec3 ax, float ro ) {
 
 // blue noise helper
 vec4 blue() {
-	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
+	return vec4( imageLoad( blueNoiseTexture, ivec2( blueNoiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
 
 // terrain trace helper

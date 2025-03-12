@@ -89,7 +89,7 @@ uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
 uniform float blendAmount;
-uniform ivec2 noiseOffset;
+uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 
 // enable flags for the three lights
@@ -128,7 +128,7 @@ vec3 erot( vec3 p, vec3 ax, float ro ) {
 
 // blue noise helper
 vec4 blue() {
-	return vec4( imageLoad( blueNoiseTexture, ivec2( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
+	return vec4( imageLoad( blueNoiseTexture, ivec2( blueNoiseOffset + ivec2( gl_GlobalInvocationID.xy ) ) % ivec2( imageSize( blueNoiseTexture ).xy ) ) ) / 255.0f;
 }
 
 // terrain trace helper
@@ -159,7 +159,7 @@ void main () {
 	uv.y *= -float( is.y ) / float( is.x );
 
 	// seeding the RNG
-	seed = writeLoc.x * 6969 + writeLoc.y * 420 + noiseOffset.x * 1313 + noiseOffset.y * 31415;
+	seed = writeLoc.x * 6969 + writeLoc.y * 420 + blueNoiseOffset.x * 1313 + blueNoiseOffset.y * 31415;
 
 	// initialize color value
 	vec3 color = vec3( 0.0f );
