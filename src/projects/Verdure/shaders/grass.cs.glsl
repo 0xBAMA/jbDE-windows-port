@@ -61,11 +61,10 @@ uniform vec2 blueNoiseOffset;
 // used for sampling the noise
 uniform vec3 noiseOffset0;
 uniform vec3 noiseOffset1;
-uniform vec3 noiseOffset2;
-uniform vec3 noiseScalars;
+uniform vec2 noiseScalars;
 
 // used to scale the noise contribution to the grass blades
-uniform vec3 displacementScalars;
+uniform vec2 displacementScalars;
 
 //=============================================================================================================================
 // vector axis/angle rotation, from https://suricrasia.online/blog/shader-functions/
@@ -108,11 +107,10 @@ void main () {
 
 	// three noise reads, for the displacement on each axis
 	vec3 noiseReads = vec3(
-		abs( perlinfbm( basePoint + noiseOffset0 / 5.0f, noiseScalars.x * 5.0f, 1 ) ),
-		abs( perlinfbm( basePoint + noiseOffset1 / 5.0f, noiseScalars.y * 5.0f, 1 ) ),
-		0.0f // abs( perlinfbm( basePoint + noiseOffset2 / 5.0f, noiseScalars.z, 1 ) )
-	);
+		displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ),
+		displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ),
+		0.0f );
 
 	// writeback vertex 0's displaced point
-	triangleData2[ 4 * index + 2 ].xyz = basePoint + displacementScalars.xyz * noiseReads;
+	triangleData2[ 4 * index + 2 ].xyz = basePoint + noiseReads;
 }

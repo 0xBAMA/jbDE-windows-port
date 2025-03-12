@@ -50,6 +50,13 @@ public:
 	int maxGrassBlades = 1000000;
 	float heightmapHeightScalar = 1.0f;
 
+	// parameters for the simulation
+	bool runSim = true;
+	vec2 noiseScalars = vec2( 2.5f );
+	vec2 displacementScalars = vec2( maxDisplacement, maxDisplacement );
+	vec3 noiseDisplacement0 = vec3( 0.01f );
+	vec3 noiseDisplacement1 = vec3( 0.01f );
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -663,21 +670,22 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-		// run the grass update shader for maxGrassBlades
-		const GLuint shader = shaders[ "Grass" ];
-		glUseProgram( shader );
+		if ( runSim ) {
+			// run the grass update shader for maxGrassBlades
+			const GLuint shader = shaders[ "Grass" ];
+			glUseProgram( shader );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 
-		const float time = SDL_GetTicks() / 100.0f;
-		glUniform3f( glGetUniformLocation( shader, "noiseOffset0" ), 0.0f, 0.0f, time / 10.0f );
-		glUniform3f( glGetUniformLocation( shader, "noiseOffset1" ), 0.0f, time / 9.0f, 0.0f );
-		glUniform3f( glGetUniformLocation( shader, "noiseOffset2" ), time / 13.0f, 0.0f, 0.0f );
-		glUniform3f( glGetUniformLocation( shader, "noiseScalars" ), 1.5f, 2.5f, 3.5f );
-		glUniform3f( glGetUniformLocation( shader, "displacementScalars" ), maxDisplacement, maxDisplacement, 0.0f );
+			const float time = SDL_GetTicks() / 100.0f;
+			glUniform3f( glGetUniformLocation( shader, "noiseOffset0" ), time * noiseDisplacement0.x, time * noiseDisplacement0.y, time * noiseDisplacement0.z );
+			glUniform3f( glGetUniformLocation( shader, "noiseOffset1" ), time * noiseDisplacement1.x, time * noiseDisplacement1.y, time * noiseDisplacement1.z );
+			glUniform2f( glGetUniformLocation( shader, "noiseScalars" ), noiseScalars.x, noiseScalars.y );
+			glUniform2f( glGetUniformLocation( shader, "displacementScalars" ), displacementScalars.x, displacementScalars.y );
 
-		glDispatchCompute( 64, ( maxGrassBlades + 63 ) / 64, 1 );
+			glDispatchCompute( 64, ( maxGrassBlades + 63 ) / 64, 1 );
+		}
 	}
 
 	void OnRender () {
