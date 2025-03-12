@@ -517,7 +517,7 @@ public:
 						}
 					}
 
-					static int colorLimit = 256;
+					static int colorLimit = 8;
 					ImGui::SliderInt( "Palette Color Count Limit", &colorLimit, 0, 256 );
 					ImGui::Combo( ( string( "Palette## " ) ).c_str(), &selectedPalette, paletteLabels.data(), paletteLabels.size() );
 					bool isUpdated = ImGui::IsItemEdited();
@@ -569,6 +569,20 @@ public:
 					}
 				}
 
+				ImGui::EndTabItem();
+			}
+			if ( ImGui::BeginTabItem( " Simulation " ) ) {
+				ImGui::Checkbox( "Run Simulation", &runSim );
+				ImGui::Text( "Noise Scalars (Spatial Frequency)" );
+				ImGui::SliderFloat( "X## Noise Scalar", &noiseScalars.x, 0.0f, maxDisplacement );
+				ImGui::SliderFloat( "Y## Noise Scalar", &noiseScalars.y, 0.0f, maxDisplacement );
+				ImGui::Text( "Noise Offset Scalars (Time Varying Sample Offset)" );
+				ImGui::SliderFloat3( "X## Noise Offset", ( float* ) &noiseDisplacement0, -0.04f, 0.04f );
+				ImGui::SliderFloat3( "Y## Noise Offset", ( float* ) &noiseDisplacement1, -0.04f, 0.04f );
+				ImGui::Text( "Displacement Scalars (Max Geometry Offset)" );
+				ImGui::SliderFloat( "X## Displacement Scalar", &displacementScalars.x, 0.0f, maxDisplacement );
+				ImGui::SliderFloat( "Y## Displacement Scalar", &displacementScalars.y, 0.0f, maxDisplacement );
+				
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
