@@ -47,6 +47,7 @@ public:
 	int selectedPalette = 0;
 	float paletteMin = 0.0f;
 	float paletteMax = 1.0f;
+	int paletteColorLimit = 8;
 	float maxDisplacement = 0.01f;
 	int maxGrassBlades = 1000000;
 	float heightmapHeightScalar = 1.0f;
@@ -504,73 +505,7 @@ public:
 				}
 				ImGui::Separator();
 				ImGui::Text( " " );
-				{
-					ImGui::SliderFloat( "Min", &paletteMin, 0.0f, 1.0f );
-					ImGui::SliderFloat( "Max", &paletteMax, 0.0f, 1.0f );
-
-					static std::vector< const char* > paletteLabels;
-					if ( paletteLabels.size() == 0 ) {
-						for ( auto& entry : palette::paletteListLocal ) {
-							// copy to a cstr for use by imgui
-							char* d = new char[ entry.label.length() + 1 ];
-							std::copy( entry.label.begin(), entry.label.end(), d );
-							d[ entry.label.length() ] = '\0';
-							paletteLabels.push_back( d );
-						}
-					}
-
-					static int colorLimit = 8;
-					ImGui::SliderInt( "Palette Color Count Limit", &colorLimit, 0, 256 );
-					ImGui::Combo( ( string( "Palette## " ) ).c_str(), &selectedPalette, paletteLabels.data(), paletteLabels.size() );
-					bool isUpdated = ImGui::IsItemEdited();
-
-					ImGui::SameLine();
-					if ( ImGui::Button( "Pick Random" ) ) {
-						do {
-							palette::PickRandomPalette( true );
-							selectedPalette = palette::PaletteIndex;
-						} while ( palette::paletteListLocal[ selectedPalette ].colors.size() > colorLimit );
-					}
-
-					const size_t paletteSize = palette::paletteListLocal[ selectedPalette ].colors.size();
-					ImGui::Text( "  Contains %.3lu colors:", palette::paletteListLocal[ palette::PaletteIndex ].colors.size() );
-					// handle max < min
-					float minVal = paletteMin;
-					float maxVal = paletteMax;
-					float realSelectedMin = std::min( minVal, maxVal );
-					float realSelectedMax = std::max( minVal, maxVal );
-					size_t minShownIdx = std::floor( realSelectedMin * ( paletteSize - 1 ) );
-					size_t maxShownIdx = std::ceil( realSelectedMax * ( paletteSize - 1 ) );
-
-					bool finished = false;
-					for ( int y = 0; y < 8; y++ ) {
-						if ( !finished ) {
-							ImGui::Text( " " );
-						}
-						for ( int x = 0; x < 32; x++ ) {
-							// terminate when you run out of colors
-							const uint32_t index = x + 32 * y;
-							if ( index >= paletteSize ) {
-								finished = true;
-								// goto terminate;
-							}
-							// show color, or black if past the end of the list
-							ivec4 color = ivec4( 0 );
-							if ( !finished ) {
-								color = ivec4( palette::paletteListLocal[ selectedPalette ].colors[ index ], 255 );
-								// determine if it is in the active range
-								if ( index < minShownIdx || index > maxShownIdx ) {
-									color.a = 64; // dim inactive entries
-								}
-							}
-							if ( color.a != 0 ) {
-								ImGui::SameLine();
-								ImGui::TextColored( ImVec4( color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f ), "@" );
-							}
-						}
-					}
-				}
-
+				ColorPickerElement( paletteMin, paletteMax, selectedPalette, paletteColorLimit, "Grass" );
 				ImGui::EndTabItem();
 			}
 			if ( ImGui::BeginTabItem( " Simulation " ) ) {
