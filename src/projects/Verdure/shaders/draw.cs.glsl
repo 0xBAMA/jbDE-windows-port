@@ -152,6 +152,45 @@ vec4 sphereTrace ( vec3 origin, vec3 direction ) {
 	return vec4( d, normal );
 }
 
+float deSrc ( vec3 p ) {
+	vec3 pOriginal = p;
+	float s = 2.0f, l = 0.0f;
+	p = abs( p );
+	for ( int j = 0; j++ < 8; )
+		p =- sign( p ) * ( abs( abs( abs( p ) - 2.0f ) - 1.0f ) - 1.0f ),
+		p *= l = -1.3f / dot( p, p ),
+		p -= 0.15f, s *= l;
+	return max( length( p ) / s, ( length( pOriginal ) - 1.0f ) );
+}
+
+float de ( vec3 p ) {
+	// offset, scaling, masking
+	float scale = 2.0f;
+	p.z -= 0.3f;
+	return deSrc( p * scale ) / scale;
+}
+
+const float epsilon = 0.0001f;
+vec3 SDFNormal( in vec3 position ) {
+	vec2 e = vec2( epsilon, 0.0f );
+	return normalize( vec3( de( position ) ) - vec3( de( position - e.xyy ), de( position - e.yxy ), de( position - e.yyx ) ) );
+}
+
+vec4 SDFTrace ( vec3 origin, vec3 direction ) {
+	float dQuery = 0.0f;
+	float dTotal = 0.0f;
+	vec3 pQuery = origin;
+	for ( int steps = 0; steps < 300; steps++ ) {
+		pQuery = origin + dTotal * direction;
+		dQuery = de( pQuery );
+		dTotal += dQuery * 0.9f; // small understep
+		if ( dTotal > 5.0f || abs( dQuery ) < epsilon ) {
+			break;
+		}
+	}
+	return vec4( dTotal, SDFNormal( origin + dTotal * direction ) );
+}
+
 //=============================================================================================================================
 
 void main () {
@@ -220,10 +259,11 @@ void main () {
 			rayDirection = refract( rayDirection, initialSphereTest.yzw, 1.0f / globeIoR );
 
 			// get new intersections with the intersectors
-			vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain
+			// vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain
+			vec4 terrainPrimaryHit = SDFTrace( rayOrigin, rayDirection );	// terrain
 			vec4 grassPrimaryHit = grassTrace( rayOrigin, rayDirection );		// grass
 			vec4 spherePrimaryHit = sphereTrace( rayOrigin, rayDirection );		// sphere
-
+			
 			// solve for minimum of the three distances
 			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
 
@@ -241,7 +281,7 @@ void main () {
 				vec3 vertex1t = triangleData[ vertexIdx + 1 ].xyz;
 				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
 				// vec3 terrainColor = vec3( triangleData[ vertexIdx + 0 ].w, triangleData[ vertexIdx + 1 ].w, triangleData[ vertexIdx + 2 ].w ); // ... this adds a significant amount of time, will benefit from deferred
-				vec3 terrainColor = tire;
+				vec3 terrainColor = bone;
 
 				// the indexing for grass will change once grass blades have multiple tris
 				vertexIdx = 4 * floatBitsToUint( grassPrimaryHit.w ); // stride of 4, caching the base point in the 4th coordinate
@@ -255,7 +295,8 @@ void main () {
 				// solve for normal, frontface
 				vec3 normal = vec3( 0.0f );
 				if ( terrainPrimaryHit.x < grassPrimaryHit.x ) {
-					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
+					// normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
+					normal = terrainPrimaryHit.yzw;
 				} else {
 					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ); // use grass data
 				}
@@ -281,7 +322,8 @@ void main () {
 				vec3 overallLightContribution = vec3( 0.0f );
 
 				if ( lightEnable.x ) { // first light - "key light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );	// terrain
+					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );	// terrain
+					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );	// sphere
 
@@ -289,11 +331,12 @@ void main () {
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
 
 					// resolve color contribution ( N dot L diffuse term * shadow term )
-					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
 				}
 
 				if ( lightEnable.y ) { // second light - "fill light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );	// terrain
+					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );	// terrain
+					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );	// sphere
 
@@ -301,11 +344,12 @@ void main () {
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
 
 					// resolve color contribution ( N dot L diffuse term * shadow term )
-					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
 				}
 
 				if ( lightEnable.z ) { // third light - "back light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );	// terrain
+					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );	// terrain
+					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
 					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );		// grass
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );	// sphere
 
@@ -313,7 +357,7 @@ void main () {
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
 
 					// resolve color contribution ( N dot L diffuse term * shadow term )
-					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 				}
 
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
