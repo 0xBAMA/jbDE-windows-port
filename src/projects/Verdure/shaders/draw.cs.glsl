@@ -238,6 +238,7 @@ void main () {
 				vec3 vertex0t = triangleData[ vertexIdx + 0 ].xyz;
 				vec3 vertex1t = triangleData[ vertexIdx + 1 ].xyz;
 				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
+				vec3 terrainColor = vec3( triangleData[ vertexIdx + 0 ].w, triangleData[ vertexIdx + 1 ].w, triangleData[ vertexIdx + 2 ].w );
 
 				// the indexing for grass will change once grass blades have multiple tris
 				vertexIdx = 4 * floatBitsToUint( grassPrimaryHit.w ); // stride of 4, caching the base point in the 4th coordinate
@@ -315,7 +316,7 @@ void main () {
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( grassPrimaryHit.yz, 1.0f - grassPrimaryHit.y - grassPrimaryHit.z ) : vec3( 1.0f ) ); // visualizing UVs
 				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : vec3( 0.02f, 0.01f, 0.0f ) ); // fade to black at base
-				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : tire ); // fade to black at base
+				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : terrainColor ); // fade to black at base
 				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
 
 				// add fog contribution to the final color

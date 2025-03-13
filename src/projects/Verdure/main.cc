@@ -150,6 +150,10 @@ public:
 					distance( vec3( C.x, C.y, C.z ), center ) < radiusWithPad;
 		};
 
+		// terrain palette sampling
+		rng palettePickTerrain( paletteMinTerrain, paletteMaxTerrain );
+		palette::PaletteIndex = selectedPaletteTerrain;
+
 		for ( uint32_t y = 0; y < p.model.Width() - 1; y++ ) {
 			for ( uint32_t x = 0; x < p.model.Height() - 1; x++ ) {
 				// four corners of a square
@@ -200,16 +204,23 @@ public:
 
 				// ADC
 				if ( boundsCheck( A, D, C ) ) {
-					// TODO: color plumbing will be slightly different here
+					vec3 color = palette::paletteRef( palettePickTerrain() );
+					A.w = color.r;
 					terrainTriangles.push_back( A );
+					D.w = color.g;
 					terrainTriangles.push_back( D );
+					C.w = color.b;
 					terrainTriangles.push_back( C );
 				}
 
 				// ABD
 				if ( boundsCheck( A, B, D ) ) {
+					vec3 color = palette::paletteRef( palettePickTerrain() );
+					A.w = color.r;
 					terrainTriangles.push_back( A );
+					B.w = color.g;
 					terrainTriangles.push_back( B );
+					D.w = color.b;
 					terrainTriangles.push_back( D );
 				}
 			}
@@ -329,6 +340,7 @@ public:
 					mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - maxDisplacement ) );
 					maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
 
+				// we get crashes in the BVH construction when adding the z axis jitter...
 					// mins.z = min( min( v0.z, v1.z ), min( v2.z, v0.z - maxDisplacement ) );
 					// maxs.z = max( max( v0.z, v1.z ), max( v2.z, v0.z + maxDisplacement ) );
 					mins.z = min( min( v0.z, v1.z ), v2.z );
