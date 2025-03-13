@@ -57,6 +57,9 @@ public:
 	float maxDisplacement = 0.01f;
 	int maxGrassBlades = 1000000;
 	float heightmapHeightScalar = 1.0f;
+	int heightmapDimension = 512;
+	int heightmapGenerateMethod = 0;
+	int numErosionSteps = 5;
 
 	// parameters for the simulation
 	bool runSim = true;
@@ -106,18 +109,24 @@ public:
 
 	void GenerateLandscape () {
 		Tick();
-		uint32_t size = 1024;
+		uint32_t size = heightmapDimension;
 
 		particleEroder p;
-		p.InitWithDiamondSquare( size );
-		//p.InitWithPerlin( size ); // this sucks, needs work
+		if ( heightmapGenerateMethod == 0 ) {
+
+			p.InitWithDiamondSquare( size );
+
+		} else if ( heightmapGenerateMethod == 1 ) {
+
+			p.InitWithPerlin( size ); // needs scaling parameters...
+
+		}
 
 		// probably copy original model image here, so we can compute height deltas, determine areas where sediment would collect
 		Image_1F modelCache( p.model );
 
-		const int numSteps = 20;
-		for ( int i = 0; i < numSteps; i++ )
-			p.Erode( 5000 ), cout << "\rstep " << i << " / " << numSteps;
+		for ( int i = 0; i < numErosionSteps; i++ )
+			p.Erode( 5000 ), cout << "\rstep " << i << " / " << numErosionSteps;
 		cout << "\rerosion step finished          " << endl;
 		p.model.Autonormalize();
 
