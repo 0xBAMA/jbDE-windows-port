@@ -20,7 +20,7 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 // second set, for the grass blades
 layout( binding = 3, std430 ) readonly buffer cwbvhNodesBuffer2 { vec4 cwbvhNodes2[]; };
 layout( binding = 4, std430 ) readonly buffer cwbvhTrisBuffer2 { vec4 cwbvhTris2[]; };
-layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangleData2[]; }; // todo
+layout( binding = 5, std430 ) readonly buffer triangleDataBuffer2 { vec4 triangleData2[]; };
 //=============================================================================================================================
 #include "consistentPrimitives.glsl.h" // ray-sphere, ray-box inside traverse.h
 #include "noise.h"
@@ -51,7 +51,7 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 	vec4 v2 = triangleData2[ baseIndex + 2 ];
 
 // moller trombore on a dynamic triangle
-	// precompute vectors representing edges
+	// precompute vectors representing edges - this computation should moved to the grass shader, out of the traversal code... should be at least a bit of a perf win
 	const vec3 e1 = v1.xyz - v0.xyz; // edge1 = vertex1 - vertex0
 	const vec3 e2 = v2.xyz - v0.xyz; // edge2 = vertex2 - vertex0
 
@@ -164,8 +164,9 @@ void main () {
 	// seeding the RNG
 	seed = writeLoc.x * 6969 + writeLoc.y * 420 + blueNoiseOffset.x * 1313 + blueNoiseOffset.y * 31415;
 
-	// initialize color value
-	vec3 color = vec3( 0.0f );
+	// initialize color value - reserve value 0 written for nohit
+	vec3 color = vec3( 0.0f, 0.0f, 0.0f );
+	vec4 deferredResultValue = vec4( 0.0f, 0.0f, 0.0f, uintBitsToFloat( 0u ) );
 
 	// initial ray origin and direction
 	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
@@ -192,7 +193,6 @@ void main () {
 		rayDirection = normalize( focusPoint - rayOrigin );
 	}
 
-
 	// initial ray-sphere test against snowglobe
 	vec4 initialSphereTest = sphereTrace( rayOrigin, rayDirection );
 
@@ -212,7 +212,7 @@ void main () {
 		if ( skirtCheckTerrain.x < skirtCheckSphere.x ) {
 
 			// pixel gets skirts color... probably parameterize this
-			color = vec3( 0.01f );
+			// color = vec3( 0.01f );
 
 		} else {
 
@@ -240,7 +240,8 @@ void main () {
 				vec3 vertex0t = triangleData[ vertexIdx + 0 ].xyz;
 				vec3 vertex1t = triangleData[ vertexIdx + 1 ].xyz;
 				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
-				vec3 terrainColor = vec3( triangleData[ vertexIdx + 0 ].w, triangleData[ vertexIdx + 1 ].w, triangleData[ vertexIdx + 2 ].w );
+				// vec3 terrainColor = vec3( triangleData[ vertexIdx + 0 ].w, triangleData[ vertexIdx + 1 ].w, triangleData[ vertexIdx + 2 ].w ); // ... this adds a significant amount of time, will benefit from deferred
+				vec3 terrainColor = tire;
 
 				// the indexing for grass will change once grass blades have multiple tris
 				vertexIdx = 4 * floatBitsToUint( grassPrimaryHit.w ); // stride of 4, caching the base point in the 4th coordinate
@@ -248,7 +249,8 @@ void main () {
 				vec3 vertex1g = triangleData2[ vertexIdx + 1 ].xyz;
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
 				// vec3 grassColor = vec3( triangleData2[ vertexIdx + 0 ].w, triangleData2[ vertexIdx + 1 ].w, triangleData2[ vertexIdx + 2 ].w );
-				vec3 grassColor = grassColorLeaf;
+				vec3 grassColor = grassColorLeaf; // this is not nearly as bad for perf as the terrain bvh color stuff
+				// vec3 grassColor = vec3( 1.0f );
 
 				// solve for normal, frontface
 				vec3 normal = vec3( 0.0f );
@@ -314,16 +316,8 @@ void main () {
 					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.01f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 				}
 
-				/* grassColor = vec3( // testing perlin displacement, visualizing as color
-					abs( perlinfbm( rayOrigin + vec3( 0.0f, 0.5f * time, 0.0f ), 2.5f, 3 ) ),
-					abs( perlinfbm( rayOrigin + vec3( 0.5f * time, 0.0f, 0.0f ), 1.5f, 3 ) ),
-					abs( perlinfbm( rayOrigin + vec3( 0.0f, 0.0f, 0.5f * time ), 3.5f, 3 ) ) ); */
-
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
-				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? vec3( grassPrimaryHit.yz, 1.0f - grassPrimaryHit.y - grassPrimaryHit.z ) : vec3( 1.0f ) ); // visualizing UVs
-				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : vec3( 0.02f, 0.01f, 0.0f ) ); // fade to black at base
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : terrainColor ); // fade to black at base
-				// vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor : vec3( 1.0f ) );
 
 				// add fog contribution to the final color
 				color = fogTerm + overallLightContribution * baseColor;
@@ -331,7 +325,7 @@ void main () {
 			} else {
 
 				// just take the fog term
-				color = fogTerm;
+				// color = fogTerm;
 
 			}
 		}

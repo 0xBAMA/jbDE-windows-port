@@ -111,8 +111,8 @@ void main () {
 		abs( displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ) ),
 		abs( displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ) ),
 	#else
-		displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ) ),
-		displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ) ),
+		displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ),
+		displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ),
 	#endif
 		0.0f );
 

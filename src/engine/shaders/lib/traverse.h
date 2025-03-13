@@ -209,18 +209,13 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 
 				float tmaxLocal = tmax;
 				vec2 uvLocal = uv;
-
 				const uint index = floatBitsToUint( v0.w );
-				bool doesHit = CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal );
 
-				if ( doesHit ) {
+				if ( CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal ) ) {
 					tmax = tmaxLocal;
 					uv = uvLocal;
-					hitAddr = floatBitsToUint( v0.w );
+					hitAddr = index;
 				}
-
-				// need bool hit...
-				// need closest hit distance
 
 				// need triangle UV ( optional )
 				// need triangle index, within the blade ( pending, currently single triangle )
