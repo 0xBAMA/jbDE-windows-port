@@ -85,7 +85,21 @@ public:
 			glGenBuffers( 1, &cwbvhTrisDataBuffer_grass );
 			glGenBuffers( 1, &triangleData_grass );
 
-			// picking an initial palette
+			{
+				// create the new accumulator(s)
+				textureOptions_t opts;
+				opts.dataType = GL_RGBA32F;
+				opts.width = config.width;
+				opts.height = config.height;
+				opts.minFilter = GL_NEAREST;
+				opts.magFilter = GL_NEAREST;
+				opts.textureType = GL_TEXTURE_2D;
+				opts.wrap = GL_CLAMP_TO_BORDER;
+				textureManager.Add( "Deferred Target 1", opts );
+				textureManager.Add( "Deferred Target 2", opts );
+			}
+
+			// picking initial palettes
 			palette::PickRandomPalette( true );
 			selectedPaletteGrass = palette::PaletteIndex;
 
@@ -589,7 +603,11 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
-			
+
+			// wip deferred rendering
+			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
+			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
+
 			// get a new light direction in the list... get rid of the last one
 			PushLightDirections();
 			lightDirectionQueue[ 0 ].pop_front();

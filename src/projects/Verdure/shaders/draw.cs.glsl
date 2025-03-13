@@ -3,6 +3,8 @@ layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 //=============================================================================================================================
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
+layout( binding = 2, rgba32f ) uniform image2D deferredResult1;
+layout( binding = 3, rgba32f ) uniform image2D deferredResult2;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -270,6 +272,10 @@ void main () {
 				// test shadow rays in the light direction
 				rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
 
+				// writing out the result... need to figure out signalling grass/terrain
+				// color = vec4( rayOrigin, uintBitsToFloat( floatBitsToUint( grassPrimaryHit.w ) + 1 ) );
+				deferredResultValue = vec4( rayOrigin, floatBitsToUint( grassPrimaryHit.w ) + 1 );
+
 				vec3 overallLightContribution = vec3( 0.0f );
 
 				if ( lightEnable.x ) { // first light - "key light"
@@ -334,4 +340,8 @@ void main () {
 	// load previous color and blend with the result, write back to accumulator
 	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
 	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
+
+	// very minimal perf hit, since it's not raster
+	imageStore( deferredResult1, writeLoc, deferredResultValue );
+	imageStore( deferredResult2, writeLoc, deferredResultValue );
 }
