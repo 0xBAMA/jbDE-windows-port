@@ -1,9 +1,9 @@
 #include "../../engine/engine.h"
 
-class Verdure final : public engineBase { // sample derived from base engine class
+class Raqia final : public engineBase { // sample derived from base engine class
 public:
-	Verdure () { Init(); OnInit(); PostInit(); }
-	~Verdure () { Quit(); }
+	Raqia () { Init(); OnInit(); PostInit(); }
+	~Raqia () { Quit(); }
 
 	// application data
 	tinybvh::BVH8_CWBVH terrainBVH;
@@ -117,8 +117,8 @@ public:
 	}
 
 	void CompileShaders () {
-		shaders[ "Draw" ] = computeShader( "../src/projects/Verdure/shaders/draw.cs.glsl" ).shaderHandle;
-		shaders[ "Grass" ] = computeShader( "../src/projects/Verdure/shaders/grass.cs.glsl" ).shaderHandle;
+		shaders[ "Draw" ] = computeShader( "../src/projects/Raqia/shaders/draw.cs.glsl" ).shaderHandle;
+		shaders[ "Grass" ] = computeShader( "../src/projects/Raqia/shaders/grass.cs.glsl" ).shaderHandle;
 	}
 
 	void GenerateLandscape () {
@@ -443,7 +443,7 @@ public:
 			screenshot.RGBtoSRGB();
 		}
 		screenshot.FlipVertical();
-		const string filename = string( "Verdure-" ) + timeDateString() + string( fullDepth ? ".exr" : ".png" );
+		const string filename = string( "Raqia-" ) + timeDateString() + string( fullDepth ? ".exr" : ".png" );
 		screenshot.Save( filename, fullDepth ? Image_4F::backend::TINYEXR : Image_4F::backend::LODEPNG );
 	}
 
@@ -749,7 +749,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
-	Verdure engineInstance;
+	Raqia engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }

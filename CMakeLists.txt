@@ -615,11 +615,11 @@ target_link_libraries( LineSpam
 # =================================================================================================
 # Grass rendering
 # =================================================================================================
-add_executable( Verdure
-	src/projects/Verdure/main.cc
+add_executable( Raqia
+	src/projects/Raqia/main.cc
 )
 
-target_link_libraries( Verdure
+target_link_libraries( Raqia
 	PUBLIC
 	engineBase
 )
