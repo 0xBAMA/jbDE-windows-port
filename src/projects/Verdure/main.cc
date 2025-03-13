@@ -44,10 +44,16 @@ public:
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
 
 	// parameters for the palette and generator
-	int selectedPalette = 0;
-	float paletteMin = 0.0f;
-	float paletteMax = 1.0f;
-	int paletteColorLimit = 8;
+	int selectedPaletteGrass = 0;
+	float paletteMinGrass = 0.0f;
+	float paletteMaxGrass = 1.0f;
+	int paletteColorLimitGrass = 8;
+
+	int selectedPaletteTerrain = 0;
+	float paletteMinTerrain = 0.0f;
+	float paletteMaxTerrain = 1.0f;
+	int paletteColorLimitTerrain = 8;
+
 	float maxDisplacement = 0.01f;
 	int maxGrassBlades = 1000000;
 	float heightmapHeightScalar = 1.0f;
@@ -78,7 +84,10 @@ public:
 
 			// picking an initial palette
 			palette::PickRandomPalette( true );
-			selectedPalette = palette::PaletteIndex;
+			selectedPaletteGrass = palette::PaletteIndex;
+
+			palette::PickRandomPalette( true );
+			selectedPaletteTerrain = palette::PaletteIndex;
 
 			// generate the ground, grass, and buffer it to the GPU
 			GenerateLandscape();
@@ -191,6 +200,7 @@ public:
 
 				// ADC
 				if ( boundsCheck( A, D, C ) ) {
+					// TODO: color plumbing will be slightly different here
 					terrainTriangles.push_back( A );
 					terrainTriangles.push_back( D );
 					terrainTriangles.push_back( C );
@@ -269,13 +279,13 @@ public:
 
 		rng pick = rng( -1.0f, 1.0f );
 		rng adjust = rng( 0.8f, 2.618f );
-		rng palettePick = rng( paletteMin, paletteMax );
+		rng palettePick = rng( paletteMinGrass, paletteMaxGrass );
 		rng clip = rng( 0.0f, 0.5f );
 		float boxSize = 0.001f;
 		float zMultiplier = 20.0f;
 		PerlinNoise per;
 
-		palette::PaletteIndex = selectedPalette;
+		palette::PaletteIndex = selectedPaletteGrass;
 
 		// effectively just rejection sampling
 		while ( ( grassTrianglesBVH.size() / 3 ) < maxGrassBlades ) {
@@ -505,17 +515,23 @@ public:
 				}
 				ImGui::Separator();
 				ImGui::Text( " " );
-				ColorPickerElement( paletteMin, paletteMax, selectedPalette, paletteColorLimit, "Grass" );
+				ColorPickerElement( paletteMinGrass, paletteMaxGrass, selectedPaletteGrass, paletteColorLimitGrass, "Grass" );
+				ImGui::Text( " " );
+				ColorPickerElement( paletteMinTerrain, paletteMaxTerrain, selectedPaletteTerrain, paletteColorLimitTerrain, "Terrain" );
 				ImGui::EndTabItem();
 			}
+
 			if ( ImGui::BeginTabItem( " Simulation " ) ) {
 				ImGui::Checkbox( "Run Simulation", &runSim );
+
 				ImGui::Text( "Noise Scalars (Spatial Frequency)" );
-				ImGui::SliderFloat( "X## Noise Scalar", &noiseScalars.x, 0.0f, maxDisplacement );
-				ImGui::SliderFloat( "Y## Noise Scalar", &noiseScalars.y, 0.0f, maxDisplacement );
+				ImGui::SliderFloat( "X## Noise Scalar", &noiseScalars.x, 0.0f, 5.0f );
+				ImGui::SliderFloat( "Y## Noise Scalar", &noiseScalars.y, 0.0f, 5.0f );
+
 				ImGui::Text( "Noise Offset Scalars (Time Varying Sample Offset)" );
 				ImGui::SliderFloat3( "X## Noise Offset", ( float* ) &noiseDisplacement0, -0.04f, 0.04f );
 				ImGui::SliderFloat3( "Y## Noise Offset", ( float* ) &noiseDisplacement1, -0.04f, 0.04f );
+
 				ImGui::Text( "Displacement Scalars (Max Geometry Offset)" );
 				ImGui::SliderFloat( "X## Displacement Scalar", &displacementScalars.x, 0.0f, maxDisplacement );
 				ImGui::SliderFloat( "Y## Displacement Scalar", &displacementScalars.y, 0.0f, maxDisplacement );
