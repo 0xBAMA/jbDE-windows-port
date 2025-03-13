@@ -342,12 +342,20 @@ public:
 					vec3 mins = vec3(  1000.0f );
 					vec3 maxs = vec3( -1000.0f );
 
-					// expand to also include the displacement sphere
-					mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - maxDisplacement ) );
-					maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
+					// expand to also include the displacement sphere/disk...
+					#if 0 // if we only use abs( noise ), it can be only additive... this is more efficient, but constrains movement
+						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x + maxDisplacement ) );
+						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
 
-					mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - maxDisplacement ) );
-					maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
+						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y + maxDisplacement ) );
+						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
+					#else
+						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - maxDisplacement ) );
+						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
+
+						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - maxDisplacement ) );
+						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
+					#endif
 
 				// we get crashes in the BVH construction when adding the z axis jitter...
 					// mins.z = min( min( v0.z, v1.z ), min( v2.z, v0.z - maxDisplacement ) );
