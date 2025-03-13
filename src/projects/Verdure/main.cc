@@ -55,11 +55,11 @@ public:
 	int paletteColorLimitTerrain = 8;
 
 	float maxDisplacement = 0.01f;
-	int maxGrassBlades = 1000000;
+	uint32_t maxGrassBlades = 1000000u;
 	float heightmapHeightScalar = 1.0f;
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
-	int numErosionSteps = 5;
+	uint32_t numErosionSteps = 0u;
 
 	// parameters for the simulation
 	bool runSim = true;
@@ -556,7 +556,12 @@ public:
 				if ( ImGui::Button( "Regen" ) ) {
 					GenerateLandscape();
 				}
+
 				ImGui::Separator();
+				ImGui::DragScalar( "##grassblades", ImGuiDataType_U32, &maxGrassBlades, 50, NULL, NULL, "%d grass blades" );
+				ImGui::DragScalar( "##erosionsteps", ImGuiDataType_U32, &numErosionSteps, 1, NULL, NULL, "%d erosion steps" );
+				ImGui::Separator();
+
 				ImGui::Text( " " );
 				ColorPickerElement( paletteMinGrass, paletteMaxGrass, selectedPaletteGrass, paletteColorLimitGrass, "Grass" );
 				ImGui::Text( " " );
