@@ -260,8 +260,8 @@ void main () {
 			rayDirection = refract( rayDirection, initialSphereTest.yzw, 1.0f / globeIoR );
 
 			// get new intersections with the intersectors
-			// vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain
-			vec4 terrainPrimaryHit = SDFTrace( rayOrigin, rayDirection );	// terrain
+			vec4 terrainPrimaryHit = terrainTrace( rayOrigin, rayDirection );	// terrain
+			vec4 SDFPrimaryHit = SDFTrace( rayOrigin, rayDirection );			// SDF
 			vec4 grassPrimaryHit = grassTrace( rayOrigin, rayDirection );		// grass
 			vec4 spherePrimaryHit = sphereTrace( rayOrigin, rayDirection );		// sphere
 			
@@ -290,11 +290,14 @@ void main () {
 
 				// solve for normal, frontface
 				vec3 normal = vec3( 0.0f );
-				if ( terrainPrimaryHit.x < grassPrimaryHit.x ) {
-					// normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
-					normal = terrainPrimaryHit.yzw;
-				} else {
+				if ( terrainPrimaryHit.x == dClosest ) {
+					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
+				} else if ( grassPrimaryHit.x == dClosest ) {
 					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ); // use grass data
+				} else if ( SDFPrimaryHit.x == dClosest ) {
+					normal = SDFPrimaryHit.yzw;
+				} else {
+					// hit the sphere... we consider this nohit
 				}
 
 				// I need to make sure that this is correct
@@ -318,48 +321,42 @@ void main () {
 				vec3 overallLightContribution = vec3( 0.0f );
 
 				if ( lightEnable.x ) { // first light - "key light"
-					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );	// terrain
-					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );		// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );	// sphere
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );				// terrain
+					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );					// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );				// sphere
 
 					// resolve whether we hit an occluder before leaving the sphere
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 
 					// resolve color contribution ( N dot L diffuse term * shadow term )
 					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
 				}
 
-				if ( lightEnable.y ) { // second light - "fill light"
-					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );	// terrain
-					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );		// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );	// sphere
+				if ( lightEnable.y ) { // same for second light - "fill light"
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );				// terrain
+					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );					// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );				// sphere
 
-					// resolve whether we hit an occluder before leaving the sphere
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
-
-					// resolve color contribution ( N dot L diffuse term * shadow term )
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
 				}
 
-				if ( lightEnable.z ) { // third light - "back light"
-					// vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );	// terrain
-					vec4 terrainShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// terrain
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );		// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );	// sphere
+				if ( lightEnable.z ) { // same for third light - "back light"
+					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );				// terrain
+					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
+					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );					// grass
+					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );				// sphere
 
-					// resolve whether we hit an occluder before leaving the sphere
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x );
-
-					// resolve color contribution ( N dot L diffuse term * shadow term )
+					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 				}
 
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : terrainColor ); // fade to black at base
 
-				// get the final color
+				// get the final color, based on the contribution of up to three lights
 				color = overallLightContribution * baseColor;
 			}
 		}
@@ -369,7 +366,7 @@ void main () {
 	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
 	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
 
-	// very minimal perf hit, since it's not raster
+	// very minimal perf hit, since it's not raster... single write per pixel
 	imageStore( deferredResult1, writeLoc, deferredResultValue );
 	imageStore( deferredResult2, writeLoc, deferredResultValue );
 }
