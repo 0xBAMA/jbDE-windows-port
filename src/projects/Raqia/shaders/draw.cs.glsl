@@ -152,6 +152,7 @@ vec4 sphereTrace ( vec3 origin, vec3 direction ) {
 	return vec4( d, normal );
 }
 
+// SDF geometry helpers
 float deSrc ( vec3 p ) {
 	vec3 pOriginal = p;
 	float s = 2.0f, l = 0.0f;
@@ -251,7 +252,7 @@ void main () {
 		if ( skirtCheckTerrain.x < skirtCheckSphere.x ) {
 
 			// pixel gets skirts color... probably parameterize this
-			// color = vec3( 0.01f );
+			color = vec3( 0.003f );
 
 		} else {
 
@@ -266,11 +267,6 @@ void main () {
 			
 			// solve for minimum of the three distances
 			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
-
-			// compute the fog term based on this minimum distance - this is where the volumetrics would need to go
-			// vec3 fogTerm = exp( 0.5f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
-			// vec3 fogTerm = exp( -0.001f * dClosest ) * vec3( 0.01f, 0.05f, 0.0618f );
-			vec3 fogTerm = vec3( 0.0f );
 
 			// if the sphere is not the closest of the three, we hit some surface
 			if ( dClosest != spherePrimaryHit.x ) {
@@ -363,14 +359,8 @@ void main () {
 				// base color is vertex colors - currently boring white ground if you don't hit the grass
 				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : terrainColor ); // fade to black at base
 
-				// add fog contribution to the final color
-				color = fogTerm + overallLightContribution * baseColor;
-
-			} else {
-
-				// just take the fog term
-				// color = fogTerm;
-
+				// get the final color
+				color = overallLightContribution * baseColor;
 			}
 		}
 	}
