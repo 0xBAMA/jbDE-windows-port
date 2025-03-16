@@ -88,7 +88,7 @@ public:
 			{
 				// create the new accumulator(s)
 				textureOptions_t opts;
-				opts.dataType = GL_RGBA32F;
+				opts.dataType = GL_RGBA32UI;
 				opts.width = config.width;
 				opts.height = config.height;
 				opts.minFilter = GL_NEAREST;
@@ -119,6 +119,7 @@ public:
 	void CompileShaders () {
 		shaders[ "Draw" ] = computeShader( "../src/projects/Raqia/shaders/draw.cs.glsl" ).shaderHandle;
 		shaders[ "Grass" ] = computeShader( "../src/projects/Raqia/shaders/grass.cs.glsl" ).shaderHandle;
+		shaders[ "Deferred Composite" ] = computeShader( "../src/projects/Raqia/shaders/deferred.cs.glsl" ).shaderHandle;
 	}
 
 	void GenerateLandscape () {
@@ -594,7 +595,7 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // dummy draw - draw something into accumulatorTexture
+		{ // prepare the Gbuffers
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			const GLuint shader = shaders[ "Draw" ];
@@ -613,6 +614,42 @@ public:
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
 			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
 
+			// snowglobe IoR
+			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
+
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
+
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
+		{
+			// deferred pass, doing lighting calculations
+			scopedTimer Start( "Deferred Composite" );
+			bindSets[ "Drawing" ].apply();
+			const GLuint shader = shaders[ "Deferred Composite" ];
+			glUseProgram( shader );
+
+			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
+			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
+			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
+			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
+			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
+
+			// wip deferred rendering
+			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
+			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
+
+			// Light enable flags
+			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
+
 			// get a new light direction in the list... get rid of the last one
 			PushLightDirections();
 			lightDirectionQueue[ 0 ].pop_front();
@@ -629,9 +666,6 @@ public:
 				lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
 			}
 
-			// Light enable flags
-			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
-
 			// Key Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );
 			glUniform4f( glGetUniformLocation( shader, "lightColor0" ), lightColors[ 0 ].x, lightColors[ 0 ].y, lightColors[ 0 ].z, lightBrightness[ 0 ] );
@@ -643,12 +677,6 @@ public:
 			// Back Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections2" ), 16, glm::value_ptr( lightDirections2[ 0 ] ) );
 			glUniform4f( glGetUniformLocation( shader, "lightColor2" ), lightColors[ 2 ].x, lightColors[ 2 ].y, lightColors[ 2 ].z, lightBrightness[ 2 ] );
-
-			// snowglobe IoR
-			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
-
-			static rngi noiseOffset = rngi( 0, 512 );
-			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );

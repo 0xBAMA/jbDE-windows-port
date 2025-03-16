@@ -2,9 +2,9 @@
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 //=============================================================================================================================
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
-layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
-layout( binding = 2, rgba32f ) uniform image2D deferredResult1;
-layout( binding = 3, rgba32f ) uniform image2D deferredResult2;
+layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture; // moving away from using this, to a deferred setup
+layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
+layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -85,6 +85,7 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 #undef CUSTOMLEAFTEST
 
 #include "random.h"
+#include "normalEncodeDecode.h"
 //=============================================================================================================================
 
 uniform mat3 invBasis;
@@ -94,21 +95,6 @@ uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 uniform float globeIoR;
-
-// enable flags for the three lights
-uniform bvec3 lightEnable;
-
-// Key Light
-uniform vec3 lightDirections0[ 16 ];
-uniform vec4 lightColor0;
-
-// Fill Light
-uniform vec3 lightDirections1[ 16 ];
-uniform vec4 lightColor1;
-
-// Back Light
-uniform vec3 lightDirections2[ 16 ];
-uniform vec4 lightColor2;
 
 // DoF parameters
 uniform float DoFRadius;
@@ -189,6 +175,7 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 			break;
 		}
 	}
+	// matching interface, x is distance, yzw is normal
 	return vec4( dTotal, SDFNormal( origin + dTotal * direction ) );
 }
 
@@ -206,7 +193,8 @@ void main () {
 
 	// initialize color value - reserve value 0 written for nohit
 	vec3 color = vec3( 0.0f, 0.0f, 0.0f );
-	vec4 deferredResultValue = vec4( 0.0f, 0.0f, 0.0f, uintBitsToFloat( 0u ) );
+	uvec4 deferredResultValue1 = uvec4( 0u );
+	uvec4 deferredResultValue2 = uvec4( 0u );
 
 	// initial ray origin and direction
 	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
@@ -266,10 +254,10 @@ void main () {
 			vec4 spherePrimaryHit = sphereTrace( rayOrigin, rayDirection );		// sphere
 			
 			// solve for minimum of the three distances
-			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), spherePrimaryHit.x );
+			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), min( spherePrimaryHit.x, SDFPrimaryHit.x ) );
 
 			// if the sphere is not the closest of the three, we hit some surface
-			if ( dClosest != spherePrimaryHit.x ) {
+			if ( dClosest < 10.0f ) { // this needs to change... want to enter this branch if we don't
 
 				// pull the vertex data for the hit terrain/grass triangles
 				uint vertexIdx = 3 * floatBitsToUint( terrainPrimaryHit.w );
@@ -277,7 +265,7 @@ void main () {
 				vec3 vertex1t = triangleData[ vertexIdx + 1 ].xyz;
 				vec3 vertex2t = triangleData[ vertexIdx + 2 ].xyz;
 				// vec3 terrainColor = vec3( triangleData[ vertexIdx + 0 ].w, triangleData[ vertexIdx + 1 ].w, triangleData[ vertexIdx + 2 ].w ); // ... this adds a significant amount of time, will benefit from deferred
-				vec3 terrainColor = bone;
+				vec3 terrainColor = honey / 50.0f;
 
 				// the indexing for grass will change once grass blades have multiple tris
 				vertexIdx = 4 * floatBitsToUint( grassPrimaryHit.w ); // stride of 4, caching the base point in the 4th coordinate
@@ -286,28 +274,68 @@ void main () {
 				vec3 vertex2g = triangleData2[ vertexIdx + 2 ].xyz;
 				// vec3 grassColor = vec3( triangleData2[ vertexIdx + 0 ].w, triangleData2[ vertexIdx + 1 ].w, triangleData2[ vertexIdx + 2 ].w );
 				vec3 grassColor = grassColorLeaf; // this is not nearly as bad for perf as the terrain bvh color stuff
-				// vec3 grassColor = vec3( 1.0f );
 
-				// solve for normal, frontface
+				// solve for normal, baseColor
 				vec3 normal = vec3( 0.0f );
+				vec3 baseColor = vec3( 0.0f );
+				uint idx = 0u;
+
 				if ( terrainPrimaryHit.x == dClosest ) {
-					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) ); // use terrain data
+
+					// terrain is closest
+					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) );
+					bool frontFace = dot( normal, rayDirection ) < 0.0f;
+					normal = frontFace ? normal : -normal;
+					baseColor = terrainColor;
+					idx = floatBitsToUint( terrainPrimaryHit.w );
+
 				} else if ( grassPrimaryHit.x == dClosest ) {
-					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) ); // use grass data
+
+					// grass is closest
+					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) );
+					bool frontFace = dot( normal, rayDirection ) < 0.0f;
+					normal = frontFace ? normal : -normal;
+					baseColor = grassColor * ( 1.0f - grassPrimaryHit.z );
+					idx = floatBitsToUint( grassPrimaryHit.w );
+
 				} else if ( SDFPrimaryHit.x == dClosest ) {
+
+					// SDF is closest
 					normal = SDFPrimaryHit.yzw;
+					baseColor = nickel;
+
 				} else {
+
 					// hit the sphere... we consider this nohit
+					normal = -spherePrimaryHit.yzw;
+
 				}
 
-				// I need to make sure that this is correct
-				bool frontFace = dot( normal, rayDirection ) < 0.0f;
-				normal = frontFace ? normal : -normal;
 
-				// TODO: depth, normal, position, are all now known, so we can write this to another target for SSAO
-					// it may make sense to move some stuff to a deferred pass... need to validate normal, position, depth results first
-					// RT deferred will be much more efficient than the equivalent raster operation, I think... single set of results written per pixel
+			// we're now ready to prepare the GBuffer data
 
+			// result 1
+				// .x is 4-byte encoded normal
+				deferredResultValue1.x = encode( normal );
+
+				// .y is 4-byte encoded post-refract ray direction
+				deferredResultValue1.y = encode( rayDirection );
+
+				// .z is the uint primitive ID
+				deferredResultValue1.z = idx;
+
+				// .w is going to indicate what object got hit ( NOHIT, SKIRTS, TERRAIN, GRASS, SDF, SPHEREBACKFACE, ... ? )
+
+			// result 2
+				// .x is distance traveled inside the sphere ( combine with ray direction to solve for position )
+				deferredResultValue2.x = floatBitsToUint( dClosest );
+
+				// .yzw is currently unused
+
+
+
+
+			/*
 				// based on the x and y pixel locations, index into the list of light directions
 				const int idx = bayerMatrix[ ( writeLoc.x % 4 ) + ( writeLoc.y % 4 ) * 4 ];
 
@@ -316,7 +344,7 @@ void main () {
 
 				// writing out the result... need to figure out signalling grass/terrain
 				// color = vec4( rayOrigin, uintBitsToFloat( floatBitsToUint( grassPrimaryHit.w ) + 1 ) );
-				deferredResultValue = vec4( rayOrigin, floatBitsToUint( grassPrimaryHit.w ) + 1 );
+				// deferredResultValue1 = vec4( rayOrigin, floatBitsToUint( grassPrimaryHit.w ) + 1 );
 
 				vec3 overallLightContribution = vec3( 0.0f );
 
@@ -330,7 +358,7 @@ void main () {
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 
 					// resolve color contribution ( N dot L diffuse term * shadow term )
-					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
 				}
 
 				if ( lightEnable.y ) { // same for second light - "fill light"
@@ -340,7 +368,7 @@ void main () {
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );				// sphere
 
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
 				}
 
 				if ( lightEnable.z ) { // same for third light - "back light"
@@ -350,23 +378,21 @@ void main () {
 					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );				// sphere
 
 					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.0f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
+					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 				}
-
-				// base color is vertex colors - currently boring white ground if you don't hit the grass
-				vec3 baseColor = ( ( grassPrimaryHit.x < terrainPrimaryHit.x ) ? grassColor * ( 1.0f - grassPrimaryHit.z ) : terrainColor ); // fade to black at base
 
 				// get the final color, based on the contribution of up to three lights
 				color = overallLightContribution * baseColor;
+			*/
 			}
 		}
 	}
 
 	// load previous color and blend with the result, write back to accumulator
-	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
+	// vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
+	// imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
 
 	// very minimal perf hit, since it's not raster... single write per pixel
-	imageStore( deferredResult1, writeLoc, deferredResultValue );
-	imageStore( deferredResult2, writeLoc, deferredResultValue );
+	imageStore( deferredResult1, writeLoc, deferredResultValue1 );
+	imageStore( deferredResult2, writeLoc, deferredResultValue2 );
 }
