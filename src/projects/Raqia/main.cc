@@ -123,6 +123,8 @@ public:
 	}
 
 	void GenerateLandscape () {
+		float totalTime = 0.0f;
+
 		Tick();
 		uint32_t size = heightmapDimension;
 
@@ -145,6 +147,10 @@ public:
 		cout << "\rerosion step finished          " << endl;
 		p.model.Autonormalize();
 
+		float msTakenErosion = Tock();
+		totalTime += msTakenErosion;
+		cout << endl << "Erosion finished in " << msTakenErosion / 1000.0f << "s\n";
+
 		/* variance clamping... something
 		// I want to do something to remove abnormally brighter pixels... this is relevant for high iteration counts on the erosion, for some reason
 			// if a pixel is much brighter than neighbors, take the average of the neigbors
@@ -160,6 +166,8 @@ public:
 			}
 		}
 		*/
+
+		Tick();
 
 		// build the triangle list
 		std::vector< tinybvh::bvhvec4 > terrainTriangles;
@@ -250,8 +258,18 @@ public:
 			}
 		}
 
+		float msTakenHeightmapMesh = Tock();
+		totalTime += msTakenHeightmapMesh;
+		cout << endl << "Terrain meshing finished in " << msTakenHeightmapMesh / 1000.0f << "s\n";
+
+		Tick();
+
 		// build the BVH from the triangle list
 		terrainBVH.BuildHQ( &terrainTriangles[ 0 ], terrainTriangles.size() / 3 );
+
+		float msTakenTerrainBVH = Tock();
+		totalTime += msTakenTerrainBVH;
+		cout << endl << "Terrain BVH finished in " << msTakenTerrainBVH / 1000.0f << "s\n";
 
 		/*
 		// test some rays
@@ -290,6 +308,8 @@ public:
 		output.Save( "test.png" );
 		*/
 
+		Tick();
+
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Data, GL_DYNAMIC_COPY );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
@@ -307,6 +327,12 @@ public:
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
 		glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Terrain Triangle Data" ).c_str() );
 		cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		float msTakenBufferTerrainBVH = Tock();
+		totalTime += msTakenBufferTerrainBVH;
+		cout << endl << "Terrain BVH passed to GPU in " << msTakenBufferTerrainBVH / 1000.0f << "s\n";
+
+		Tick();
 
 		// choosing grass locations
 		std::vector< tinybvh::bvhvec4 > grassTrianglesBVH;
@@ -392,7 +418,19 @@ public:
 			}
 		}
 
+		float msTakenGrassPlacement = Tock();
+		totalTime += msTakenGrassPlacement;
+		cout << endl << "Grass blades placed in " << msTakenGrassPlacement / 1000.0f << "s\n";
+
+		Tick();
+
 		grassBVH.BuildHQ( &grassTrianglesBVH[ 0 ], grassTrianglesBVH.size() / 3 );
+
+		float msTakenGrassBVH = Tock();
+		totalTime += msTakenGrassBVH;
+		cout << endl << "Grass blades BVH built in " << msTakenGrassBVH / 1000.0f << "s\n";
+
+		Tick();
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer_grass );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, grassBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) grassBVH.bvh8Data, GL_DYNAMIC_COPY );
@@ -412,8 +450,11 @@ public:
 		glObjectLabel( GL_BUFFER, triangleData_grass, -1, string( "Actual Grass Triangle Data" ).c_str() );
 		cout << "Grass Triangle Test Data is " << GetWithThousandsSeparator( grassTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
-		float msTaken = Tock();
-		cout << "Operation Complete in " << msTaken / 1000.0f << " seconds" << endl;
+		float msTakenBufferGrassBVH = Tock();
+		totalTime += msTakenBufferGrassBVH;
+		cout << endl << "Grass BVH passed to GPU in " << msTakenBufferGrassBVH / 1000.0f << "s\n";
+
+		cout << "Operation Complete in " << totalTime / 1000.0f << " seconds" << endl;
 	}
 
 	void PushLightDirections () {
