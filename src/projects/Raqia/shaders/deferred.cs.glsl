@@ -194,6 +194,13 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 	return vec4( dTotal, SDFNormal( origin + dTotal * direction ) );
 }
 
+//==Surface=ID=Values==========================================================================================================
+#define NOHIT	0
+#define SKIRTS	1
+#define TERRAIN	2
+#define GRASS	3
+#define SDF		4
+#define SPHERE	5
 //=============================================================================================================================
 
 void main () {
@@ -206,7 +213,7 @@ void main () {
 			// .x is 4-byte encoded normal
 			// .y is 4-byte encoded post-refract ray direction
 			// .z is the uint primitive ID
-			// .w is signalling the surface ID
+			// .w is signalling the surface ID ( really only using 3 bits right now, 0-5 )
 
 		// result 2
 			// .x is worldspace hit x ( floatBitsToUint() encoded, need to unapply )
@@ -215,9 +222,38 @@ void main () {
 	uvec4 Gbuffer1 = imageLoad( deferredResult1, writeLoc );
 	uvec4 Gbuffer2 = imageLoad( deferredResult2, writeLoc );
 
-	// vec3 color = vec3( 0.0f );
-	vec3 color = ( decode( Gbuffer1.x ) + 1.0f ) / 2.0f; // normals good
-	// vec3 color = vec3( uintBitsToFloat( Gbuffer2.x ) );
+	vec3 color = vec3( 0.0f );
+	// color = ( decode( Gbuffer1.x ) + 1.0f ) / 2.0f; // normals good
+	// color = vec3( uintBitsToFloat( Gbuffer2.x ) );
+
+	switch ( Gbuffer1.w ) {
+	case NOHIT:
+		color = vec3( 0.0f );
+		break;
+
+	case SKIRTS:
+		color = vec3( 0.1f );
+		break;
+
+	case TERRAIN:
+		color = vec3( 0.1f, 0.03f, 0.0f );
+		break;
+
+	case GRASS:
+		color = vec3( 0.2f, 1.0f, 0.0f );
+		break;
+
+	case SDF:
+		color = vec3( 0.4f, 0.1f, 0.4f );
+		break;
+
+	case SPHERE:
+		color = vec3( 0.0f, 0.3f, 0.8f );
+		break;
+
+	default:
+		break;
+	}
 
 
 	/*

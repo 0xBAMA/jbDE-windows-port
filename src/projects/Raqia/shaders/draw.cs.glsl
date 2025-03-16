@@ -179,6 +179,13 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 	return vec4( dTotal, SDFNormal( origin + dTotal * direction ) );
 }
 
+//==Surface=ID=Values==========================================================================================================
+#define NOHIT	0
+#define SKIRTS	1
+#define TERRAIN	2
+#define GRASS	3
+#define SDF		4
+#define SPHERE	5
 //=============================================================================================================================
 
 void main () {
@@ -191,10 +198,13 @@ void main () {
 	// seeding the RNG
 	seed = writeLoc.x * 6969 + writeLoc.y * 420 + blueNoiseOffset.x * 1313 + blueNoiseOffset.y * 31415;
 
-	// initialize color value - reserve value 0 written for nohit
+	// initialize color value
 	vec3 color = vec3( 0.0f, 0.0f, 0.0f );
 	uvec4 deferredResultValue1 = uvec4( 0u );
 	uvec4 deferredResultValue2 = uvec4( 0u );
+
+	// initialize the surface ID, this will be kept unless updated later
+	deferredResultValue1.w = NOHIT;
 
 	// initial ray origin and direction
 	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
@@ -241,6 +251,7 @@ void main () {
 
 			// pixel gets skirts color... probably parameterize this
 			color = vec3( 0.003f );
+			deferredResultValue1.w = SKIRTS;
 
 		} else {
 
@@ -288,6 +299,7 @@ void main () {
 					normal = frontFace ? normal : -normal;
 					baseColor = terrainColor;
 					idx = floatBitsToUint( terrainPrimaryHit.w );
+					deferredResultValue1.w = TERRAIN;
 
 				} else if ( grassPrimaryHit.x == dClosest ) {
 
@@ -297,17 +309,20 @@ void main () {
 					normal = frontFace ? normal : -normal;
 					baseColor = grassColor * ( 1.0f - grassPrimaryHit.z );
 					idx = floatBitsToUint( grassPrimaryHit.w );
+					deferredResultValue1.w = GRASS;
 
 				} else if ( SDFPrimaryHit.x == dClosest ) {
 
 					// SDF is closest
 					normal = SDFPrimaryHit.yzw;
 					baseColor = nickel;
+					deferredResultValue1.w = SDF;
 
 				} else {
 
-					// hit the sphere... we consider this nohit
+					// hit the backface of the sphere
 					normal = -spherePrimaryHit.yzw;
+					deferredResultValue1.w = SPHERE;
 
 				}
 
@@ -330,7 +345,7 @@ void main () {
 				// .x is distance traveled inside the sphere ( combine with ray direction to solve for position )
 				deferredResultValue2.x = floatBitsToUint( dClosest );
 
-				// .yzw is currently unused
+				// .yzw is currently unused, might make sense to clean this up at some point
 
 
 
