@@ -32,6 +32,7 @@ public:
 	float DoFRadius = 10.0f;
 	bool screenshotRequested = false;
 	float globeIoR = 1.4f;
+	float perspectiveFactor = 0.0f;
 
 	// parameters for 3 lights
 	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
@@ -519,7 +520,7 @@ public:
 			// handling scrolling
 			if ( event.type == SDL_EVENT_MOUSE_WHEEL && !ImGui::GetIO().WantCaptureMouse ) {
 				float scaleCache = scale;
-				scale = std::clamp( scale - event.wheel.y * ( ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 0.07f : 0.01f ), 0.005f, 5.0f );
+				scale = std::clamp( scale - event.wheel.y * ( ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 0.07f : 0.01f ), 0.005f, 20.0f );
 				uvOffset = uvOffset * ( scaleCache / scale ); // adjust offset by the ratio, keeps center intact
 			}
 		}
@@ -587,6 +588,7 @@ public:
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 				ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Snowglobe IoR", &globeIoR, 0.7f, 2.0f );
+				ImGui::SliderFloat( "Perspective Factor", &perspectiveFactor, -2.0f, 2.0f );
 
 				ImGui::EndTabItem();
 			}
@@ -650,6 +652,7 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "perspectiveFactor" ), perspectiveFactor );
 
 			// wip deferred rendering
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );

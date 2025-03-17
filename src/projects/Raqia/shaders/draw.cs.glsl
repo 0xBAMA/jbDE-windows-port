@@ -95,6 +95,7 @@ uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 uniform float globeIoR;
+uniform float perspectiveFactor;
 
 // DoF parameters
 uniform float DoFRadius;
@@ -187,7 +188,6 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 #define SDF		4
 #define SPHERE	5
 //=============================================================================================================================
-const float perspectiveFactor = -0.8f;
 
 void main () {
 	// solve for jittered pixel uv, aspect ratio adjust
