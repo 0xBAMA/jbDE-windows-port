@@ -216,38 +216,43 @@ void main () {
 			// .w is signalling the surface ID ( really only using 3 bits right now, 0-5 )
 
 		// result 2
-			// .x is worldspace hit x ( floatBitsToUint() encoded, need to unapply )
-			// .yzw is available
+			// .x is depth ( floatBitsToUint() encoded, need to unapply )
+			// .yzw is worldspace position
 
 	uvec4 Gbuffer1 = imageLoad( deferredResult1, writeLoc );
 	uvec4 Gbuffer2 = imageLoad( deferredResult2, writeLoc );
 
 	vec3 color = vec3( 0.0f );
-	// color = ( decode( Gbuffer1.x ) + 1.0f ) / 2.0f; // normals good
-	// color = vec3( uintBitsToFloat( Gbuffer2.x ) );
 
+	// set base colors
 	switch ( Gbuffer1.w ) {
 	case NOHIT:
+	// rays that have not even hit the snowglobe
 		color = vec3( 0.0f );
 		break;
 
 	case SKIRTS:
-		color = vec3( 0.1f );
+	// need to figure out the particulars on skirts color
+		color = vec3( 0.5f );
 		break;
 
 	case TERRAIN:
+	// needs to load terrain color
 		color = vec3( 0.1f, 0.03f, 0.0f );
 		break;
 
 	case GRASS:
+	// needs to load grass color
 		color = vec3( 0.2f, 1.0f, 0.0f );
 		break;
 
 	case SDF:
+	// SDF coloration
 		color = vec3( 0.4f, 0.1f, 0.4f );
 		break;
 
 	case SPHERE:
+	// this needs to basically be clear
 		color = vec3( 0.0f, 0.3f, 0.8f );
 		break;
 
@@ -255,18 +260,20 @@ void main () {
 		break;
 	}
 
+	// small amount of ambient light
+	vec3 overallLightContribution = vec3( 0.01f );
 
-	/*
-	if ( you hit anything other than NOTHING ) {
+	// these are surfaces that need to calculate lighting
+	if ( Gbuffer1.w == TERRAIN || Gbuffer1.w == GRASS || Gbuffer1.w == SDF ) {
 
 		// based on the x and y pixel locations, index into the list of light directions
 		const int idx = bayerMatrix[ ( writeLoc.x % 4 ) + ( writeLoc.y % 4 ) * 4 ];
 
-		// test shadow rays in the light direction
-		vec3 rayOrigin = vec3( 0.0f ); // need to load from the buffer
-		// rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
+		// surface normal
+		const vec3 normal = decode( Gbuffer1.x );
 
-		vec3 overallLightContribution = vec3( 0.0f );
+		// test shadow rays in the light direction
+		vec3 rayOrigin = vec3( uintBitsToFloat( Gbuffer2.y ), uintBitsToFloat( Gbuffer2.z ), uintBitsToFloat( Gbuffer2.w ) );
 
 		if ( lightEnable.x ) { // first light - "key light"
 			vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );				// terrain
@@ -300,14 +307,12 @@ void main () {
 			bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 			overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 		}
-
-		// get the final color, based on the contribution of up to three lights
-		color = overallLightContribution * baseColor;
 	}
-	*/
+
+	// get the final color, based on the contribution of up to three lights
+	color = overallLightContribution * color;
 
 	// load previous color and blend with the result, write back to accumulator
-	// vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-	// imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
-	imageStore( accumulatorTexture, writeLoc, vec4( color, 1.0f ) );
+	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
+	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
 }

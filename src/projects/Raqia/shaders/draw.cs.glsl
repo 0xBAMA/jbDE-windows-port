@@ -268,7 +268,7 @@ void main () {
 			float dClosest = min( min( terrainPrimaryHit.x, grassPrimaryHit.x ), min( spherePrimaryHit.x, SDFPrimaryHit.x ) );
 
 			// if the sphere is not the closest of the three, we hit some surface
-			if ( dClosest < 10.0f ) { // this needs to change... want to enter this branch if we don't
+			if ( initialSphereTest.x < MAX_DIST_CP ) {
 
 				// pull the vertex data for the hit terrain/grass triangles
 				uint vertexIdx = 3 * floatBitsToUint( terrainPrimaryHit.w );
@@ -326,9 +326,7 @@ void main () {
 
 				}
 
-
-			// we're now ready to prepare the GBuffer data
-
+		// GBuffer data
 			// result 1
 				// .x is 4-byte encoded normal
 				deferredResultValue1.x = encode( normal );
@@ -345,60 +343,11 @@ void main () {
 				// .x is distance traveled inside the sphere ( combine with ray direction to solve for position )
 				deferredResultValue2.x = floatBitsToUint( dClosest );
 
-				// .yzw is currently unused, might make sense to clean this up at some point
-
-
-
-
-			/*
-				// based on the x and y pixel locations, index into the list of light directions
-				const int idx = bayerMatrix[ ( writeLoc.x % 4 ) + ( writeLoc.y % 4 ) * 4 ];
-
-				// test shadow rays in the light direction
+				// .yzw is worldspace position... whatever
 				rayOrigin = rayOrigin + rayDirection * dClosest * 0.99999f;
-
-				// writing out the result... need to figure out signalling grass/terrain
-				// color = vec4( rayOrigin, uintBitsToFloat( floatBitsToUint( grassPrimaryHit.w ) + 1 ) );
-				// deferredResultValue1 = vec4( rayOrigin, floatBitsToUint( grassPrimaryHit.w ) + 1 );
-
-				vec3 overallLightContribution = vec3( 0.0f );
-
-				if ( lightEnable.x ) { // first light - "key light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );				// terrain
-					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );					// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );				// sphere
-
-					// resolve whether we hit an occluder before leaving the sphere
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-
-					// resolve color contribution ( N dot L diffuse term * shadow term )
-					overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
-				}
-
-				if ( lightEnable.y ) { // same for second light - "fill light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );				// terrain
-					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );					// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );				// sphere
-
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-					overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
-				}
-
-				if ( lightEnable.z ) { // same for third light - "back light"
-					vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );				// terrain
-					vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-					vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );					// grass
-					vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );				// sphere
-
-					bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-					overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
-				}
-
-				// get the final color, based on the contribution of up to three lights
-				color = overallLightContribution * baseColor;
-			*/
+				deferredResultValue2.y = floatBitsToUint( rayOrigin.x );
+				deferredResultValue2.z = floatBitsToUint( rayOrigin.y );
+				deferredResultValue2.w = floatBitsToUint( rayOrigin.z );
 			}
 		}
 	}
