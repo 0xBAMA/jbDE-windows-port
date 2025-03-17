@@ -236,15 +236,19 @@ void main () {
 		color = vec3( 0.5f );
 		break;
 
-	case TERRAIN:
+	case TERRAIN: {
 	// needs to load terrain color
-		color = vec3( 0.1f, 0.03f, 0.0f );
+		uint index = 3 * Gbuffer1.z;
+		color = vec3( triangleData[ index + 0 ].w, triangleData[ index + 1 ].w, triangleData[ index + 2 ].w );
 		break;
+	}
 
-	case GRASS:
+	case GRASS: {
 	// needs to load grass color
-		color = vec3( 0.2f, 1.0f, 0.0f );
+		uint index = 3 * Gbuffer1.z;
+		color = vec3( triangleData2[ index + 0 ].w, triangleData2[ index + 1 ].w, triangleData2[ index + 2 ].w );
 		break;
+	}
 
 	case SDF:
 	// SDF coloration
