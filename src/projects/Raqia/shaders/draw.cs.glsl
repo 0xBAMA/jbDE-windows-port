@@ -187,6 +187,7 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 #define SDF		4
 #define SPHERE	5
 //=============================================================================================================================
+const float perspectiveFactor = -0.8f;
 
 void main () {
 	// solve for jittered pixel uv, aspect ratio adjust
@@ -208,18 +209,16 @@ void main () {
 
 	// initial ray origin and direction
 	vec3 rayOrigin = invBasis * vec3( uv, -2.0f );
-	vec3 rayDirection = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
+	vec3 rayDirection = normalize( invBasis * vec3( perspectiveFactor * uv, 2.0f ) );
 
-	// TODO: DoF calculation...
-		// probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
+	if ( DoFRadius != 0.0f ) { // probably bring over more of the Voraldo13 camera https://github.com/0xBAMA/Voraldo13/blob/main/resources/engineCode/shaders/renderers/raymarch.cs.glsl#L70C28-L70C37
 
-	if ( DoFRadius != 0.0f ) {
 		// compute "perfect" ray
 		vec2 uvNoJitter = scale * ( ( ( vec2( writeLoc + uvOffset ) + ( blue().zw - vec2( 0.5f ) ) ) / is ) - vec2( 0.5f ) );
 		uvNoJitter.y *= -float( is.y ) / float( is.x );
 	
 		vec3 rayOriginNoJitter = invBasis * vec3( uvNoJitter, -2.0f );
-		vec3 rayDirectionNoJitter = normalize( invBasis * vec3( 0.0f, 0.0f, 2.0f ) );
+		vec3 rayDirectionNoJitter = normalize( invBasis * vec3( perspectiveFactor * uvNoJitter, 2.0f ) );
 
 		// DoF focus distance out along the ray
 		vec3 focusPoint = rayOriginNoJitter + rayDirectionNoJitter * DoFDistance;
@@ -229,6 +228,7 @@ void main () {
 		uv.y *= -float( is.y ) / float( is.x );
 		rayOrigin = invBasis * vec3( uv, -2.0f );
 		rayDirection = normalize( focusPoint - rayOrigin );
+
 	}
 
 	// initial ray-sphere test against snowglobe
