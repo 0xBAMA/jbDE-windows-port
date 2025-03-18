@@ -11,6 +11,7 @@ inline size_t bytesPerPixel ( GLint type ) {
 	// one channel formats
 	case GL_R8UI:				return 1; break;
 	case GL_DEPTH_COMPONENT16:	return 1 * 2; break;
+
 	case GL_R32UI:
 	case GL_R32F:
 	case GL_DEPTH_COMPONENT32:	return 1 * 4; break;
@@ -24,7 +25,10 @@ inline size_t bytesPerPixel ( GLint type ) {
 	// four channel formats
 	case GL_RGBA8:
 	case GL_RGBA8UI:			return 4 * 1; break;
+
 	case GL_RGBA16F:			return 4 * 2; break;
+
+	case GL_RGBA32UI:
 	case GL_RGBA32F:			return 4 * 4; break;
 
 	default:
