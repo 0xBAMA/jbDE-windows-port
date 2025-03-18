@@ -378,6 +378,8 @@ public:
 				vec3 offset2 = ( rot * vec4( 0.0f, -boxSize, -zMul * boxSize, 0.0f ) ).xyz();
 				vec3 color = palette::paletteRef( palettePick() );
 
+				float sizeAdjust = zMul / zMultiplier;
+
 				tinybvh::bvhvec4 v0 = tinybvh::bvhvec4( O.x + offset0.x, O.y + offset0.y, 3.0f - ray.hit.t + offset0.z, color.x );
 				tinybvh::bvhvec4 v1 = tinybvh::bvhvec4( O.x + offset1.x, O.y + offset1.y, 3.0f - ray.hit.t + offset1.z, color.y );
 				tinybvh::bvhvec4 v2 = tinybvh::bvhvec4( O.x + offset2.x, O.y + offset2.y, 3.0f - ray.hit.t + offset2.z, color.z );
@@ -389,17 +391,17 @@ public:
 
 					// expand to also include the displacement sphere/disk...
 					#if 0 // if we only use abs( noise ), it can be only additive... this is more efficient, but constrains movement
-						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x + maxDisplacement ) );
-						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
+						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x + sizeAdjust * maxDisplacement ) );
+						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + sizeAdjust * maxDisplacement ) );
 
-						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y + maxDisplacement ) );
-						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
+						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
+						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
 					#else
-						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - maxDisplacement ) );
-						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + maxDisplacement ) );
+						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - sizeAdjust * maxDisplacement ) );
+						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + sizeAdjust * maxDisplacement ) );
 
-						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - maxDisplacement ) );
-						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + maxDisplacement ) );
+						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - sizeAdjust * maxDisplacement ) );
+						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
 					#endif
 
 				// we get crashes in the BVH construction when adding the z axis jitter...
@@ -418,6 +420,9 @@ public:
 				grassTriangles.push_back( v0 );
 				grassTriangles.push_back( v1 );
 				grassTriangles.push_back( v2 );
+
+				// adding a noise scalar to the last component
+				v2.w = sizeAdjust;
 				grassTriangles.push_back( v2 );
 			}
 		}

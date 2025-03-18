@@ -103,19 +103,19 @@ void main () {
 
 // we need a couple pieces of information
 	// base point, from which to displace
-	vec3 basePoint = triangleData2[ 4 * index + 3 ].xyz;
+	vec4 basePoint = triangleData2[ 4 * index + 3 ];
 
 	// three noise reads, for the displacement on each axis
 	vec3 noiseReads = vec3(
 	#if 0 // this is more efficient, since a smaller range of motion means tighter bounds... requires the corresponding change on the CPU side
-		abs( displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ) ),
-		abs( displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ) ),
+		abs( displacementScalars.x * perlinfbm( basePoint.xyz + noiseOffset0, noiseScalars.x, 2 ) ),
+		abs( displacementScalars.y * perlinfbm( basePoint.xyz + noiseOffset1, noiseScalars.y, 2 ) ),
 	#else
-		displacementScalars.x * perlinfbm( basePoint + noiseOffset0, noiseScalars.x, 2 ),
-		displacementScalars.y * perlinfbm( basePoint + noiseOffset1, noiseScalars.y, 2 ),
+		displacementScalars.x * perlinfbm( basePoint.xyz + noiseOffset0, noiseScalars.x, 2 ),
+		displacementScalars.y * perlinfbm( basePoint.xyz + noiseOffset1, noiseScalars.y, 2 ),
 	#endif
 		0.0f );
 
 	// writeback vertex 0's displaced point
-	triangleData2[ 4 * index + 2 ].xyz = basePoint + noiseReads;
+	triangleData2[ 4 * index + 2 ].xyz = basePoint.xyz + noiseReads * basePoint.w;
 }
