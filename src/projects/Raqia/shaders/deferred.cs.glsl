@@ -245,8 +245,8 @@ void main () {
 
 	case GRASS: {
 	// needs to load grass color
-		uint index = 3 * Gbuffer1.z;
-		color = vec3( triangleData2[ index + 0 ].w, triangleData2[ index + 1 ].w, triangleData2[ index + 2 ].w );
+		uint index = 4 * Gbuffer1.z;
+		color = vec3( triangleData2[ index + 0 ].w, triangleData2[ index + 1 ].w, triangleData2[ index + 2 ].w ) * ( 1.0f - unpackHalf2x16( Gbuffer3.x ).y );
 		break;
 	}
 
