@@ -96,6 +96,7 @@ uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 uniform float globeIoR;
+uniform float terrainBrightnessScalar;
 
 // enable flags for the three lights
 uniform bvec3 lightEnable;
@@ -244,7 +245,7 @@ void main () {
 	case TERRAIN: {
 	// needs to load terrain color
 		uint index = 3 * Gbuffer1.z;
-		color = vec3( triangleData[ index + 0 ].w, triangleData[ index + 1 ].w, triangleData[ index + 2 ].w );
+		color = vec3( triangleData[ index + 0 ].w, triangleData[ index + 1 ].w, triangleData[ index + 2 ].w ) * terrainBrightnessScalar;
 		break;
 	}
 

@@ -62,6 +62,7 @@ public:
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
 	uint32_t numErosionSteps = 0u;
+	float terrainBrightnessScalar = 0.3f;
 
 	// parameters for the simulation
 	bool runSim = true;
@@ -693,6 +694,7 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
