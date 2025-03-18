@@ -89,13 +89,9 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 #include "normalEncodeDecode.h"
 //=============================================================================================================================
 
-uniform mat3 invBasis;
 uniform float time;
-uniform float scale;
 uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
-uniform ivec2 uvOffset;
-uniform float globeIoR;
 uniform float terrainBrightnessScalar;
 uniform int debugDrawMode;
 
@@ -113,10 +109,6 @@ uniform vec4 lightColor1;
 // Back Light
 uniform vec3 lightDirections2[ 16 ];
 uniform vec4 lightColor2;
-
-// DoF parameters
-uniform float DoFRadius;
-uniform float DoFDistance;
 
 //=============================================================================================================================
 // bayer matrix for indexing into the queues
@@ -220,7 +212,7 @@ void main () {
 
 		// result 2
 			// .x is depth ( floatBitsToUint() encoded, need to unapply )
-			// .yzw is worldspace position
+			// .yzw is worldspace position, half floats were not sufficient
 
 		// result 3
 			// .x is packed UV
@@ -251,7 +243,7 @@ void main () {
 	}
 
 	case GRASS: {
-	// needs to load grass color
+	// needs to load grass color + V component of triangle UV, to fade to black at the base of the blade
 		uint index = 4 * Gbuffer1.z;
 		color = vec3( triangleData2[ index + 0 ].w, triangleData2[ index + 1 ].w, triangleData2[ index + 2 ].w ) * ( 1.0f - unpackHalf2x16( Gbuffer3.x ).y );
 		break;
@@ -259,7 +251,7 @@ void main () {
 
 	case SDF:
 	// SDF coloration
-		color = vec3( 0.4f, 0.1f, 0.4f );
+		color = iron;
 		break;
 
 	case SPHERE:

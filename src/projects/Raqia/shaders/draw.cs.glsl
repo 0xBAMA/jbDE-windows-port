@@ -92,7 +92,6 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 uniform mat3 invBasis;
 uniform float time;
 uniform float scale;
-uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 uniform float globeIoR;

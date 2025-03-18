@@ -609,6 +609,7 @@ public:
 				ImGui::RadioButton( "Depth", &debugDrawMode, 2 );
 				ImGui::SameLine();
 				ImGui::RadioButton( "Surface ID", &debugDrawMode, 3 );
+				// todo: traversal step count
 
 				ImGui::EndTabItem();
 			}
@@ -674,7 +675,6 @@ public:
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
 			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
-			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
 			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
@@ -702,13 +702,7 @@ public:
 			const GLuint shader = shaders[ "Deferred Composite" ];
 			glUseProgram( shader );
 
-			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
-			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
-			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
-			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
-			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
-			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
 			glUniform1i( glGetUniformLocation( shader, "debugDrawMode" ), debugDrawMode );
