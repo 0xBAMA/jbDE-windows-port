@@ -1,14 +1,14 @@
 #version 430
-layout( local_size_x = 8, local_size_y = 8, local_size_z = 1 ) in;
+layout( local_size_x = 8, local_size_y = 8, local_size_z = 8 ) in;
 //=============================================================================================================================
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
 layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
 layout( binding = 4, r32ui ) uniform uimage2D deferredResult3;
-layout( binding = 5, r32f ) uniform image2D lightCache1;
-layout( binding = 6, r32f ) uniform image2D lightCache2;
-layout( binding = 7, r32f ) uniform image2D lightCache3;
+layout( binding = 5, r32f ) uniform image3D lightCache1;
+layout( binding = 6, r32f ) uniform image3D lightCache2;
+layout( binding = 7, r32f ) uniform image3D lightCache3;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -195,10 +195,28 @@ void main () {
 	// this will need to change to a jitter
 	vec3 worldSpace = 2.0f * ( vec3( writeLoc + 0.5f ) / imageSize( lightCache1 ).xyz ) - vec3( 1.0f );
 
-	// trace a ray for each light
-
 	// load previous values
+	vec3 previousValues = vec3(
+		imageLoad( lightCache1, writeLoc ).x,
+		imageLoad( lightCache2, writeLoc ).x,
+		imageLoad( lightCache3, writeLoc ).x
+	);
 
-	// mix and writeback
+	// maybe find some way to shuffle this at some point... alternatively, check against all 16? We can do a 3d sequence like the bayer thing
+	const int idx = 0;
 
+	// trace a ray for each enabled light
+	if ( lightEnable.x ) {
+		// trace against potential occluders
+		vec4 terrainShadowHit = terrainTrace( worldSpace, lightDirections0[ idx ] );	// terrain
+		vec4 SDFShadowHit = SDFTrace( worldSpace, lightDirections0[ idx ] );			// SDF
+		vec4 grassShadowHit = grassTrace( worldSpace, lightDirections0[ idx ] );		// grass
+		vec4 sphereShadowHit = sphereTrace( worldSpace, lightDirections0[ idx ] );		// sphere
+
+		// occlusion determination
+		bool occluded = ( min( min( terrainShadowHit.x, SDFShadowHit.x ), grassShadowHit.x ) < sphereShadowHit.x );
+
+		// mix and writeback
+		imageStore( lightCache1, writeLoc, vec4( mix( previousValues.x, occluded ? 0.0f : 1.0f, blendAmount ) ) );
+	}
 }

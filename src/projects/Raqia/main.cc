@@ -26,7 +26,7 @@ public:
 
 	// view parameters
 	float scale = 3.0f;
-	float blendAmount = 0.75f;
+	float frameBlendAmount = 0.75f;
 	vec2 uvOffset = vec2( 0.0f );
 	float DoFDistance = 2.0f;
 	float DoFRadius = 10.0f;
@@ -41,6 +41,8 @@ public:
 	vec3 lightColors[ 3 ] = { vec3( 1.0f ) };
 	float lightBrightness[ 3 ] = { 1.0f };
 	ivec3 lightEnable = ivec3( 1, 0, 0 );
+	int lightCacheSize = 256;
+	float lightBlendAmount = 0.75f;
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -111,7 +113,7 @@ public:
 				// create the textures for caching the lighting
 				textureOptions_t opts;
 				opts.dataType = GL_R32F;
-				opts.width = opts.height = opts.depth = 256;
+				opts.width = opts.height = opts.depth = lightCacheSize;
 				opts.minFilter = GL_LINEAR;
 				opts.magFilter = GL_LINEAR;
 				opts.textureType = GL_TEXTURE_3D;
@@ -610,7 +612,7 @@ public:
 				if ( ImGui::Button( "Capture" ) ) {
 					screenshotRequested = true;
 				}
-				ImGui::SliderFloat( "Blend Amount", &blendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SliderFloat( "Blend Amount", &frameBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 				ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Snowglobe IoR", &globeIoR, 0.7f, 2.0f );
@@ -683,12 +685,62 @@ public:
 		// make sure that each shader gets the same time value
 		const float t = SDL_GetTicks() / 1600.0f;
 
+		// get a new light direction in the list... get rid of the last one
+		PushLightDirections();
+		lightDirectionQueue[ 0 ].pop_front();
+		lightDirectionQueue[ 1 ].pop_front();
+		lightDirectionQueue[ 2 ].pop_front();
+
+		// construct a vector of the data to send to GPU
+		vec3 lightDirections0[ 16 ];
+		vec3 lightDirections1[ 16 ];
+		vec3 lightDirections2[ 16 ];
+		for ( int i = 0; i < 16; i++ ) {
+			lightDirections0[ i ] = lightDirectionQueue[ 0 ][ i ];
+			lightDirections1[ i ] = lightDirectionQueue[ 1 ][ i ];
+			lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
+		}
+
+		{ // updating the volumetric lighting
+			scopedTimer Start( "Lighting" );
+			bindSets[ "Drawing" ].apply();
+			const GLuint shader = shaders[ "Lighting" ];
+			glUseProgram( shader );
+
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
+			glUniform1f( glGetUniformLocation( shader, "time" ), t );
+			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), lightBlendAmount );
+
+			// volumetic light caches
+			textureManager.BindImageForShader( "Light Cache 1", "lightCache1", shader, 5 );
+			textureManager.BindImageForShader( "Light Cache 2", "lightCache2", shader, 6 );
+			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
+
+			// Light enable flags
+			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
+
+			// Key Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );
+
+			// Fill Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections1" ), 16, glm::value_ptr( lightDirections1[ 0 ] ) );
+
+			// Back Light
+			glUniform3fv( glGetUniformLocation( shader, "lightDirections2" ), 16, glm::value_ptr( lightDirections2[ 0 ] ) );
+
+			glDispatchCompute( ( lightCacheSize + 7 ) / 8, ( lightCacheSize + 7 ) / 8, ( lightCacheSize + 7 ) / 8 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
 		{ // prepare the Gbuffers
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			const GLuint shader = shaders[ "Draw" ];
 			glUseProgram( shader );
 
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
 			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
 			glUniform2i( glGetUniformLocation( shader, "uvOffset" ), uvOffset.x, uvOffset.y );
@@ -698,16 +750,13 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "time" ), t );
 			glUniform1f( glGetUniformLocation( shader, "perspectiveFactor" ), perspectiveFactor );
 
-			// wip deferred rendering
+			// deferred rendering buffers
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
 			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
 			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
 
 			// snowglobe IoR
 			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
-
-			static rngi noiseOffset = rngi( 0, 512 );
-			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
 
 			glDispatchCompute( ( config.width + 7 ) / 8, ( config.height + 7 ) / 8, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
@@ -720,37 +769,25 @@ public:
 			const GLuint shader = shaders[ "Deferred Composite" ];
 			glUseProgram( shader );
 
-			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
+			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), frameBlendAmount );
 			glUniform1f( glGetUniformLocation( shader, "time" ), t );
 			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
 			glUniform1i( glGetUniformLocation( shader, "debugDrawMode" ), debugDrawMode );
 
-			static rngi noiseOffset = rngi( 0, 512 );
-			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );
-
-			// wip deferred rendering
+			// deferred rendering buffers
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
 			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
 			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
 
+			// volumetic light caches
+			textureManager.BindImageForShader( "Light Cache 1", "lightCache1", shader, 5 );
+			textureManager.BindImageForShader( "Light Cache 2", "lightCache2", shader, 6 );
+			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
+
 			// Light enable flags
 			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
-
-			// get a new light direction in the list... get rid of the last one
-			PushLightDirections();
-			lightDirectionQueue[ 0 ].pop_front();
-			lightDirectionQueue[ 1 ].pop_front();
-			lightDirectionQueue[ 2 ].pop_front();
-
-			// construct a vector of the data to send to GPU
-			vec3 lightDirections0[ 16 ];
-			vec3 lightDirections1[ 16 ];
-			vec3 lightDirections2[ 16 ];
-			for ( int i = 0; i < 16; i++ ) {
-				lightDirections0[ i ] = lightDirectionQueue[ 0 ][ i ];
-				lightDirections1[ i ] = lightDirectionQueue[ 1 ][ i ];
-				lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
-			}
 
 			// Key Light
 			glUniform3fv( glGetUniformLocation( shader, "lightDirections0" ), 16, glm::value_ptr( lightDirections0[ 0 ] ) );

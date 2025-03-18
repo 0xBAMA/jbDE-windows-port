@@ -6,9 +6,9 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
 layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
 layout( binding = 4, r32ui ) uniform uimage2D deferredResult3;
-layout( binding = 5, r32f ) uniform image2D lightCache1;
-layout( binding = 6, r32f ) uniform image2D lightCache2;
-layout( binding = 7, r32f ) uniform image2D lightCache3;
+layout( binding = 5, r32f ) uniform image3D lightCache1;
+layout( binding = 6, r32f ) uniform image3D lightCache2;
+layout( binding = 7, r32f ) uniform image3D lightCache3;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -313,6 +313,14 @@ void main () {
 			bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
 			overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
 		}
+	}
+
+	if ( Gbuffer1.w != NOHIT ) {
+		// add the volumetric light inscatter contribution
+			// direction for phase function could be average of the 16 jittered positions...
+
+		// stepping from texel's worldspace position, in the negative post-refract ray direction, accumulating like Voraldo
+
 	}
 
 	// get the final color, based on the contribution of up to three lights
