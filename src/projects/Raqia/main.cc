@@ -101,10 +101,10 @@ public:
 			}
 
 			// picking initial palettes
-			palette::PickRandomPalette( true );
+			palette::PickPaletteByLabel( "harshgreens" );
 			selectedPaletteGrass = palette::PaletteIndex;
 
-			palette::PickRandomPalette( true );
+			palette::PickPaletteByLabel( "sepia6" );
 			selectedPaletteTerrain = palette::PaletteIndex;
 
 			// generate the ground, grass, and buffer it to the GPU
