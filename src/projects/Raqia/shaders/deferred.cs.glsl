@@ -341,7 +341,11 @@ void main () {
 		imageStore( accumulatorTexture, writeLoc, vec4( vec3( uintBitsToFloat( Gbuffer2.x ) ), 1.0f ) );
 	break;
 
-	case 3:
+	case 3: // worldspace position
+		imageStore( accumulatorTexture, writeLoc, vec4( uintBitsToFloat( Gbuffer2.y ), uintBitsToFloat( Gbuffer2.z ), uintBitsToFloat( Gbuffer2.w ), 1.0f ) );
+	break;
+
+	case 4:
 		switch ( Gbuffer1.w ) {
 		case NOHIT:
 			color = vec3( 0.0f );

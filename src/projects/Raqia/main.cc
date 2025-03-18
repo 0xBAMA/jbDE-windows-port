@@ -625,7 +625,9 @@ public:
 				ImGui::SameLine();
 				ImGui::RadioButton( "Depth", &debugDrawMode, 2 );
 				ImGui::SameLine();
-				ImGui::RadioButton( "Surface ID", &debugDrawMode, 3 );
+				ImGui::RadioButton( "Position", &debugDrawMode, 3 );
+				ImGui::SameLine();
+				ImGui::RadioButton( "Surface ID", &debugDrawMode, 4 );
 				// todo: traversal step count
 
 				ImGui::EndTabItem();
