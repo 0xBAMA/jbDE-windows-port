@@ -1,6 +1,6 @@
 #include "../../engine/engine.h"
 
-class Raqia final : public engineBase { // sample derived from base engine class
+class Raqia final : public engineBase {
 public:
 	Raqia () { Init(); OnInit(); PostInit(); }
 	~Raqia () { Quit(); }
@@ -92,7 +92,7 @@ public:
 			glGenBuffers( 1, &triangleData_grass );
 
 			{
-				// create the new accumulator(s)
+				// create the deferred attachments
 				textureOptions_t opts;
 				opts.dataType = GL_RGBA32UI;
 				opts.width = config.width;
@@ -105,6 +105,20 @@ public:
 				textureManager.Add( "Deferred Target 2", opts );
 				opts.dataType = GL_R32UI;
 				textureManager.Add( "Deferred Target 3", opts );
+			}
+
+			{
+				// create the textures for caching the lighting
+				textureOptions_t opts;
+				opts.dataType = GL_R32F;
+				opts.width = opts.height = opts.depth = 256;
+				opts.minFilter = GL_LINEAR;
+				opts.magFilter = GL_LINEAR;
+				opts.textureType = GL_TEXTURE_3D;
+				opts.wrap = GL_CLAMP_TO_BORDER;
+				textureManager.Add( "Light Cache 1", opts );
+				textureManager.Add( "Light Cache 2", opts );
+				textureManager.Add( "Light Cache 3", opts );
 			}
 
 			// picking initial palettes
@@ -127,6 +141,7 @@ public:
 	void CompileShaders () {
 		shaders[ "Draw" ] = computeShader( "../src/projects/Raqia/shaders/draw.cs.glsl" ).shaderHandle;
 		shaders[ "Grass" ] = computeShader( "../src/projects/Raqia/shaders/grass.cs.glsl" ).shaderHandle;
+		shaders[ "Lighting" ] = computeShader( "../src/projects/Raqia/shaders/lighting.cs.glsl" ).shaderHandle;
 		shaders[ "Deferred Composite" ] = computeShader( "../src/projects/Raqia/shaders/deferred.cs.glsl" ).shaderHandle;
 	}
 

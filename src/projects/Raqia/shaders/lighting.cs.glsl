@@ -95,32 +95,19 @@ bool leafTestFunc ( vec3 origin, vec3 direction, uint index, inout float tmax, i
 uniform float time;
 uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
-uniform float terrainBrightnessScalar;
-uniform int debugDrawMode;
 
 // enable flags for the three lights
 uniform bvec3 lightEnable;
 
 // Key Light
 uniform vec3 lightDirections0[ 16 ];
-uniform vec4 lightColor0;
 
 // Fill Light
 uniform vec3 lightDirections1[ 16 ];
-uniform vec4 lightColor1;
 
 // Back Light
 uniform vec3 lightDirections2[ 16 ];
-uniform vec4 lightColor2;
 
-//=============================================================================================================================
-// bayer matrix for indexing into the queues
-const int bayerMatrix[ 16 ] = int [] (
-	 0,  8,  2, 10,
-	12,  4, 14,  6,
-	 3, 11,  1,  9,
-	15,  7, 13,  5
-);
 //=============================================================================================================================
 
 // vector axis/angle rotation, from https://suricrasia.online/blog/shader-functions/
@@ -202,170 +189,16 @@ vec4 SDFTrace ( vec3 origin, vec3 direction ) {
 //=============================================================================================================================
 
 void main () {
-	// solve for jittered pixel uv, aspect ratio adjust
-	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
+	// solve for voxel position, so that it spans the entire snowglobe
+	ivec3 writeLoc = ivec3( gl_GlobalInvocationID.xyz );
 
-	// we're now ready to load the the GBuffer data
+	// this will need to change to a jitter
+	vec3 worldSpace = 2.0f * ( vec3( writeLoc + 0.5f ) / imageSize( lightCache1 ).xyz ) - vec3( 1.0f );
 
-		// result 1
-			// .x is 4-byte encoded normal
-			// .y is 4-byte encoded post-refract ray direction
-			// .z is the uint primitive ID
-			// .w is signalling the surface ID ( really only using 3 bits right now, 0-5 )
+	// trace a ray for each light
 
-		// result 2
-			// .x is depth ( floatBitsToUint() encoded, need to unapply )
-			// .yzw is worldspace position, half floats were not sufficient
+	// load previous values
 
-		// result 3
-			// .x is packed UV
+	// mix and writeback
 
-	uvec4 Gbuffer1 = imageLoad( deferredResult1, writeLoc );
-	uvec4 Gbuffer2 = imageLoad( deferredResult2, writeLoc );
-	uvec4 Gbuffer3 = imageLoad( deferredResult3, writeLoc );
-
-	vec3 color = vec3( 0.0f );
-
-	// set base colors
-	switch ( Gbuffer1.w ) {
-	case NOHIT:
-	// rays that have not even hit the snowglobe
-		color = vec3( 0.0f );
-		break;
-
-	case SKIRTS:
-	// need to figure out the particulars on skirts color
-		color = vec3( 0.5f );
-		break;
-
-	case TERRAIN: {
-	// needs to load terrain color
-		uint index = 3 * Gbuffer1.z;
-		color = vec3( triangleData[ index + 0 ].w, triangleData[ index + 1 ].w, triangleData[ index + 2 ].w ) * terrainBrightnessScalar;
-		break;
-	}
-
-	case GRASS: {
-	// needs to load grass color + V component of triangle UV, to fade to black at the base of the blade
-		uint index = 4 * Gbuffer1.z;
-		color = vec3( triangleData2[ index + 0 ].w, triangleData2[ index + 1 ].w, triangleData2[ index + 2 ].w ) * ( 1.0f - unpackHalf2x16( Gbuffer3.x ).y );
-		break;
-	}
-
-	case SDF:
-	// SDF coloration
-		color = iron;
-		break;
-
-	case SPHERE:
-	// this needs to basically be clear
-		color = vec3( 0.0f, 0.3f, 0.8f );
-		break;
-
-	default:
-		break;
-	}
-
-	// small amount of ambient light
-	vec3 overallLightContribution = vec3( 0.01f );
-
-	// these are surfaces that need to calculate lighting
-	if ( Gbuffer1.w == TERRAIN || Gbuffer1.w == GRASS || Gbuffer1.w == SDF ) {
-
-		// based on the x and y pixel locations, index into the list of light directions
-		const int idx = bayerMatrix[ ( writeLoc.x % 4 ) + ( writeLoc.y % 4 ) * 4 ];
-
-		// surface normal
-		const vec3 normal = decode( Gbuffer1.x );
-
-		// test shadow rays in the light direction
-		vec3 rayOrigin = vec3( uintBitsToFloat( Gbuffer2.y ), uintBitsToFloat( Gbuffer2.z ), uintBitsToFloat( Gbuffer2.w ) );
-
-		if ( lightEnable.x ) { // first light - "key light"
-			vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections0[ idx ] );				// terrain
-			vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-			vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections0[ idx ] );					// grass
-			vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections0[ idx ] );				// sphere
-
-			// resolve whether we hit an occluder before leaving the sphere
-			bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-
-			// resolve color contribution ( N dot L diffuse term * shadow term )
-			overallLightContribution += lightColor0.rgb * lightColor0.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections0[ idx ] ), 0.01f, 1.0f );
-		}
-
-		if ( lightEnable.y ) { // same for second light - "fill light"
-			vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections1[ idx ] );				// terrain
-			vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-			vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections1[ idx ] );					// grass
-			vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections1[ idx ] );				// sphere
-
-			bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-			overallLightContribution += lightColor1.rgb * lightColor1.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections1[ idx ] ), 0.01f, 1.0f );
-		}
-
-		if ( lightEnable.z ) { // same for third light - "back light"
-			vec4 terrainShadowHit = terrainTrace( rayOrigin, lightDirections2[ idx ] );				// terrain
-			vec4 SDFShadowHit = SDFTrace( rayOrigin + epsilon * normal, lightDirections0[ idx ] );	// SDF
-			vec4 grassShadowHit = grassTrace( rayOrigin, lightDirections2[ idx ] );					// grass
-			vec4 sphereShadowHit = sphereTrace( rayOrigin, lightDirections2[ idx ] );				// sphere
-
-			bool inShadow = ( terrainShadowHit.x < sphereShadowHit.x ) || ( grassShadowHit.x < sphereShadowHit.x ) || ( SDFShadowHit.x < sphereShadowHit.x );
-			overallLightContribution += lightColor2.rgb * lightColor2.a * ( ( inShadow ) ? 0.005f : 1.0f ) * clamp( dot( normal, lightDirections2[ idx ] ), 0.01f, 1.0f );
-		}
-	}
-
-	// get the final color, based on the contribution of up to three lights
-	color = overallLightContribution * color;
-
-	switch ( debugDrawMode ) {
-	case 0: // normal functioning
-		// load previous color and blend with the result, write back to accumulator
-		vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-		imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
-	break;
-
-	case 1: // Gbuffer normal vector visualization
-		imageStore( accumulatorTexture, writeLoc, vec4( 0.5f * decode( Gbuffer1.x ) + 0.5f, 1.0f ) );
-	break;
-
-	case 2: // Gbuffer sphere-to-first-opaque distance
-		imageStore( accumulatorTexture, writeLoc, vec4( vec3( uintBitsToFloat( Gbuffer2.x ) ), 1.0f ) );
-	break;
-
-	case 3:
-		switch ( Gbuffer1.w ) {
-		case NOHIT:
-			color = vec3( 0.0f );
-			break;
-
-		case SKIRTS:
-			color = vec3( 0.1f );
-			break;
-
-		case TERRAIN:
-			color = vec3( 0.1f, 0.03f, 0.0f );
-			break;
-
-		case GRASS:
-			color = vec3( 0.2f, 1.0f, 0.0f );
-			break;
-
-		case SDF:
-			color = vec3( 0.4f, 0.1f, 0.4f );
-			break;
-
-		case SPHERE:
-			color = vec3( 0.0f, 0.3f, 0.8f );
-			break;
-
-		default:
-			break;
-		}
-		imageStore( accumulatorTexture, writeLoc, vec4( color, 1.0f ) );
-	break;
-
-	default: // draw nothing
-	break;
-	}
 }
