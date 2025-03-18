@@ -5,6 +5,7 @@ layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture; // moving away from using this, to a deferred setup
 layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
 layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
+layout( binding = 4, r32ui ) uniform uimage2D deferredResult3;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -203,6 +204,7 @@ void main () {
 	vec3 color = vec3( 0.0f, 0.0f, 0.0f );
 	uvec4 deferredResultValue1 = uvec4( 0u );
 	uvec4 deferredResultValue2 = uvec4( 0u );
+	uvec4 deferredResultValue3 = uvec4( 0u );
 
 	// initialize the surface ID, this will be kept unless updated later
 	deferredResultValue1.w = NOHIT;
@@ -297,9 +299,9 @@ void main () {
 					normal = normalize( cross( vertex1t - vertex0t, vertex2t - vertex0t ) );
 					bool frontFace = dot( normal, rayDirection ) < 0.0f;
 					normal = frontFace ? normal : -normal;
-					baseColor = terrainColor;
 					idx = floatBitsToUint( terrainPrimaryHit.w );
 					deferredResultValue1.w = TERRAIN;
+					deferredResultValue3.x = packHalf2x16( terrainPrimaryHit.yz );
 
 				} else if ( grassPrimaryHit.x == dClosest ) {
 
@@ -307,9 +309,10 @@ void main () {
 					normal = normalize( cross( vertex1g - vertex0g, vertex2g - vertex0g ) );
 					bool frontFace = dot( normal, rayDirection ) < 0.0f;
 					normal = frontFace ? normal : -normal;
-					baseColor = grassColor * ( 1.0f - grassPrimaryHit.z );
 					idx = floatBitsToUint( grassPrimaryHit.w );
 					deferredResultValue1.w = GRASS;
+					deferredResultValue3.x = packHalf2x16( grassPrimaryHit.yz );
+					// baseColor = grassColor * ( 1.0f - grassPrimaryHit.z );
 
 				} else if ( SDFPrimaryHit.x == dClosest ) {
 
@@ -359,4 +362,5 @@ void main () {
 	// very minimal perf hit, since it's not raster... single write per pixel
 	imageStore( deferredResult1, writeLoc, deferredResultValue1 );
 	imageStore( deferredResult2, writeLoc, deferredResultValue2 );
+	imageStore( deferredResult3, writeLoc, deferredResultValue3 );
 }

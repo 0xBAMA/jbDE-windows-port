@@ -98,6 +98,8 @@ public:
 				opts.wrap = GL_CLAMP_TO_BORDER;
 				textureManager.Add( "Deferred Target 1", opts );
 				textureManager.Add( "Deferred Target 2", opts );
+				opts.dataType = GL_R32UI;
+				textureManager.Add( "Deferred Target 3", opts );
 			}
 
 			// picking initial palettes
@@ -657,6 +659,7 @@ public:
 			// wip deferred rendering
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
 			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
+			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
 
 			// snowglobe IoR
 			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
@@ -690,6 +693,7 @@ public:
 			// wip deferred rendering
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
 			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
+			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
 
 			// Light enable flags
 			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );

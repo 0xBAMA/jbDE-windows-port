@@ -5,6 +5,7 @@ layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture; // moving away from using this, to a deferred setup
 layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
 layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
+layout( binding = 4, r32ui ) uniform uimage2D deferredResult3;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
@@ -219,8 +220,12 @@ void main () {
 			// .x is depth ( floatBitsToUint() encoded, need to unapply )
 			// .yzw is worldspace position
 
+		// result 3
+			// .x is packed UV
+
 	uvec4 Gbuffer1 = imageLoad( deferredResult1, writeLoc );
 	uvec4 Gbuffer2 = imageLoad( deferredResult2, writeLoc );
+	uvec4 Gbuffer3 = imageLoad( deferredResult3, writeLoc );
 
 	vec3 color = vec3( 0.0f );
 
