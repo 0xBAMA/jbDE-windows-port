@@ -59,6 +59,8 @@ public:
 	float maxDisplacement = 0.01f;
 	uint32_t maxGrassBlades = 1000000u;
 	float noiseContributionScalar = -0.8f;
+	float noiseScalarOctave1 = 10.0f;
+	float noiseScalarOctave2 = 33.0f;
 	float heightmapHeightScalar = 1.0f;
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
@@ -362,9 +364,8 @@ public:
 			tinybvh::bvhvec3 D( 0.0f, 0.0f, -1.0f );
 			tinybvh::Ray ray( O, D );
 
-			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + noiseContributionScalar * clip();
-			// float noiseRead = 1.0f;
+			float noiseRead = per.noise( O.x * noiseScalarOctave1, O.y * noiseScalarOctave1, 0.0f )
+				* per.noise( O.x * noiseScalarOctave2, O.y * noiseScalarOctave2, 0.4f ) + noiseContributionScalar * clip();
 			if ( noiseRead < 0.01f ) continue;
 
 			int steps = terrainBVH.Intersect( ray );
@@ -620,16 +621,21 @@ public:
 					GenerateLandscape();
 				}
 
-				ImGui::SeparatorText( "Erosion" );
+				ImGui::SeparatorText( "Terrain" );
+				// todo: picker for init method
 				ImGui::DragScalar( "##erosionsteps", ImGuiDataType_U32, &numErosionSteps, 1, NULL, NULL, "%d erosion steps" );
+				ImGui::SliderFloat( "Terrain Brightness Scalar", &terrainBrightnessScalar, 0.0f, 1.0f );
+				ImGui::Text( " " );
+				ColorPickerElement( paletteMinTerrain, paletteMaxTerrain, selectedPaletteTerrain, paletteColorLimitTerrain, "Terrain" );
+
 				ImGui::SeparatorText( "Grass" );
 				ImGui::DragScalar( "##grassblades", ImGuiDataType_U32, &maxGrassBlades, 50, NULL, NULL, "%d grass blades" );
 				ImGui::SliderFloat( "Noise Contribution", &noiseContributionScalar, -2.0f, 2.0f );
-
+				ImGui::SliderFloat( "Noise Scalar (Octave 1)", &noiseScalarOctave1, 0.0f, 50.0f );
+				ImGui::SliderFloat( "Noise Scalar (Octave 2)", &noiseScalarOctave2, 0.0f, 50.0f );
 				ImGui::Text( " " );
 				ColorPickerElement( paletteMinGrass, paletteMaxGrass, selectedPaletteGrass, paletteColorLimitGrass, "Grass" );
-				ImGui::Text( " " );
-				ColorPickerElement( paletteMinTerrain, paletteMaxTerrain, selectedPaletteTerrain, paletteColorLimitTerrain, "Terrain" );
+
 				ImGui::EndTabItem();
 			}
 

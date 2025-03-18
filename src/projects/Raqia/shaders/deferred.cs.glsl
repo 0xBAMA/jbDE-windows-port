@@ -369,5 +369,8 @@ void main () {
 		}
 		imageStore( accumulatorTexture, writeLoc, vec4( color, 1.0f ) );
 	break;
+
+	default: // draw nothing
+	break;
 	}
 }
