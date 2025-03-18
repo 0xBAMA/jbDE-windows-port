@@ -324,5 +324,49 @@ void main () {
 
 	// load previous color and blend with the result, write back to accumulator
 	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-	imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
+
+
+	#define MODE 0
+
+	#if MODE==0
+		// regular color
+		imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
+	#elif MODE==1
+		// normal
+		imageStore( accumulatorTexture, writeLoc, vec4( 0.5f * decode( Gbuffer1.x ) + 1.0f, 1.0f ) );
+	#elif MODE==2
+		// depth
+		imageStore( accumulatorTexture, writeLoc, vec4( vec3( uintBitsToFloat( Gbuffer2.x ) ), 1.0f ) );
+	#elif MODE==3
+		switch ( Gbuffer1.w ) {
+		case NOHIT:
+			color = vec3( 0.0f );
+			break;
+
+		case SKIRTS:
+			color = vec3( 0.1f );
+			break;
+
+		case TERRAIN:
+			color = vec3( 0.1f, 0.03f, 0.0f );
+			break;
+
+		case GRASS:
+			color = vec3( 0.2f, 1.0f, 0.0f );
+			break;
+
+		case SDF:
+			color = vec3( 0.4f, 0.1f, 0.4f );
+			break;
+
+		case SPHERE:
+			color = vec3( 0.0f, 0.3f, 0.8f );
+			break;
+
+		default:
+			break;
+		}
+		imageStore( accumulatorTexture, writeLoc, vec4( color, 1.0f ) );
+	#endif
+
 }
