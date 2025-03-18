@@ -57,6 +57,7 @@ public:
 
 	float maxDisplacement = 0.01f;
 	uint32_t maxGrassBlades = 1000000u;
+	float noiseContributionScalar = -0.8f;
 	float heightmapHeightScalar = 1.0f;
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
@@ -360,7 +361,7 @@ public:
 			tinybvh::Ray ray( O, D );
 
 			// if ( ( per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) ) > clip() ) continue;
-			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + clip();
+			float noiseRead = per.noise( O.x * 10.0f, O.y * 10.0f, 0.0f ) * per.noise( O.x * 33.0f, O.y * 33.0f, 0.4f ) + noiseContributionScalar * clip();
 			// float noiseRead = 1.0f;
 			if ( noiseRead < 0.01f ) continue;
 
@@ -603,10 +604,11 @@ public:
 					GenerateLandscape();
 				}
 
-				ImGui::Separator();
-				ImGui::DragScalar( "##grassblades", ImGuiDataType_U32, &maxGrassBlades, 50, NULL, NULL, "%d grass blades" );
+				ImGui::SeparatorText( "Erosion" );
 				ImGui::DragScalar( "##erosionsteps", ImGuiDataType_U32, &numErosionSteps, 1, NULL, NULL, "%d erosion steps" );
-				ImGui::Separator();
+				ImGui::SeparatorText( "Grass" );
+				ImGui::DragScalar( "##grassblades", ImGuiDataType_U32, &maxGrassBlades, 50, NULL, NULL, "%d grass blades" );
+				ImGui::SliderFloat( "Noise Contribution", &noiseContributionScalar, -2.0f, 2.0f );
 
 				ImGui::Text( " " );
 				ColorPickerElement( paletteMinGrass, paletteMaxGrass, selectedPaletteGrass, paletteColorLimitGrass, "Grass" );
