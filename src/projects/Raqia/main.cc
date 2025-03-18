@@ -33,6 +33,7 @@ public:
 	bool screenshotRequested = false;
 	float globeIoR = 1.4f;
 	float perspectiveFactor = 0.0f;
+	int debugDrawMode = 0;
 
 	// parameters for 3 lights
 	vec2 thetaPhi_lightDirection[ 3 ] = { vec2( 0.0f ) };
@@ -599,6 +600,15 @@ public:
 				ImGui::SliderFloat( "Snowglobe IoR", &globeIoR, 0.7f, 2.0f );
 				ImGui::SliderFloat( "Perspective Factor", &perspectiveFactor, -2.0f, 2.0f );
 
+				ImGui::SeparatorText( "Debug Visual" );
+				ImGui::RadioButton( "None", &debugDrawMode, 0 );
+				ImGui::SameLine();
+				ImGui::RadioButton( "Normal", &debugDrawMode, 1 );
+				ImGui::SameLine();
+				ImGui::RadioButton( "Depth", &debugDrawMode, 2 );
+				ImGui::SameLine();
+				ImGui::RadioButton( "Surface ID", &debugDrawMode, 3 );
+
 				ImGui::EndTabItem();
 			}
 
@@ -695,6 +705,7 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
+			glUniform1i( glGetUniformLocation( shader, "debugDrawMode" ), debugDrawMode );
 
 			static rngi noiseOffset = rngi( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), noiseOffset(), noiseOffset() );

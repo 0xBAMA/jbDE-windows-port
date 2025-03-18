@@ -97,6 +97,7 @@ uniform ivec2 blueNoiseOffset;
 uniform ivec2 uvOffset;
 uniform float globeIoR;
 uniform float terrainBrightnessScalar;
+uniform int debugDrawMode;
 
 // enable flags for the three lights
 uniform bvec3 lightEnable;
@@ -322,22 +323,22 @@ void main () {
 	// get the final color, based on the contribution of up to three lights
 	color = overallLightContribution * color;
 
-	// load previous color and blend with the result, write back to accumulator
-	vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
-
-
-	#define MODE 0
-
-	#if MODE==0
-		// regular color
+	switch ( debugDrawMode ) {
+	case 0: // normal functioning
+		// load previous color and blend with the result, write back to accumulator
+		vec4 previousColor = imageLoad( accumulatorTexture, writeLoc );
 		imageStore( accumulatorTexture, writeLoc, mix( vec4( color, 1.0f ), previousColor, blendAmount ) );
-	#elif MODE==1
-		// normal
-		imageStore( accumulatorTexture, writeLoc, vec4( 0.5f * decode( Gbuffer1.x ) + 1.0f, 1.0f ) );
-	#elif MODE==2
-		// depth
+	break;
+
+	case 1: // Gbuffer normal vector visualization
+		imageStore( accumulatorTexture, writeLoc, vec4( 0.5f * decode( Gbuffer1.x ) + 0.5f, 1.0f ) );
+	break;
+
+	case 2: // Gbuffer sphere-to-first-opaque distance
 		imageStore( accumulatorTexture, writeLoc, vec4( vec3( uintBitsToFloat( Gbuffer2.x ) ), 1.0f ) );
-	#elif MODE==3
+	break;
+
+	case 3:
 		switch ( Gbuffer1.w ) {
 		case NOHIT:
 			color = vec3( 0.0f );
@@ -367,6 +368,6 @@ void main () {
 			break;
 		}
 		imageStore( accumulatorTexture, writeLoc, vec4( color, 1.0f ) );
-	#endif
-
+	break;
+	}
 }
