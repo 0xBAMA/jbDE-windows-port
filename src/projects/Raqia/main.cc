@@ -665,6 +665,9 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
+		// make sure that each shader gets the same time value
+		const float t = SDL_GetTicks() / 1600.0f;
+
 		{ // prepare the Gbuffers
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
@@ -677,7 +680,7 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 			glUniform1f( glGetUniformLocation( shader, "DoFRadius" ), DoFRadius );
 			glUniform1f( glGetUniformLocation( shader, "DoFDistance" ), DoFDistance );
-			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "time" ), t );
 			glUniform1f( glGetUniformLocation( shader, "perspectiveFactor" ), perspectiveFactor );
 
 			// wip deferred rendering
@@ -703,7 +706,7 @@ public:
 			glUseProgram( shader );
 
 			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), blendAmount );
-			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "time" ), t );
 			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
 			glUniform1i( glGetUniformLocation( shader, "debugDrawMode" ), debugDrawMode );
 
