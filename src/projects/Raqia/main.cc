@@ -43,6 +43,7 @@ public:
 	ivec3 lightEnable = ivec3( 1, 0, 0 );
 	int lightCacheSize = 256;
 	float lightBlendAmount = 0.75f;
+	float ambientLightLevel = 0.001f;
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -64,7 +65,7 @@ public:
 	float noiseScalarOctave1 = 10.0f;
 	float noiseScalarOctave2 = 33.0f;
 	float heightmapHeightScalar = 1.0f;
-	float heightmapHeightOffset = -0.5f;
+	float heightmapHeightOffset = 0.0f;
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
 	uint32_t numErosionSteps = 0u;
@@ -613,6 +614,7 @@ public:
 				if ( ImGui::Button( "Capture" ) ) {
 					screenshotRequested = true;
 				}
+				ImGui::SliderFloat( "Ambient Light Level", &ambientLightLevel, 0.0f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Frame Blend Amount", &frameBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Lighting Blend Amount", &lightBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
@@ -789,6 +791,9 @@ public:
 			textureManager.BindImageForShader( "Light Cache 1", "lightCache1", shader, 5 );
 			textureManager.BindImageForShader( "Light Cache 2", "lightCache2", shader, 6 );
 			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
+
+			// ambient light level
+			glUniform1f( glGetUniformLocation( shader, "ambientLightLevel" ), ambientLightLevel );
 
 			// Light enable flags
 			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );

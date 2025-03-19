@@ -97,6 +97,7 @@ uniform float blendAmount;
 uniform ivec2 blueNoiseOffset;
 uniform float terrainBrightnessScalar;
 uniform int debugDrawMode;
+uniform float ambientLightLevel;
 
 // enable flags for the three lights
 uniform bvec3 lightEnable;
@@ -267,7 +268,7 @@ void main () {
 	}
 
 	// small amount of ambient light
-	vec3 overallLightContribution = vec3( 0.0f );
+	vec3 overallLightContribution = vec3( ambientLightLevel );
 
 	// these are surfaces that need to calculate lighting
 	if ( Gbuffer1.w == TERRAIN || Gbuffer1.w == GRASS || Gbuffer1.w == SDF ) {
