@@ -623,3 +623,15 @@ target_link_libraries( Raqia
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Voraldo13 port - RGBA direct volume graphics editor and renderer with various lighting utilities
+# =================================================================================================
+add_executable( Voraldo13
+	src/projects/Voraldo13/main.cc
+)
+
+target_link_libraries( Voraldo13
+	PUBLIC
+	engineBase
+)
