@@ -64,6 +64,7 @@ public:
 	float noiseScalarOctave1 = 10.0f;
 	float noiseScalarOctave2 = 33.0f;
 	float heightmapHeightScalar = 1.0f;
+	float heightmapHeightOffset = -0.5f;
 	int heightmapDimension = 512;
 	int heightmapGenerateMethod = 0;
 	uint32_t numErosionSteps = 0u;
@@ -228,7 +229,7 @@ public:
 					p.model.GetAtXY( x + 1,     y )[ red ], // B
 					p.model.GetAtXY(     x, y + 1 )[ red ], // C
 					p.model.GetAtXY( x + 1, y + 1 )[ red ]  // D
-				) / heightmapHeightScalar;
+				) / heightmapHeightScalar + vec4( heightmapHeightOffset );
 
 				vec4 heightValuesPreErode = vec4(
 					modelCache.GetAtXY( x, y )[ red ], // A
@@ -612,7 +613,8 @@ public:
 				if ( ImGui::Button( "Capture" ) ) {
 					screenshotRequested = true;
 				}
-				ImGui::SliderFloat( "Blend Amount", &frameBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SliderFloat( "Frame Blend Amount", &frameBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::SliderFloat( "Lighting Blend Amount", &lightBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
 				ImGui::SliderFloat( "Thin Lens Defocus Amount", &DoFRadius, 0.1f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Snowglobe IoR", &globeIoR, 0.7f, 2.0f );
