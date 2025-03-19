@@ -30,6 +30,9 @@ vec3 anglePhong( float a, vec3 n ){
 	return normalize( x * T + y * B + z * N );
 }
 //=============================================================================================================================
+// look at these for a potentially better fresnel approximation:
+// https://samdriver.xyz/article/refraction-sphere
+// https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
 float Reflectance ( const float cosTheta, const float IoR ) {
 	// Use Schlick's approximation for reflectance
 	float r0 = ( 1.0f - IoR ) / ( 1.0f + IoR );
