@@ -43,7 +43,7 @@ public:
 	ivec3 lightEnable = ivec3( 1, 0, 0 );
 	int lightCacheSize = 256;
 	float lightBlendAmount = 0.75f;
-	float ambientLightLevel = 0.001f;
+	vec4 ambientLightLevel = vec4( 1.0f, 1.0f, 1.0f, 0.001f );
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -580,6 +580,12 @@ public:
 			if ( ImGui::BeginTabItem( " Rendering " ) ) {
 
 				ImGui::SeparatorText( "Lights" );
+
+				ImGui::Text( "Ambient" );
+				ImGui::ColorEdit3( "Color##Ambient", ( float* ) &ambientLightLevel[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+				ImGui::SliderFloat( "Brightness##ambient", &ambientLightLevel[ 3 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+				ImGui::Text( " " );
 				ImGui::Text( "Key Light" );
 				ImGui::SameLine();
 				ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
@@ -614,7 +620,6 @@ public:
 				if ( ImGui::Button( "Capture" ) ) {
 					screenshotRequested = true;
 				}
-				ImGui::SliderFloat( "Ambient Light Level", &ambientLightLevel, 0.0f, 0.1f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Frame Blend Amount", &frameBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Lighting Blend Amount", &lightBlendAmount, 0.75f, 0.99f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::SliderFloat( "Thin Lens Focus Distance", &DoFDistance, 0.1f, 6.0f, "%.5f" );
@@ -793,7 +798,7 @@ public:
 			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
 
 			// ambient light level
-			glUniform1f( glGetUniformLocation( shader, "ambientLightLevel" ), ambientLightLevel );
+			glUniform4fv( glGetUniformLocation( shader, "ambientLightLevel" ), 1, glm::value_ptr( ambientLightLevel ) );
 
 			// Light enable flags
 			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );
