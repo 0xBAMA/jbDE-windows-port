@@ -717,9 +717,9 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "blendAmount" ), lightBlendAmount );
 
 			// volumetic light caches
-			textureManager.BindImageForShader( "Light Cache 1", "lightCache1", shader, 5 );
-			textureManager.BindImageForShader( "Light Cache 2", "lightCache2", shader, 6 );
-			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
+			textureManager.BindTexForShader( "Light Cache 1", "lightCache1", shader, 5 );
+			textureManager.BindTexForShader( "Light Cache 2", "lightCache2", shader, 6 );
+			textureManager.BindTexForShader( "Light Cache 3", "lightCache3", shader, 7 );
 
 			// Light enable flags
 			glUniform3iv( glGetUniformLocation( shader, "lightEnable" ), 1, ( const GLint* ) &lightEnable );

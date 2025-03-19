@@ -6,9 +6,9 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 layout( binding = 2, rgba32ui ) uniform uimage2D deferredResult1;
 layout( binding = 3, rgba32ui ) uniform uimage2D deferredResult2;
 layout( binding = 4, r32ui ) uniform uimage2D deferredResult3;
-layout( binding = 5, r32f ) uniform image3D lightCache1;
-layout( binding = 6, r32f ) uniform image3D lightCache2;
-layout( binding = 7, r32f ) uniform image3D lightCache3;
+layout( binding = 5 ) uniform sampler3D lightCache1;
+layout( binding = 6 ) uniform sampler3D lightCache2;
+layout( binding = 7 ) uniform sampler3D lightCache3;
 //=============================================================================================================================
 // gpu-side code for ray-BVH traversal
 	// used for computing rD, reciprocal direction
