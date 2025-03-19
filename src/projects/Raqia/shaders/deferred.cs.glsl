@@ -98,6 +98,12 @@ uniform ivec2 blueNoiseOffset;
 uniform float terrainBrightnessScalar;
 uniform int debugDrawMode;
 
+// volumetrics enable/disable
+uniform bool volumetricsEnable;
+
+// volumetrics color and density
+uniform vec4 volumeColor;
+
 // light level applied to all geometry
 uniform vec4 ambientLightLevel;
 
@@ -321,7 +327,7 @@ void main () {
 	// get the shaded color, based on the contribution of up to three lights
 	color = overallLightContribution * color;
 
-	if ( Gbuffer1.w != NOHIT ) {
+	if ( Gbuffer1.w != NOHIT && volumetricsEnable ) {
 		// add the volumetric light inscatter contribution
 			// direction for phase function could be average of the 16 jittered positions... tbd, starting with Voraldo style blending
 		vec3 startingPosition = vec3( uintBitsToFloat( Gbuffer2.y ), uintBitsToFloat( Gbuffer2.z ), uintBitsToFloat( Gbuffer2.w ) );
@@ -329,7 +335,6 @@ void main () {
 
 		// stepping from texel's worldspace position, in the negative post-refract ray direction, accumulating like Voraldo
 		vec4 blueNoiseValues = blue();
-		const float volumeDensity = 0.0001f; // probably needs to be user controllable
 
 		// compute step size
 		const int numSteps = 400;
@@ -352,8 +357,8 @@ void main () {
 
 		for ( int i = 0; i < numSteps; i++ ) {
 			if ( tCurrent < maxDistance ) {
-				colorComposite.a = max( volumeDensity + colorComposite.a * ( 1.0f - volumeDensity ), 0.001f );
-				colorComposite.rgb = ( colorSample.rgb * volumeDensity + colorComposite.rgb * colorComposite.a * ( 1.0f - volumeDensity ) ) / colorComposite.a;
+				colorComposite.a = max( volumeColor.a + colorComposite.a * ( 1.0f - volumeColor.a ), 0.001f );
+				colorComposite.rgb = ( colorSample.rgb * volumeColor.rgb * volumeColor.a + colorComposite.rgb * colorComposite.a * ( 1.0f - volumeColor.a ) ) / colorComposite.a;
 				tCurrent += stepSize;
 				samplePosition = ( startingPosition + tCurrent * direction ) / 2.0f + vec3( 0.5f );
 				shadowReads = vec3(

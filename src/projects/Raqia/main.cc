@@ -44,6 +44,8 @@ public:
 	int lightCacheSize = 256;
 	float lightBlendAmount = 0.75f;
 	vec4 ambientLightLevel = vec4( 1.0f, 1.0f, 1.0f, 0.001f );
+	vec4 volumeColor = vec4( 1.0f, 1.0f, 1.0f, 0.0001f );
+	bool volumetricsEnable = true;
 
 	// the running deque of jittered light positions
 	std::deque< vec3 >lightDirectionQueue[ 3 ];
@@ -584,6 +586,9 @@ public:
 				ImGui::Text( "Ambient" );
 				ImGui::ColorEdit3( "Color##Ambient", ( float* ) &ambientLightLevel[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
 				ImGui::SliderFloat( "Brightness##ambient", &ambientLightLevel[ 3 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::Checkbox( "Enable Volumetrics", &volumetricsEnable );
+				ImGui::ColorEdit3( "Color##Volumetrics", ( float* ) &volumeColor[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
+				ImGui::SliderFloat( "Brightness##Volumetrics", &volumeColor[ 3 ], 0.0f, 0.01f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
 				ImGui::Text( " " );
 				ImGui::Text( "Key Light" );
@@ -712,7 +717,7 @@ public:
 			lightDirections2[ i ] = lightDirectionQueue[ 2 ][ i ];
 		}
 
-		{ // updating the volumetric lighting
+		if ( volumetricsEnable ) { // updating the volumetric lighting
 			scopedTimer Start( "Lighting" );
 			bindSets[ "Drawing" ].apply();
 			const GLuint shader = shaders[ "Lighting" ];
@@ -786,6 +791,8 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "time" ), t );
 			glUniform1f( glGetUniformLocation( shader, "terrainBrightnessScalar" ), terrainBrightnessScalar );
 			glUniform1i( glGetUniformLocation( shader, "debugDrawMode" ), debugDrawMode );
+			glUniform4fv( glGetUniformLocation( shader, "volumeColor" ), 1, glm::value_ptr( volumeColor ) );
+			glUniform1i( glGetUniformLocation( shader, "volumetricsEnable" ), volumetricsEnable );
 
 			// deferred rendering buffers
 			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
