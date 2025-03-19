@@ -315,16 +315,56 @@ void main () {
 		}
 	}
 
+	// get the shaded color, based on the contribution of up to three lights
+	color = overallLightContribution * color;
+
 	if ( Gbuffer1.w != NOHIT ) {
 		// add the volumetric light inscatter contribution
-			// direction for phase function could be average of the 16 jittered positions...
+			// direction for phase function could be average of the 16 jittered positions... tbd, starting with Voraldo style blending
+		vec3 startingPosition = vec3( uintBitsToFloat( Gbuffer2.y ), uintBitsToFloat( Gbuffer2.z ), uintBitsToFloat( Gbuffer2.w ) );
+		vec3 direction = -decode( Gbuffer1.y );
 
 		// stepping from texel's worldspace position, in the negative post-refract ray direction, accumulating like Voraldo
+		vec4 blueNoiseValues = blue();
+		const float volumeDensity = 0.0001f; // probably needs to be user controllable
 
+		// compute step size
+		const int numSteps = 400;
+		const float maxDistance = uintBitsToFloat( Gbuffer2.x );
+		const float stepSize = max( maxDistance / numSteps, 0.001f );
+
+		float tCurrent = blue().x;
+
+		// get some initial samples
+		vec3 samplePosition = ( startingPosition + tCurrent * direction ) / 2.0f + vec3( 0.5f );
+		vec3 shadowReads = vec3(
+			texture( lightCache1, samplePosition ).r,
+			texture( lightCache2, samplePosition ).r,
+			texture( lightCache3, samplePosition ).r
+		);
+		vec3 colorSample = lightColor0.rgb * lightColor0.a * shadowReads.x + lightColor1.rgb * lightColor1.a * shadowReads.y + lightColor2.rgb * lightColor2.a * shadowReads.z;
+
+		// assuming the incoming alpha is 1.0, can this be simplified?
+		vec4 colorComposite = vec4( color, 1.0f );
+
+		for ( int i = 0; i < numSteps; i++ ) {
+			if ( tCurrent < maxDistance ) {
+				colorComposite.a = max( volumeDensity + colorComposite.a * ( 1.0f - volumeDensity ), 0.001f );
+				colorComposite.rgb = ( colorSample.rgb * volumeDensity + colorComposite.rgb * colorComposite.a * ( 1.0f - volumeDensity ) ) / colorComposite.a;
+				tCurrent += stepSize;
+				samplePosition = ( startingPosition + tCurrent * direction ) / 2.0f + vec3( 0.5f );
+				shadowReads = vec3(
+					texture( lightCache1, samplePosition ).r,
+					texture( lightCache2, samplePosition ).r,
+					texture( lightCache3, samplePosition ).r
+				);
+				colorSample = lightColor0.rgb * lightColor0.a * shadowReads.x + lightColor1.rgb * lightColor1.a * shadowReads.y + lightColor2.rgb * lightColor2.a * shadowReads.z;
+			}
+		}
+
+		// need to see if there is room on this for some simplification
+		color = colorComposite.rgb;
 	}
-
-	// get the final color, based on the contribution of up to three lights
-	color = overallLightContribution * color;
 
 	switch ( debugDrawMode ) {
 	case 0: // normal functioning
