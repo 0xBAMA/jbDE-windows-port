@@ -193,30 +193,55 @@ void main () {
 	ivec3 writeLoc = ivec3( gl_GlobalInvocationID.xyz );
 
 	// this will need to change to a jitter
-	vec3 worldSpace = 2.0f * ( vec3( writeLoc + 0.5f ) / imageSize( lightCache1 ).xyz ) - vec3( 1.0f );
+	vec3 worldSpace = 2.0f * ( vec3( writeLoc + blue().xyz ) / imageSize( lightCache1 ).xyz ) - vec3( 1.0f );
 
-	// load previous values
-	vec3 previousValues = vec3(
-		imageLoad( lightCache1, writeLoc ).x,
-		imageLoad( lightCache2, writeLoc ).x,
-		imageLoad( lightCache3, writeLoc ).x
-	);
+	// reject out-of-sphere texels - potentially check SDF, here, too, since that's not very expensive
+	if ( distance( worldSpace, vec3( 0.0f ) ) < 1.01 ) {
 
-	// maybe find some way to shuffle this at some point... alternatively, check against all 16? We can do a 3d sequence like the bayer thing
-	const int idx = 0;
+		// load previous values
+		vec3 previousValues = vec3(
+			imageLoad( lightCache1, writeLoc ).x,
+			imageLoad( lightCache2, writeLoc ).x,
+			imageLoad( lightCache3, writeLoc ).x
+		);
 
-	// trace a ray for each enabled light
-	if ( lightEnable.x ) {
-		// trace against potential occluders
-		vec4 terrainShadowHit = terrainTrace( worldSpace, lightDirections0[ idx ] );	// terrain
-		vec4 SDFShadowHit = SDFTrace( worldSpace, lightDirections0[ idx ] );			// SDF
-		vec4 grassShadowHit = grassTrace( worldSpace, lightDirections0[ idx ] );		// grass
-		vec4 sphereShadowHit = sphereTrace( worldSpace, lightDirections0[ idx ] );		// sphere
+		// maybe find some way to shuffle this at some point...
+			// alternatively, check against all 16? We can do a 3d sequence like the bayer thing to reduce the number of updated texels per frame
+		const int idx = 0;
 
-		// occlusion determination
-		bool occluded = ( min( min( terrainShadowHit.x, SDFShadowHit.x ), grassShadowHit.x ) < sphereShadowHit.x );
+		// trace a ray for each enabled light
+		if ( lightEnable.x ) {
+			// trace against potential occluders
+			vec4 terrainShadowHit = terrainTrace( worldSpace, lightDirections0[ idx ] );	// terrain
+			vec4 SDFShadowHit = SDFTrace( worldSpace, lightDirections0[ idx ] );			// SDF
+			vec4 grassShadowHit = grassTrace( worldSpace, lightDirections0[ idx ] );		// grass
+			vec4 sphereShadowHit = sphereTrace( worldSpace, lightDirections0[ idx ] );		// sphere
 
-		// mix and writeback
-		imageStore( lightCache1, writeLoc, vec4( mix( previousValues.x, occluded ? 0.0f : 1.0f, blendAmount ) ) );
+			// occlusion determination
+			bool occluded = ( min( min( terrainShadowHit.x, SDFShadowHit.x ), grassShadowHit.x ) < sphereShadowHit.x );
+
+			// mix and writeback
+			imageStore( lightCache1, writeLoc, vec4( mix( occluded ? 0.0f : 1.0f, previousValues.x, blendAmount ) ) );
+		}
+
+		if ( lightEnable.y ) {
+			vec4 terrainShadowHit = terrainTrace( worldSpace, lightDirections1[ idx ] );	// terrain
+			vec4 SDFShadowHit = SDFTrace( worldSpace, lightDirections1[ idx ] );			// SDF
+			vec4 grassShadowHit = grassTrace( worldSpace, lightDirections1[ idx ] );		// grass
+			vec4 sphereShadowHit = sphereTrace( worldSpace, lightDirections1[ idx ] );		// sphere
+
+			bool occluded = ( min( min( terrainShadowHit.x, SDFShadowHit.x ), grassShadowHit.x ) < sphereShadowHit.x );
+			imageStore( lightCache2, writeLoc, vec4( mix( occluded ? 0.0f : 1.0f, previousValues.y, blendAmount ) ) );
+		}
+
+		if ( lightEnable.z ) {
+			vec4 terrainShadowHit = terrainTrace( worldSpace, lightDirections2[ idx ] );	// terrain
+			vec4 SDFShadowHit = SDFTrace( worldSpace, lightDirections2[ idx ] );			// SDF
+			vec4 grassShadowHit = grassTrace( worldSpace, lightDirections2[ idx ] );		// grass
+			vec4 sphereShadowHit = sphereTrace( worldSpace, lightDirections2[ idx ] );		// sphere
+
+			bool occluded = ( min( min( terrainShadowHit.x, SDFShadowHit.x ), grassShadowHit.x ) < sphereShadowHit.x );
+			imageStore( lightCache3, writeLoc, vec4( mix( occluded ? 0.0f : 1.0f, previousValues.z, blendAmount ) ) );
+		}
 	}
 }
