@@ -767,9 +767,9 @@ public:
 			glUniform1f( glGetUniformLocation( shader, "perspectiveFactor" ), perspectiveFactor );
 
 			// deferred rendering buffers
-			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
-			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
-			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
+			textureManager.Bind( "Deferred Target 1", 2 );
+			textureManager.Bind( "Deferred Target 2", 3 );
+			textureManager.Bind( "Deferred Target 3", 4 );
 
 			// snowglobe IoR
 			glUniform1f( glGetUniformLocation( shader, "globeIoR" ), globeIoR );
@@ -795,14 +795,14 @@ public:
 			glUniform1i( glGetUniformLocation( shader, "volumetricsEnable" ), volumetricsEnable );
 
 			// deferred rendering buffers
-			textureManager.BindImageForShader( "Deferred Target 1", "deferredResult1", shader, 2 );
-			textureManager.BindImageForShader( "Deferred Target 2", "deferredResult2", shader, 3 );
-			textureManager.BindImageForShader( "Deferred Target 3", "deferredResult3", shader, 4 );
+			textureManager.Bind( "Deferred Target 1", 2 );
+			textureManager.Bind( "Deferred Target 2", 3 );
+			textureManager.Bind( "Deferred Target 3", 4 );
 
 			// volumetic light caches
-			textureManager.BindImageForShader( "Light Cache 1", "lightCache1", shader, 5 );
-			textureManager.BindImageForShader( "Light Cache 2", "lightCache2", shader, 6 );
-			textureManager.BindImageForShader( "Light Cache 3", "lightCache3", shader, 7 );
+			textureManager.Bind( "Light Cache 1", 5 );
+			textureManager.Bind( "Light Cache 2", 6 );
+			textureManager.Bind( "Light Cache 3", 7 );
 
 			// ambient light level
 			glUniform4fv( glGetUniformLocation( shader, "ambientLightLevel" ), 1, glm::value_ptr( ambientLightLevel ) );

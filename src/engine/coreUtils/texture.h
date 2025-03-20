@@ -300,7 +300,7 @@ struct textureOptions_t {
 	GLsizei width = 0;
 	GLsizei height = 0;
 	GLsizei depth = 1;	// will become relevant with 3d textures
-	GLsizei layers = 1;	// not technically correctly handled right now, ignores value
+	GLsizei layers = 1;	// not technically correctly handled right now, ignores value... 2D array texture is using depth, not layers...
 
 // filtering - default to nearest filtering
 	GLint minFilter = GL_NEAREST;
@@ -484,6 +484,11 @@ public:
 
 // I think this is the way we're going to use this now...
 	// additionally, we can drop the glUniform1i if using layout qualifiers in the shader code
+
+	// I'd like to have something here that's just like, Bind( string label, int binding ), with some default arguments for glBindImageTexture(), like what the bindsets were doing
+	void Bind ( string label, int location, int level = 0, GLuint access = GL_READ_WRITE ) { // is not equivalent for textures, not sure what's going on with that
+		glBindImageTexture( location, Get( label ), level, GL_TRUE, 0, access, GetType( label ) );
+	}
 
 	// so an example call is textureManager.BindTexForShader( "Display Texture", "current", shaders[ "Display" ], 0 );
 	void BindTexForShader ( string label, const string shaderSampler, const GLuint shader, int location ) {
