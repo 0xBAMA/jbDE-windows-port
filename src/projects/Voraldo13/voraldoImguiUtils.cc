@@ -2581,6 +2581,16 @@ void Voraldo13::MenuPostProcessingSettings () {
 	ImGui::SliderFloat( "Gamma", &tonemap.gamma, 0.0f, 3.0f );
 	ImGui::SliderFloat( "Color Temperature", &tonemap.colorTemp, 1000.0f, 40000.0f, "%.2f", ImGuiSliderFlags_Logarithmic );
 	ImGui::Combo( "Tonemapping Mode", &tonemap.tonemapMode, tonemapModesList, IM_ARRAYSIZE( tonemapModesList ) );
+	ImGui::SliderFloat( "PostExposure", &tonemap.postExposure, 0.0f, 5.0f );
+	ImGui::SliderFloat( "Saturation", &tonemap.saturation, 0.0f, 4.0f );
+	ImGui::Checkbox( "Saturation Uses Improved Weight Vector", &tonemap.saturationImprovedWeights );
+	ImGui::Checkbox( "Enable Vignette", &tonemap.enableVignette );
+	if ( tonemap.enableVignette ) {
+		ImGui::SliderFloat( "Vignette Power", &tonemap.vignettePower, 0.0f, 2.0f );
+	}
+	if ( ImGui::Button( "Reset to Defaults" ) ) {
+		TonemapDefaults();
+	}
 
 	OrangeText( "Dithering" );
 

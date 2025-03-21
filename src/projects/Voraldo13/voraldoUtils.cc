@@ -37,7 +37,7 @@ void Voraldo13::CompileShaders () {
 	shaders[ "Ambient Occlusion" ] = computeShader( base + "lighting/ambientOcclusion.cs.glsl" ).shaderHandle;
 
 	// color adjustments - uses custom tonemap shader
-	// shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
+	shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Quantize" ] = computeShader( base + "ditherQuantize.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Palette" ] = computeShader( base + "ditherPalette.cs.glsl" ).shaderHandle;
 
@@ -493,12 +493,52 @@ void Voraldo13::SendRaymarchParameters() {
 	glUniform1f( glGetUniformLocation( shader, "thinLensFocusDist" ), render.thinLensFocusDist );
 }
 
-/*
 void Voraldo13::SendTonemappingParameters() {
 	ZoneScoped;
+	/*
 	const GLuint shader = shaders[ "Tonemap" ];
 	glUniform3fv( glGetUniformLocation( shader, "colorTempAdjust" ), 1, glm::value_ptr( GetColorForTemperature( tonemap.colorTemp ) ) );
 	glUniform1i( glGetUniformLocation( shader, "tonemapMode" ), tonemap.tonemapMode );
 	glUniform1f( glGetUniformLocation( shader, "gamma" ), tonemap.gamma );
+	*/
+
+	static float prevColorTemperature = 0.0f;
+	static vec3 temperatureColor;
+	if ( tonemap.colorTemp != prevColorTemperature ) {
+		prevColorTemperature = tonemap.colorTemp;
+		temperatureColor = GetColorForTemperature( tonemap.colorTemp );
+	}
+
+	// precompute the 3x3 matrix for the saturation adjustment
+	static float prevSaturationValue = -1.0f;
+	static mat3 saturationMatrix;
+	if ( tonemap.saturation != prevSaturationValue ) {
+		// https://www.graficaobscura.com/matrix/index.html
+		const float s = tonemap.saturation;
+		const float oms = 1.0f - s;
+
+		vec3 weights = tonemap.saturationImprovedWeights ?
+			vec3( 0.3086f, 0.6094f, 0.0820f ) :	// "improved" luminance vector
+			vec3( 0.2990f, 0.5870f, 0.1140f );	// NTSC weights
+
+		saturationMatrix = mat3(
+			oms * weights.r + s, oms * weights.r, oms * weights.r,
+			oms * weights.g, oms * weights.g + s, oms * weights.g,
+			oms * weights.b, oms * weights.b, oms * weights.b + s
+		);
+	}
+
+	const GLuint shader = shaders[ "Tonemap" ];
+	static rngi blueNoiseOffset = rngi( 0, 512 );
+	glUniform2i( glGetUniformLocation( shader, "blueNoiseOffset" ), blueNoiseOffset(), blueNoiseOffset() );
+	glUniform3fv( glGetUniformLocation( shader, "colorTempAdjust" ), 1, glm::value_ptr( temperatureColor ) );
+	glUniform1i( glGetUniformLocation( shader, "tonemapMode" ), tonemap.tonemapMode );
+	glUniform1f( glGetUniformLocation( shader, "gamma" ), tonemap.gamma );
+	glUniform1f( glGetUniformLocation( shader, "postExposure" ), tonemap.postExposure );
+	glUniformMatrix3fv( glGetUniformLocation( shader, "saturation" ), 1, false, glm::value_ptr( saturationMatrix ) );
+	glUniform1i( glGetUniformLocation( shader, "enableVignette" ), tonemap.enableVignette );
+	glUniform1f( glGetUniformLocation( shader, "vignettePower" ), tonemap.vignettePower );
+
+	// problematic if missing
+	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 2 );
 }
-*/

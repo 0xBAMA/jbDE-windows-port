@@ -24,6 +24,7 @@ public:
 	void genColorMipmap();
 	void genLightMipmap();
 	void SendRaymarchParameters();
+	void SendTonemappingParameters();
 
 //==============================================================================
 // these were previously done via #defines... no reason to hardcode them,
