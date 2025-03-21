@@ -2561,7 +2561,7 @@ void Voraldo13::MenuRenderingSettings () {
 	// picker for render mode shader
 	ImGui::SliderFloat( "Blend Factor", &render.blendFactor, 0.0f, 1.0f );
 	reset = reset || ImGui::IsItemEdited();
-	ImGui::SliderInt( "History Frames", &render.numFramesHistory, 0, 14 );
+	ImGui::SliderInt( "History Frames", ( int* ) &render.numFramesHistory, 0, 14 );
 	reset = reset || ImGui::IsItemEdited();
 	if( reset ) render.framesSinceLastInput = 0;
 
@@ -2621,6 +2621,7 @@ void Voraldo13::MenuPostProcessingSettings () {
 		// imgui has some kind of text filtering thing, tbd - would need a text entry field
 
 		ImGui::Text( "TODO: needs to change to use the new palette stuff" );
+
 		/*
 		ImGui::Combo( "Palette", &selectedPalette, paletteLabels.data(), paletteLabels.size() );
 		if ( ImGui::IsItemEdited() ) {

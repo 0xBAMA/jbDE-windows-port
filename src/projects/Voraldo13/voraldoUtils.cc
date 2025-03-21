@@ -472,18 +472,7 @@ void Voraldo13::SwapBlocks() {
 	// call SwapBlocks() after operations which change which blocks play the
 	// role of front/back to make sure the state is correct
 
-	// TODO: this is going to change a lot
-
-	/*
-	std::swap( bindSets[ "Rendering" ], bindSets[ "Rendering Back Set" ] );
-	std::swap( bindSets[ "Basic Operation" ], bindSets[ "Basic Operation Back Set" ] );
-	std::swap( bindSets[ "Heightmap" ], bindSets[ "Heightmap Back Set" ] );
-	std::swap( bindSets[ "LoadBuffer" ], bindSets[ "LoadBuffer Back Set" ] );
-	std::swap( bindSets[ "Basic Operation With Lighting" ], bindSets[ "Basic Operation With Lighting Back Set" ] );
-	std::swap( bindSets[ "Lighting Operation" ], bindSets[ "Lighting Operation Back Set" ] );
-
-	std::swap( textures[ "Color Block Front" ], textures[ "Color Block Back" ] ); // for mipmap gen
+	flipColorBlocks = !flipColorBlocks;
 	render.framesSinceLastInput = 0;
-	*/
 }
 
