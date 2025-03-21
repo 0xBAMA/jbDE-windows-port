@@ -88,8 +88,6 @@ public:
 	ImFont* titleFont;
 
 //==============================================================================
-	glm::vec3 GetColorForTemperature( float temperature ); // 6500.0 is white
-
 	void newHeightmapPerlin();
 	void newHeightmapDiamondSquare();
 	void newHeightmapXOR();
