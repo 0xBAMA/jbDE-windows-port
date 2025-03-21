@@ -32,15 +32,15 @@ uniform ivec2 noiseOffset;
 
 vec4 blue() {
 	const ivec2 noiseLoc = ( noiseOffset + ivec2( gl_GlobalInvocationID.xy ) + tileOffset ) % imageSize( blueNoiseTexture );
-	return ( imageLoad( blueNoiseTexture, noiseLoc ) / 255.0 );
+	return ( imageLoad( blueNoiseTexture, noiseLoc ) / 255.0f );
 }
 
 void getColorForPixel ( vec3 rO, vec3 rD, inout vec4 color ) {
 	// want to add some jittering to this - currently getting some aliasing that I think that will help with
-	float tCurrent = tMax + 0.001 * blue().z;
-	const float stepSize = max( float( ( tMax - tMin ) / numSteps ), 0.001 );
+	float tCurrent = tMax + 0.001f * blue().z;
+	const float stepSize = max( float( ( tMax - tMin ) / numSteps ), 0.001f );
 	const vec3 blockSize = vec3( imageSize( colorBlockFront ) );
-	ivec3 samplePosition = ivec3( ( blockSize / 2.0 ) * ( rO + tCurrent * rD + vec3( 1.0 ) ) );
+	ivec3 samplePosition = ivec3( ( blockSize / 2.0f ) * ( rO + tCurrent * rD + vec3( 1.0f ) ) );
 	vec4 newRead = imageLoad( colorBlockFront, samplePosition );
 	vec4 newLightRead = imageLoad( lightingBlock, samplePosition );
 	for ( int i = 0; i < numSteps; i++ ) {
@@ -48,11 +48,11 @@ void getColorForPixel ( vec3 rO, vec3 rD, inout vec4 color ) {
 			newRead.rgb *= newLightRead.xyz;
 			float alphaSquared = pow( newRead.a, alphaPower ); // gives more usable range on the alpha channel
 			// alpha blending, new sample over running color
-			color.a = max( alphaSquared + color.a * ( 1.0 - alphaSquared ), 0.001 );
-			color.rgb = newRead.rgb * alphaSquared + color.rgb * color.a * ( 1.0 - alphaSquared );
+			color.a = max( alphaSquared + color.a * ( 1.0f - alphaSquared ), 0.001f );
+			color.rgb = newRead.rgb * alphaSquared + color.rgb * color.a * ( 1.0f - alphaSquared );
 			color.rgb /= color.a; // missing piece of a over b alpha blending - can't really see a lot of difference
 			tCurrent -= stepSize;
-			samplePosition = ivec3( ( blockSize / 2.0 ) * ( rO + tCurrent * rD + vec3( 1.0 ) ) );
+			samplePosition = ivec3( ( blockSize / 2.0f ) * ( rO + tCurrent * rD + vec3( 1.0f ) ) );
 			newRead = imageLoad( colorBlockFront, samplePosition );
 			newLightRead = imageLoad( lightingBlock, samplePosition );
 		}
@@ -65,18 +65,18 @@ void main () {
 	const ivec2 iDimensions = imageSize( accumulatorTexture );
 	const vec2 dimensions   = vec2( iDimensions );
 	const float aspectRatio = dimensions.y / dimensions.x;
-	const vec2 uv           = ( location + vec2( 0.5 ) + ( jitterFactor * ( blue().xy - vec2( 0.5 ) ) ) ) / dimensions;
-	const vec2 mappedPos    = scale * ( ( uv - vec2( 0.5 ) ) * vec2( 1.0, aspectRatio ) );
-	const vec3 rayOrigin    = invBasis * vec3( mappedPos, 2.0 );
-	const vec3 rayDirection = invBasis * vec3( perspectiveFactor * mappedPos, -2.0 );
+	const vec2 uv           = ( location + vec2( 0.5f ) + ( jitterFactor * ( blue().xy - vec2( 0.5f ) ) ) ) / dimensions;
+	const vec2 mappedPos    = scale * ( ( uv - vec2( 0.5f ) ) * vec2( 1.0f, aspectRatio ) );
+	const vec3 rayOrigin    = invBasis * vec3( mappedPos, 2.0f );
+	const vec3 rayDirection = invBasis * vec3( perspectiveFactor * mappedPos, -2.0f );
 	const vec4 prevColor    = imageLoad( accumulatorTexture, invocation );
 
 	vec3 rayDirectionDoF = vec3( 0.0 );
 	if ( useThinLens == true ) {
-		const vec2 uvNoJitter           = ( location + vec2( 0.5 ) ) / dimensions;
-		const vec2 mappedPosNoJitter    = scale * ( ( uvNoJitter - vec2( 0.5 ) ) * vec2( 1.0, aspectRatio ) );
-		const vec3 rayOriginNoJitter    = invBasis * vec3( mappedPosNoJitter, 2.0 );
-		const vec3 rayDirectionNoJitter = invBasis * vec3( perspectiveFactor * mappedPosNoJitter, -2.0 );
+		const vec2 uvNoJitter           = ( location + vec2( 0.5f ) ) / dimensions;
+		const vec2 mappedPosNoJitter    = scale * ( ( uvNoJitter - vec2( 0.5f ) ) * vec2( 1.0f, aspectRatio ) );
+		const vec3 rayOriginNoJitter    = invBasis * vec3( mappedPosNoJitter, 2.0f );
+		const vec3 rayDirectionNoJitter = invBasis * vec3( perspectiveFactor * mappedPosNoJitter, -2.0f );
 		const vec3 focusPoint           = rayOriginNoJitter + thinLensFocusDist * rayDirectionNoJitter;
 		rayDirectionDoF                 = normalize( focusPoint - rayOrigin );
 	}
@@ -86,6 +86,6 @@ void main () {
 		if ( Intersect( rayOrigin, useThinLens ? rayDirectionDoF : rayDirection ) ) {
 			getColorForPixel( rayOrigin, useThinLens ? rayDirectionDoF : rayDirection, color );
 		}
-		imageStore( accumulatorTexture, invocation, color * ( 1.0 - blendFactor ) + prevColor * blendFactor );
+		imageStore( accumulatorTexture, invocation, color * ( 1.0f - blendFactor ) + prevColor * blendFactor );
 	}
 }
