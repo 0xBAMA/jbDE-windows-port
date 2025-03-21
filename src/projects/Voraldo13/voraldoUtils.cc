@@ -177,35 +177,38 @@ void Voraldo13::CreateTextures () {
 void Voraldo13::newHeightmapPerlin() {
 	// might add more parameters at some point
 	std::vector<unsigned char> data;
+	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
 	PerlinNoise p;
 	float xscale = 0.014f;
 	float yscale = 0.04f;
 	static float offset = 0;
-	// TODO: this is fucked
-	/*
-	for ( unsigned int x = 0; x < BLOCKDIM; x++ ) {
-		for ( unsigned int y = 0; y < BLOCKDIM; y++ ) {
+	data.resize( dim * dim * 4 );
+	for ( unsigned int x = 0; x < dim; x++ ) {
+		for ( unsigned int y = 0; y < dim; y++ ) {
 			data.push_back( ( unsigned char ) ( p.noise( x * xscale, y * yscale, offset ) * 255 ) );
 			data.push_back( ( unsigned char ) ( p.noise( x * xscale, y * yscale, offset ) * 255 ) );
 			data.push_back( ( unsigned char ) ( p.noise( x * xscale, y * yscale, offset ) * 255 ) );
 			data.push_back( 255 );
 		}
 	}
-	*/
-	offset += 0.5; // so it varies between updates ... ehh
+	offset += 0.5f; // so it varies between updates ... ehh
 	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Heightmap" ) );
-	// glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, BLOCKDIM, BLOCKDIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
 }
 
 void Voraldo13::newHeightmapDiamondSquare() {
-/*
 	long unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine engine{ seed };
 	std::uniform_real_distribution<float> distribution{ 0, 1 };
-	auto size = max( max( blockDim.x, blockDim.y ), blockDim.z ) + 1;
-	auto edge = size - 1;
-	// TODO: need to fix this, constant sizing issue
-	 uint8_t map[ size ][ size ] = { { 0 } };
+	uint32_t size = max( max( blockDim.x, blockDim.y ), blockDim.z ) + 1;
+	uint32_t edge = size - 1;
+	
+	std::vector< std::vector< uint8_t > > map;
+	map.resize( size );
+	for ( uint32_t i = 0; i < size; i++ ) {
+		map[ i ].resize( size );
+	}
+
 	map[ 0 ][ 0 ] = map[ edge ][ 0 ] = map[ 0 ][ edge ] = map[ edge ][ edge ] = 128;
 
 	heightfield::diamond_square_no_wrap( size,
@@ -219,29 +222,28 @@ void Voraldo13::newHeightmapDiamondSquare() {
 			return map[ y ][ x ];
 		} );
 
-	ImGui::Text( "TODO: Very high likelyhood this is fucked" );
-	
 	std::vector<unsigned char> data;
-	for ( int x = 0; x < BLOCKDIM; x++ ) {
-		for ( int y = 0; y < BLOCKDIM; y++ ) {
+	for ( int x = 0; x < size; x++ ) {
+		for ( int y = 0; y < size; y++ ) {
 			data.push_back( map[ x ][ y ] );
 			data.push_back( map[ x ][ y ] );
 			data.push_back( map[ x ][ y ] );
 			data.push_back( 255 );
 		}
 	}
+
 	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Heightmap" ) );
-	// glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, BLOCKDIM, BLOCKDIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
-*/
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
 }
 
 void Voraldo13::newHeightmapXOR() {
 	static std::vector<unsigned char> data;
 	static bool firstTime = true;
+	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
+	data.reserve( dim * dim * 4 );
 	if ( firstTime ) {
-	/*
-		for ( unsigned int x = 0; x < BLOCKDIM; x++ ) {
-			for ( unsigned int y = 0; y < BLOCKDIM; y++ ) {
+		for ( unsigned int x = 0; x < dim; x++ ) {
+			for ( unsigned int y = 0; y < dim; y++ ) {
 				unsigned int val = x ^ y;
 				data.push_back( val );
 				data.push_back( val );
@@ -250,19 +252,20 @@ void Voraldo13::newHeightmapXOR() {
 			}
 		}
 		firstTime = false;
-	*/
 	}
 	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Heightmap" ) );
-	// glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, BLOCKDIM, BLOCKDIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
 }
 
 void Voraldo13::newHeightmapAND() {
 	static std::vector<unsigned char> data;
 	static bool firstTime = true;
+	// not sure how this is going to handle nonuniform block sizes...
+	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
+	data.reserve( dim * dim * 4 );
 	if ( firstTime ) {
-	/*
-		for ( unsigned int x = 0; x < BLOCKDIM; x++ ) {
-			for ( unsigned int y = 0; y < BLOCKDIM; y++ ) {
+		for ( unsigned int x = 0; x < dim; x++ ) {
+			for ( unsigned int y = 0; y < dim; y++ ) {
 				unsigned int val = x & y;
 				data.push_back( val );
 				data.push_back( val );
@@ -271,10 +274,9 @@ void Voraldo13::newHeightmapAND() {
 			}
 		}
 		firstTime = false;
-	*/
 	}
 	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Heightmap" ) );
-	// glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, BLOCKDIM, BLOCKDIM, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, dim, dim, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
 }
 
 void Voraldo13::MenuPopulate() {
