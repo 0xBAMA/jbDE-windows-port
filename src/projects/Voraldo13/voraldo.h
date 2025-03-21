@@ -86,8 +86,6 @@ public:
 
 //==============================================================================
 	glm::vec3 GetColorForTemperature( float temperature ); // 6500.0 is white
-	std::vector<uint8_t> BayerData( int dimension );
-	std::vector<uint8_t> Make4Channel( std::vector<uint8_t> input );
 
 	void newHeightmapPerlin();
 	void newHeightmapDiamondSquare();
