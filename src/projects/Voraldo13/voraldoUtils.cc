@@ -36,7 +36,7 @@ void Voraldo13::CompileShaders () {
 	shaders[ "Cone Light" ] = computeShader( base + "lighting/cone.cs.glsl" ).shaderHandle;
 	shaders[ "Ambient Occlusion" ] = computeShader( base + "lighting/ambientOcclusion.cs.glsl" ).shaderHandle;
 
-	// color adjustments
+	// color adjustments - uses custom tonemap shader
 	shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Quantize" ] = computeShader( base + "ditherQuantize.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Palette" ] = computeShader( base + "ditherPalette.cs.glsl" ).shaderHandle;

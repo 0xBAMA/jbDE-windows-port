@@ -25,7 +25,7 @@ vec4 linearInterpolatedSample ( vec2 location ) {
 void main () {
 	ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
-	// compute SSFACTOR
+	// compute SSFACTOR - todo: this can just be passed in
 	vec2 scalar = vec2( imageSize( accumulatorTexture ) ) / vec2( imageSize( displayTexture ) );
 	vec2 samplePosition = scalar * vec2( loc );
 
