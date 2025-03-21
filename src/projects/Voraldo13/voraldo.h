@@ -23,11 +23,13 @@ public:
 	bool mipmapFlagLight = true;
 	void genColorMipmap();
 	void genLightMipmap();
+	void SendRaymarchParameters();
 
 //==============================================================================
 // these were previously done via #defines... no reason to hardcode them,
 	// they should be dynamic at runtime
 
+	int tileSize = 64;
 	float SSFactor = 1.0f;			// supersampling factor for the accumulator
 	uvec3 blockDim = uvec3( 256u );	// size of the block
 
@@ -169,16 +171,45 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // draw something into accumulatorTexture
+		{ // update the block
 			scopedTimer Start( "Drawing" );
-			bindSets[ "Drawing" ].apply();
+			// bindSets[ "Drawing" ].apply();
 			const GLuint shader = shaders[ "Draw" ];
 			glUseProgram( shader );
 
-			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			// glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 
-			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			// don't render redundantly - only run for numFramesHistory frames after any state changes
+			// if ( render.framesSinceLastInput <= render.numFramesHistory ) {
+			if ( true ) {
+
+				genColorMipmap();
+				genLightMipmap();
+				// bindSets[ "Rendering" ].apply();
+				const GLuint shader = shaders[ "Renderer" ];
+				glUseProgram( shader );
+				SendRaymarchParameters();
+
+				// bind textures
+				textureManager.Bind( "Blue Noise", 0 );
+				textureManager.Bind( "Accumulator", 1 );
+				textureManager.Bind( "Color Block" + std::to_string( render.flipColorBlocks ? 0 : 1 ), 2 );
+				textureManager.Bind( "Lighting Block", 3 );
+
+				static rngi noiseOffset = rngi( 0, 512 );
+
+				// tiled update of the accumulator texture
+				const int w = SSFactor * config.width;
+				const int h = SSFactor * config.height;
+				const int t = tileSize;
+				for ( int x = 0; x < w; x += t ) {
+					for ( int y = 0; y < h; y += t ) {
+						glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+						glUniform2i( glGetUniformLocation( shader, "tileOffset" ), x, y );
+						glDispatchCompute( t / 16, t / 16, 1 );
+					}
+				}
+			}
 		}
 
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
@@ -231,6 +262,10 @@ public:
 
 	bool MainLoop () { // this is what's called from the loop in main
 		ZoneScoped;
+
+		// increment frame timers
+		render.framesSinceLastInput++;
+		render.framesSinceStartup++;
 
 		// get new data into the input handler
 		inputHandler.update();

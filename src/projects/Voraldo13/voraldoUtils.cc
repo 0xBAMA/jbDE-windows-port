@@ -4,7 +4,7 @@
 void Voraldo13::CompileShaders () {
 	const string base( "../src/projects/Voraldo13/shaders/" );
 
-	// do we need to recompile everything, every time?
+	// do we need to recompile everything, every time? it takes a nontrivial amount of time, for this many
 	shaders[ "Draw" ] = computeShader( base + "draw.cs.glsl" ).shaderHandle;
 
 	// shape operations
@@ -37,7 +37,7 @@ void Voraldo13::CompileShaders () {
 	shaders[ "Ambient Occlusion" ] = computeShader( base + "lighting/ambientOcclusion.cs.glsl" ).shaderHandle;
 
 	// color adjustments - uses custom tonemap shader
-	shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
+	// shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Quantize" ] = computeShader( base + "ditherQuantize.cs.glsl" ).shaderHandle;
 	shaders[ "Dither Palette" ] = computeShader( base + "ditherPalette.cs.glsl" ).shaderHandle;
 
@@ -476,3 +476,29 @@ void Voraldo13::SwapBlocks() {
 	render.framesSinceLastInput = 0;
 }
 
+void Voraldo13::SendRaymarchParameters() {
+	ZoneScoped;
+	const GLuint shader = shaders[ "Renderer" ];
+	const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
+	glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+	glUniform1f( glGetUniformLocation( shader, "scale" ), -render.scaleFactor );
+	glUniform1f( glGetUniformLocation( shader, "blendFactor" ), render.blendFactor );
+	glUniform1f( glGetUniformLocation( shader, "perspectiveFactor" ), render.perspective );
+	glUniform4fv( glGetUniformLocation( shader, "clearColor" ), 1, glm::value_ptr( render.clearColor ) );
+	glUniform2f( glGetUniformLocation( shader, "renderOffset" ), render.renderOffset.x, render.renderOffset.y );
+	glUniform1f( glGetUniformLocation( shader, "alphaPower" ), render.alphaCorrectionPower );
+	glUniform1i( glGetUniformLocation( shader, "numSteps" ), render.volumeSteps );
+	glUniform1f( glGetUniformLocation( shader, "jitterFactor" ), render.jitterAmount );
+	glUniform1i( glGetUniformLocation( shader, "useThinLens" ), render.useThinLens );
+	glUniform1f( glGetUniformLocation( shader, "thinLensFocusDist" ), render.thinLensFocusDist );
+}
+
+/*
+void Voraldo13::SendTonemappingParameters() {
+	ZoneScoped;
+	const GLuint shader = shaders[ "Tonemap" ];
+	glUniform3fv( glGetUniformLocation( shader, "colorTempAdjust" ), 1, glm::value_ptr( GetColorForTemperature( tonemap.colorTemp ) ) );
+	glUniform1i( glGetUniformLocation( shader, "tonemapMode" ), tonemap.tonemapMode );
+	glUniform1f( glGetUniformLocation( shader, "gamma" ), tonemap.gamma );
+}
+*/
