@@ -48,8 +48,6 @@ constexpr glm::ivec3 BLACK = glm::ivec3(  16,  16,  16 );
 #define TERMBG	glm::ivec3(  17,  35,  24 )
 #define TERMFG	glm::ivec3( 137, 162,  87 )
 
-extern std::vector< paletteEntry > paletteList;
-
 class TextRenderLayer {
 public:
 	TextRenderLayer ( int32_t w, int32_t h, textureManager_t * tml, string label ) : width( w ), height( h ), textureManager_local( tml ), layerLabel( label ) {
