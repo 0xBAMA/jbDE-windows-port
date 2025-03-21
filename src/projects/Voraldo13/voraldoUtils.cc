@@ -538,6 +538,21 @@ void Voraldo13::SendTonemappingParameters() {
 	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 2 );
 }
 
+void Voraldo13::CapturePostprocessScreenshot() {
+	wantCapturePostprocessScreenshot = false;
+	std::vector< float > imageBytesToSaveP;
+	imageBytesToSaveP.resize( config.width * config.height * 4 );
+	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Display Texture" ) );
+	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSaveP.data()[ 0 ] );
+	Image_4F screenshotP( config.width, config.height, &imageBytesToSaveP.data()[ 0 ] );
+	screenshotP.FlipVertical();
+	screenshotP.RGBtoSRGB();
+	if ( postprocessScreenshotScaleFactor != 1.0f ) {
+		screenshotP.Resize( postprocessScreenshotScaleFactor );
+	}
+	screenshotP.Save( string( "Voraldo13_P-" ) + timeDateString() + string( ".png" ) );
+}
+
 void Voraldo13::RenderBindings() {
 	textureManager.Bind( "Blue Noise", 0 );
 	textureManager.Bind( "Accumulator", 1 );

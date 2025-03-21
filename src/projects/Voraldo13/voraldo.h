@@ -292,6 +292,10 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
+		if ( wantCapturePostprocessScreenshot ) { // postprocessed screenshot requested
+			CapturePostprocessScreenshot();
+		}
+
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Clear();
