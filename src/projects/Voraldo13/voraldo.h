@@ -26,6 +26,14 @@ public:
 	void SendRaymarchParameters();
 	void SendTonemappingParameters();
 
+	// bindset replacements
+	void RenderBindings();
+	void BasicOperationBindings();
+	void HeightmapOperationBindings();
+	void LoadBufferOperationBindings();
+	void BasicOperationWithLightingBindings();
+	void LightingOperationBindings();
+
 //==============================================================================
 // these were previously done via #defines... no reason to hardcode them,
 	// they should be dynamic at runtime

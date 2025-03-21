@@ -542,3 +542,52 @@ void Voraldo13::SendTonemappingParameters() {
 	// problematic if missing
 	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 2 );
 }
+
+void Voraldo13::RenderBindings() {
+	textureManager.Bind( "Blue Noise", 0 );
+	textureManager.Bind( "Accumulator", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 2 );
+	textureManager.Bind( "Lighting Block", 3 );
+}
+
+void Voraldo13::BasicOperationBindings () {
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 0 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 0" : "Color Block 1", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 1" : "Mask Block 0", 2 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 0" : "Mask Block 1", 3 );
+	textureManager.Bind( "Blue Noise", 4 );
+}
+
+void Voraldo13::HeightmapOperationBindings() {
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 0 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 0" : "Color Block 1", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 1" : "Mask Block 0", 2 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 0" : "Mask Block 1", 3 );
+	textureManager.Bind( "Heightmap", 4 );
+}
+
+void Voraldo13::LoadBufferOperationBindings() {
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 0 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 0" : "Color Block 1", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 1" : "Mask Block 0", 2 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 0" : "Mask Block 1", 3 );
+	textureManager.Bind( "LoadBuffer", 4 );
+}
+
+void Voraldo13::BasicOperationWithLightingBindings() {
+	// inverted wrt normal bindings
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 0" : "Color Block 1", 0 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 0" : "Mask Block 1", 2 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 1" : "Mask Block 0", 3 );
+	textureManager.Bind( "Lighting Block", 4 );
+}
+
+void Voraldo13::LightingOperationBindings() {
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 0 );
+	textureManager.Bind( render.flipColorBlocks ? "Color Block 0" : "Color Block 1", 1 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 1" : "Mask Block 0", 2 );
+	textureManager.Bind( render.flipColorBlocks ? "Mask Block 0" : "Mask Block 1", 3 );
+	textureManager.Bind( "Lighting Block", 4 );
+	textureManager.Bind( "Blue Noise", 5 );
+}

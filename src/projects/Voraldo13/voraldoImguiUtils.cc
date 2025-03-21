@@ -192,12 +192,12 @@ void Voraldo13::MenuAABB () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
 			j[ "shader" ] = "AABB";
-			j[ "bindset" ] = "Basic Operation"; // redundant for now, but relevant for reuse?
+			j[ "bindset" ] = "Basic Operation"; // bindset logging... need to think about how that's going to go
 			AddIvec3( j, "minCoords", minCoords );
 			AddIvec3( j, "maxCoords", maxCoords );
 			AddBool( j, "draw", draw );
@@ -263,7 +263,7 @@ void Voraldo13::MenuCylinderTube () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -335,7 +335,7 @@ void Voraldo13::MenuEllipsoid () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -409,7 +409,7 @@ void Voraldo13::MenuGrid () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -496,7 +496,7 @@ void Voraldo13::MenuHeightmap () {
 
 		if ( ImGui::Button( " Draw " ) ) {
 			SwapBlocks();
-			bindSets[ "Heightmap" ].apply();
+			HeightmapOperationBindings();
 			json j;
 			j[ "shader" ] = "Heightmap";
 			j[ "bindset" ] = "Heightmap";
@@ -592,7 +592,7 @@ void Voraldo13::MenuSphere () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -664,7 +664,7 @@ void Voraldo13::MenuTriangle () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -850,7 +850,7 @@ void Voraldo13::MenuUserShader () {
 				parent->shaders[ "User Shader" ] = userShader.shaderHandle;
 
 				parent->SwapBlocks(); // swap the front/back buffers
-				parent->bindSets[ "Basic Operation" ].apply(); // apply the bindset
+				parent->BasicOperationBindings(); // apply the bindset
 
 				json j;
 				j[ "shader" ] = "User Shader";
@@ -1467,7 +1467,7 @@ void Voraldo13::MenuXOR () {
 		ImGui::Checkbox( "Respect Mask", &respectMask );
 		if ( ImGui::Button( "XOR" ) ) {
 			SwapBlocks();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "XOR";
 			j[ "bindset" ] = "Basic Operation";
@@ -1520,7 +1520,7 @@ void Voraldo13::MenuClearBlock () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 
 			// send the uniforms
 			json j;
@@ -1576,7 +1576,7 @@ void Voraldo13::MenuMasking () {
 		OrangeText( "Unmask All" );
 		if( ImGui::Button( "Unmask All" ) ) {
 			SwapBlocks();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Mask Clear";
 			j[ "bindset" ] = "Basic Operation";
@@ -1592,7 +1592,7 @@ void Voraldo13::MenuMasking () {
 		OrangeText( "Invert Mask" );
 		if( ImGui::Button( "Invert Mask" ) ) {
 			SwapBlocks();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Mask Invert";
 			j[ "bindset" ] = "Basic Operation";
@@ -1643,7 +1643,7 @@ void Voraldo13::MenuMasking () {
 			SwapBlocks();
 
 			// apply the bindset
-			bindSets[ "Basic Operation With Lighting" ].apply();
+			BasicOperationWithLightingBindings();
 
 			// send the uniforms
 			json j;
@@ -1704,7 +1704,7 @@ void Voraldo13::MenuBlur () {
 		ImGui::Indent( 16.0f );
 		if ( ImGui::Button( "Box Blur" ) ) {
 			SwapBlocks();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Box Blur";
 			j[ "bindset" ] = "Basic Operation";
@@ -1721,7 +1721,7 @@ void Voraldo13::MenuBlur () {
 		ImGui::Indent( 16.0f );
 		if ( ImGui::Button( "Gaussian Blur" ) ) {
 			SwapBlocks();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Gaussian Blur";
 			j[ "bindset" ] = "Basic Operation";
@@ -1777,7 +1777,7 @@ void Voraldo13::MenuShiftTrim () {
 		if ( ImGui::Button( "Shift" ) ) {
 			SwapBlocks();
 			// bindSets[ "Basic Operation With Lighting" ].apply();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Shift";
 			// j[ "bindset" ] = "Basic Operation With Lighting";
@@ -1805,7 +1805,7 @@ void Voraldo13::MenuShiftTrim () {
 					// maybe optionally wrap on masked voxels, so that it remains? tbd
 			SwapBlocks();
 			// bindSets[ "Basic Operation With Lighting" ].apply();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			json j;
 			j[ "shader" ] = "Shift";
 			// j[ "bindset" ] = "Basic Operation With Lighting";
@@ -1818,7 +1818,7 @@ void Voraldo13::MenuShiftTrim () {
 
 			SwapBlocks();
 			// bindSets[ "Basic Operation With Lighting" ].apply();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			AddIvec3( j, "shiftAmount", glm::ivec3( -2 * trimAmount ) );
 			SendUniforms( j );
 			AddToLog( j );
@@ -1826,7 +1826,7 @@ void Voraldo13::MenuShiftTrim () {
 
 			SwapBlocks();
 			// bindSets[ "Basic Operation With Lighting" ].apply();
-			bindSets[ "Basic Operation" ].apply();
+			BasicOperationBindings();
 			AddIvec3( j, "shiftAmount", glm::ivec3( trimAmount ) );
 			SendUniforms( j );
 			AddToLog( j );
