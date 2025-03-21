@@ -145,6 +145,75 @@ public:
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
+
+		//==============================================================================
+		// Need to keep this for pQuit handling ( force quit ), and it makes scolling easier, too
+		//==============================================================================
+		SDL_Event event;
+		while ( SDL_PollEvent( &event ) ) {
+			SDL_PumpEvents();
+			// imgui event handling
+			ImGui_ImplSDL3_ProcessEvent( &event ); // imgui event handling
+			pQuit = config.oneShot || // swap out the multiple if statements for a big chained boolean setting the value of pQuit
+				( event.type == SDL_EVENT_QUIT ) ||
+				( event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID( window.window ) ) ||
+				( event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE && SDL_GetModState() & SDL_KMOD_SHIFT );
+			if ( ( event.type == SDL_EVENT_KEY_UP && event.key.key == SDLK_ESCAPE ) || ( event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_X1 ) ) {
+				quitConfirm = !quitConfirm; // this has to stay because it doesn't seem like ImGui::IsKeyReleased is stable enough to use
+			}
+			if ( !ImGui::GetIO().WantCaptureMouse ) {
+				constexpr float scaleFactor = 0.965f;
+				if ( event.type == SDL_EVENT_MOUSE_WHEEL ) {
+					if ( event.wheel.y > 0 ) {
+						render.scaleFactor *= scaleFactor;
+					}
+					else if ( event.wheel.y < 0 ) {
+						render.scaleFactor /= scaleFactor;
+					}
+					render.framesSinceLastInput = 0;
+				}
+				ImVec2 valueRaw = ImGui::GetMouseDragDelta( 0, 0.0f );
+				if ( ( valueRaw.x != 0 || valueRaw.y != 0 ) ) {
+					render.renderOffset.x -= valueRaw.x;
+					render.renderOffset.y += valueRaw.y;
+					render.framesSinceLastInput = 0;
+					ImGui::ResetMouseDragDelta( 0 );
+				}
+				valueRaw = ImGui::GetMouseDragDelta( 1, 0.0f );
+				if ( ( valueRaw.x != 0 || valueRaw.y != 0 ) ) {
+					trident.RotateY( -valueRaw.x * 0.03f );
+					trident.RotateX( -valueRaw.y * 0.03f );
+					ImGui::ResetMouseDragDelta( 1 );
+				}
+			}
+		}
+
+		//==============================================================================
+		// the rest of the event checking just looks at the current input state
+		//==============================================================================
+		if ( !ImGui::GetIO().WantCaptureKeyboard ) {
+			constexpr float bigStep = 0.120f;
+			constexpr float lilStep = 0.008f;
+			const bool* state = SDL_GetKeyboardState( NULL );
+
+			// panning around, vim style
+			if ( state[ SDL_SCANCODE_H ] ) {
+				render.renderOffset.x += ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 10.0f : 1.0f;
+				render.framesSinceLastInput = 0;
+			}
+			if ( state[ SDL_SCANCODE_L ] ) {
+				render.renderOffset.x -= ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 10.0f : 1.0f;
+				render.framesSinceLastInput = 0;
+			}
+			if ( state[ SDL_SCANCODE_J ] ) {
+				render.renderOffset.y += ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 10.0f : 1.0f;
+				render.framesSinceLastInput = 0;
+			}
+			if ( state[ SDL_SCANCODE_K ] ) {
+				render.renderOffset.y -= ( SDL_GetModState() & SDL_KMOD_SHIFT ) ? 10.0f : 1.0f;
+				render.framesSinceLastInput = 0;
+			}
+		}
 	}
 
 	void ImguiPass () {
@@ -275,8 +344,11 @@ public:
 
 		// event handling
 		HandleTridentEvents();
+		if ( trident.Dirty() ) // rotation has happened, we need to start drawing again
+			render.framesSinceLastInput = 0;
+
+		// quitting, scrolling, etc
 		HandleCustomEvents();
-		HandleQuitEvents();
 
 		// derived-class-specific functionality
 		OnUpdate();
