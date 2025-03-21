@@ -629,6 +629,8 @@ target_link_libraries( Raqia
 # =================================================================================================
 add_executable( Voraldo13
 	src/projects/Voraldo13/main.cc
+	src/projects/Voraldo13/voraldoImguiUtils.cc
+	src/projects/Voraldo13/voraldoUtils.cc
 )
 
 target_link_libraries( Voraldo13
