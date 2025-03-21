@@ -1107,7 +1107,7 @@ void Voraldo13::MenuVAT () {
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
 			glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loaded[ 0 ] );
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1143,7 +1143,7 @@ void Voraldo13::MenuVAT () {
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
 			glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loaded[ 0 ] );
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1179,7 +1179,7 @@ void Voraldo13::MenuVAT () {
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
 			glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loaded[ 0 ] );
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1268,7 +1268,7 @@ void Voraldo13::MenuSpaceship () {
 
 			// call the copyLoadbuffer shader
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1324,7 +1324,7 @@ void Voraldo13::MenuLetters () {
 
 			// call the copyLoadbuffer shader
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1430,7 +1430,7 @@ void Voraldo13::MenuOBJ () {
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
 			glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loaded[ 0 ] );
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -1880,7 +1880,7 @@ void Voraldo13::MenuLoadSave () {
 
 			// call the copyLoadbuffer shader
 			SwapBlocks();
-			bindSets[ "LoadBuffer" ].apply();
+			LoadBufferOperationBindings();
 			json j;
 			j[ "shader" ] = "Load";
 			j[ "bindset" ] = "LoadBuffer";
@@ -2307,8 +2307,6 @@ void Voraldo13::MenuFakeGI () {
 		ImGui::ColorEdit3( "Sky Color", ( float* ) &skyColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel );
 		ImGui::SliderFloat( "Intensity Scale", &skyColor.a, 0.0f, 3.0f, "%.3f" );
 
-		ImGui::Text( "TODO, not working" );
-
 		ImGui::Text( " " );
 		if ( ImGui::Button( " Fake GI " ) ) {
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
@@ -2332,15 +2330,23 @@ void Voraldo13::MenuFakeGI () {
 		bottom and you are set!"
 	*/
 
-	/*
+			// allowing for nonuniform block sizing
+			uvec3 blockControl;
+			if ( upDirection == 0 || upDirection == 1 ) {
+				blockControl = blockDim.yzx;
+			} else if ( upDirection == 2 || upDirection == 3 ) {
+				blockControl = blockDim.zxy;
+			} else {
+				blockControl = blockDim.xyz;
+			}
+
 			const GLint shaderIndexLoc = glGetUniformLocation( shaders[ "Fake GI" ], "index" );
-			for ( int i = 0; i < BLOCKDIM; i++ ) {
+			for ( int i = 0; i < blockControl.z; i++ ) {
 				// i is used for the mapping inside the shader
 				glUniform1i( shaderIndexLoc, i );
-				glDispatchCompute( BLOCKDIM / 8, BLOCKDIM / 8, 1 );
+				glDispatchCompute( ( blockControl.x + 7 ) / 8, ( blockControl.y + 7 ) / 8, 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
-	*/
 
 			setLightMipmapFlag();
 		}
