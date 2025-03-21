@@ -231,7 +231,6 @@ void Voraldo13::newHeightmapDiamondSquare() {
 			data.push_back( 255 );
 		}
 	}
-
 	glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Heightmap" ) );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, size, size, 0, GL_RGBA, GL_UNSIGNED_BYTE, &data[ 0 ] );
 }

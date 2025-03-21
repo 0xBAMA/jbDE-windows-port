@@ -1215,10 +1215,19 @@ void Voraldo13::MenuSpaceship () {
 		static int minZScale = 4;
 		static int maxZScale = 10;
 
-		// static spaceshipGenerator ssG;
-		ImGui::Text( "TODO: going to require a lot of little fixes" );
+		static spaceshipGenerator ssG;
 
-		/*
+		static int paletteLimit = 8;
+		static int paletteIndex = 0;
+		static float paletteMin = 0.0f;
+		static float paletteMax = 1.0f;
+		static float alphaMin = 0.0f;
+		static float alphaMax = 1.0f;
+
+		ImGui::SliderFloat( "Glyph Min Alpha", &alphaMin, 0.0f, 1.0f );
+		ImGui::SliderFloat( "Glyph Max Alpha", &alphaMax, 0.0f, 1.0f );
+		ColorPickerElement( paletteMin, paletteMax, paletteIndex, paletteLimit, "Glyph" );
+
 		ImGui::SliderInt( "Operation Count", &count, 0, 20 );
 		ImGui::SliderFloat( "Spread", &spread, 0.0f, 1.0f, "%.3f" );
 		ImGui::SliderInt( "Min XY Scale", &minXYScale, 0, 5 );
@@ -1227,36 +1236,12 @@ void Voraldo13::MenuSpaceship () {
 		ImGui::SliderInt( "Max Z Scale", &maxZScale, 0, 10 );
 
 		ImGui::Checkbox( "Respect Mask", &respectMask );
-		if ( ImGui::Button( "Palette 1" ) ) {
-			glm::vec4 data1[] = { glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 1.0f, 1.0f, 1.0f, 1.0f ), glm::vec4( 0.0f, 0.1f, 0.2f, 1.0f ) };
-			ssG.setPalette( data1 );
-		}
-		ImGui::SameLine();
-		if ( ImGui::Button( "Palette 2" ) ) {
-			glm::vec4 data2[] = { glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 1.0f, 1.0f, 1.0f, 1.0f ), glm::vec4( 0.8f, 0.9f, 0.3f, 0.1f ) };
-			ssG.setPalette( data2 );
-		}
-		ImGui::SameLine();
-		if ( ImGui::Button( "Palette 3" ) ) {
-			glm::vec4 data3[] = { glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 0.5f, 0.5f, 0.5f, 1.0f ), glm::vec4( 1.0f, 0.7f, 0.4f, 1.0f ), glm::vec4( 0.0f, 0.15f, 0.2f, 0.1f ) };
-			ssG.setPalette( data3 );
-		}
-		ImGui::SameLine();
-		if ( ImGui::Button( "Random Palette" ) ) {
-			ssG.genRandomPalette();
-		}
-
-		auto flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel;
-		ImGui::ColorEdit4( "Color 1", ( float * ) &ssG.palette[ 0 ], flags );
-		ImGui::ColorEdit4( "Color 2", ( float * ) &ssG.palette[ 1 ], flags );
-		ImGui::ColorEdit4( "Color 3", ( float * ) &ssG.palette[ 2 ], flags );
-		ImGui::ColorEdit4( "Color 4", ( float * ) &ssG.palette[ 3 ], flags );
 
 		if ( ImGui::Button( "Draw" ) ) {
 			std::vector< uint8_t > data;
 			data.resize( blockDim.x * blockDim.y * blockDim.z * 4, 0 );
-			// ssG.genSpaceship( count, spread, minXYScale, maxXYScale, minZScale, maxZScale );
-			// ssG.getData( data, BLOCKDIM );
+			ssG.genSpaceship( count, spread, minXYScale, maxXYScale, minZScale, maxZScale, paletteIndex, paletteMin, paletteMax, alphaMin, alphaMax, glyphList );
+			ssG.getData( data, max( max( blockDim.x, blockDim.y ), blockDim.z ) );
 
 			// buffer to the loadbuffer
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
@@ -1273,7 +1258,6 @@ void Voraldo13::MenuSpaceship () {
 			AddToLog( j );
 			BlockDispatch();
 		}
-		*/
 
 		ImGui::Unindent( 16.0f );
 		ImGui::EndTabItem();
