@@ -495,12 +495,6 @@ void Voraldo13::SendRaymarchParameters() {
 
 void Voraldo13::SendTonemappingParameters() {
 	ZoneScoped;
-	/*
-	const GLuint shader = shaders[ "Tonemap" ];
-	glUniform3fv( glGetUniformLocation( shader, "colorTempAdjust" ), 1, glm::value_ptr( GetColorForTemperature( tonemap.colorTemp ) ) );
-	glUniform1i( glGetUniformLocation( shader, "tonemapMode" ), tonemap.tonemapMode );
-	glUniform1f( glGetUniformLocation( shader, "gamma" ), tonemap.gamma );
-	*/
 
 	static float prevColorTemperature = 0.0f;
 	static vec3 temperatureColor;

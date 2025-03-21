@@ -2094,7 +2094,7 @@ void Voraldo13::MenuClearLightLevels () {
 
 		if ( ImGui::Button( "Clear Levels" ) ) {
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			json j;
 			j[ "shader" ] = "Light Clear";
 			j[ "bindset" ] = "Lighting Operation";
@@ -2143,7 +2143,7 @@ void Voraldo13::MenuPointLight () {
 
 			json j;
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			j[ "shader" ] = "Point Light";
 			j[ "bindset" ] = "Lighting Operation";
 			AddVec3( j, "lightPosition", lightPosition );
@@ -2201,7 +2201,7 @@ void Voraldo13::MenuConeLight () {
 		if ( ImGui::Button( " Cone Light " ) ) {
 			json j;
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			j[ "shader" ] = "Cone Light";
 			j[ "bindset" ] = "Lighting Operation";
 			if( glm::distance( targetPosition, lightPosition ) < 0.01 ) {
@@ -2260,7 +2260,7 @@ void Voraldo13::MenuDirectionalLight () {
 
 			json j;
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			j[ "shader" ] = "Directional Light";
 			j[ "bindset" ] = "Lighting Operation";
 			AddFloat( j, "theta", theta );
@@ -2312,7 +2312,7 @@ void Voraldo13::MenuFakeGI () {
 		ImGui::Text( " " );
 		if ( ImGui::Button( " Fake GI " ) ) {
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			json j; // no buffer swap
 			j[ "shader" ] = "Fake GI";
 			j[ "bindset" ] = "Lighting Operation";
@@ -2374,7 +2374,7 @@ void Voraldo13::MenuAmbientOcclusion () {
 		ImGui::Indent( 16.0f );
 		if ( ImGui::Button( "Ambient Occlusion" ) ) {
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			json j;
 			j[ "shader" ] = "Ambient Occlusion";
 			j[ "bindset" ] = "Lighting Operation";
@@ -2408,7 +2408,7 @@ void Voraldo13::MenuLightMash () {
 		ImGui::Text( " " );
 		if ( ImGui::Button( " Mash " ) ) {
 			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			bindSets[ "Lighting Operation" ].apply();
+			LightingOperationBindings();
 			json j;
 			j[ "shader" ] = "Light Mash";
 			j[ "bindset" ] = "Lighting Operation";

@@ -265,12 +265,7 @@ public:
 				const GLuint shader = shaders[ "Renderer" ];
 				glUseProgram( shader );
 				SendRaymarchParameters();
-
-				// bind textures
-				textureManager.Bind( "Blue Noise", 0 );
-				textureManager.Bind( "Accumulator", 1 );
-				textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 2 );
-				textureManager.Bind( "Lighting Block", 3 );
+				RenderBindings();
 
 				static rngi noiseOffset = rngi( 0, 512 );
 
