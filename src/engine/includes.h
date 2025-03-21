@@ -153,6 +153,9 @@ using glm::normalize;
 // png-encoded glyph list decoder
 #include "../data/glyphLoader.h"
 
+// spaceship generator, using the glyphs
+// #include "../data/spaceship.h" // TODO, lots of little fixes needed
+
 // wordlist decoders
 #include "../data/wordlistLoader.h"
 
