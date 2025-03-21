@@ -472,7 +472,7 @@ void Voraldo13::SwapBlocks() {
 	// call SwapBlocks() after operations which change which blocks play the
 	// role of front/back to make sure the state is correct
 
-	flipColorBlocks = !flipColorBlocks;
+	render.flipColorBlocks = !render.flipColorBlocks;
 	render.framesSinceLastInput = 0;
 }
 

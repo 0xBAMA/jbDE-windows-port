@@ -263,7 +263,7 @@ public:
 				// bind textures
 				textureManager.Bind( "Blue Noise", 0 );
 				textureManager.Bind( "Accumulator", 1 );
-				textureManager.Bind( "Color Block" + std::to_string( render.flipColorBlocks ? 0 : 1 ), 2 );
+				textureManager.Bind( render.flipColorBlocks ? "Color Block 1" : "Color Block 0", 2 );
 				textureManager.Bind( "Lighting Block", 3 );
 
 				static rngi noiseOffset = rngi( 0, 512 );
