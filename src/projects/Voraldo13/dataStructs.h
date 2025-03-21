@@ -4,12 +4,6 @@
 /*==============================================================================
 settings structs, for maintaining program state
 ==============================================================================*/
-struct colorGradeParameters {
-	int tonemapMode = 6;
-	float gamma = 1.337f;
-	float colorTemp = 6500.0f;
-};
-
 struct renderState {
 	// application-wide
 	bool showTrident = true;
@@ -48,11 +42,6 @@ struct renderState {
 	int ditherNumBits = 4;
 	int ditherSpaceSelect = 0;
 	int ditherPattern = 0;
-};
-
-struct palette {
-	string label;
-	std::vector<glm::ivec3> colors;
 };
 
 #endif
