@@ -1008,9 +1008,6 @@ void Voraldo13::MenuVAT () {
 		ImGui::Separator();
 		ImGui::Indent( 16.0f );
 
-		ImGui::Text( "TODO" );
-
-		/*
 		static glm::vec4 color0 = glm::vec4( 200.0f, 49.0f, 11.0f, 10.0f ) / 255.0f;
 		static glm::vec4 color1 = glm::vec4( 207.0f, 179.0f, 7.0f, 125.0f ) / 255.0f;
 		static glm::vec4 color2 = glm::vec4( 190.0f, 95.0f, 0.0f, 155.0f ) / 255.0f;
@@ -1081,15 +1078,15 @@ void Voraldo13::MenuVAT () {
 		ImGui::SliderFloat( "Beta", &beta, 0.0f, 1.0f, "%.3f" );
 		ImGui::SliderFloat( "Mag", &mag, 0.0f, 1.0f, "%.3f" );
 
-		int blockLevelsDeep = int( log2( float( BLOCKDIM ) ) );
+		int blockLevelsDeep = int( log2( float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ) ) );
 		if ( ImGui::Button( " Compute From String " ) ) {
 			voxelAutomataTerrain vS( blockLevelsDeep, flip, string( inputString ), initMode, lambda, beta, mag, glm::bvec3( minusX, minusY, minusZ ), glm::bvec3( plusX, plusY, plusZ ) );
 			strcpy( inputString, vS.getShortRule().c_str() );
 			std::vector<uint8_t> loaded;
-			loaded.reserve( blockDim.x * blockDim.y * blockDim.z, * 4 );
-			for ( int x = 0; x < BLOCKDIM; x++ ) {
-				for ( int y = 0; y < BLOCKDIM; y++ ) {
-					for ( int z = 0; z < BLOCKDIM; z++ ) {
+			loaded.reserve( blockDim.x * blockDim.y * blockDim.z * 4 );
+			for ( int x = 0; x < blockDim.x; x++ ) {
+				for ( int y = 0; y < blockDim.y; y++ ) {
+					for ( int z = 0; z < blockDim.z; z++ ) {
 						glm::vec4 color;
 						switch ( vS.state[ x ][ y ][ z ] ) {
 							case 0: color = color0; break;
@@ -1122,10 +1119,10 @@ void Voraldo13::MenuVAT () {
 			voxelAutomataTerrain vR( blockLevelsDeep, flip, string( "r" ), initMode, lambda, beta, mag, glm::bvec3( minusX, minusY, minusZ ), glm::bvec3( plusX, plusY, plusZ ) );
 			strcpy( inputString, vR.getShortRule().c_str() );
 			std::vector<uint8_t> loaded;
-			loaded.reserve( blockDim.x * blockDim.y * blockDim.z, * 4 );
-			for ( int x = 0; x < BLOCKDIM; x++ ) {
-				for ( int y = 0; y < BLOCKDIM; y++ ) {
-					for ( int z = 0; z < BLOCKDIM; z++ ) {
+			loaded.reserve( blockDim.x * blockDim.y * blockDim.z * 4 );
+			for ( int x = 0; x < blockDim.x; x++ ) {
+				for ( int y = 0; y < blockDim.y; y++ ) {
+					for ( int z = 0; z < blockDim.z; z++ ) {
 						glm::vec4 color;
 						switch ( vR.state[ x ][ y ][ z ] ) {
 							case 0: color = color0; break;
@@ -1158,10 +1155,10 @@ void Voraldo13::MenuVAT () {
 			voxelAutomataTerrain vI( blockLevelsDeep, flip, string( "i" ), initMode, lambda, beta, mag, glm::bvec3( minusX, minusY, minusZ ), glm::bvec3( plusX, plusY, plusZ ) );
 			strcpy( inputString, vI.getShortRule().c_str() );
 			std::vector<uint8_t> loaded;
-			loaded.reserve( blockDim.x * blockDim.y * blockDim.z, * 4 );
-			for ( int x = 0; x < BLOCKDIM; x++ ) {
-				for ( int y = 0; y < BLOCKDIM; y++ ) {
-					for ( int z = 0; z < BLOCKDIM; z++ ) {
+			loaded.reserve( blockDim.x * blockDim.y * blockDim.z * 4 );
+			for ( int x = 0; x < blockDim.x; x++ ) {
+				for ( int y = 0; y < blockDim.y; y++ ) {
+					for ( int z = 0; z < blockDim.z; z++ ) {
 						glm::vec4 color;
 						switch ( vI.state[ x ][ y ][ z ] ) {
 							case 0: color = color0; break;
@@ -1189,7 +1186,6 @@ void Voraldo13::MenuVAT () {
 			BlockDispatch();
 			setColorMipmapFlag();
 		}
-		*/
 
 		ImGui::Unindent( 16.0f );
 		ImGui::EndTabItem();
