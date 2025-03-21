@@ -25,11 +25,101 @@ public:
 	void genLightMipmap();
 
 //==============================================================================
-// these were previously done via #defines... no reason to hardcode them
+// these were previously done via #defines... no reason to hardcode them,
 	// they should be dynamic at runtime
 
-	float SSFactor = 1.0f;		// supersampling factor, for scaling the accumulator
-	uint32_t blockSize = 256;	// size of the block
+	float SSFactor = 1.0f;			// supersampling factor for the accumulator
+	uvec3 blockDim = uvec3( 256u );	// size of the block
+
+//==============================================================================
+// ImGui menu functions + associated operation functions
+	void MenuAABB();				float OperationAABB();
+	void MenuCylinderTube();		float OperationCylinderTube();
+	void MenuEllipsoid();			float OperationEllipsoid();
+	void MenuGrid();				float OperationGrid();
+	void MenuHeightmap();			float OperationHeightmap();
+	void MenuIcosahedron();			float OperationIcosahedron();
+	void MenuNoise();				float OperationNoise();
+	void MenuSphere();				float OperationSphere();
+	void MenuTriangle();			float OperationTriangle();
+	void MenuUserShader();			float OperationUserShader();
+	void MenuVAT();					float OperationVAT();
+	void MenuSpaceship();			float OperationSpaceship();
+	void MenuLetters();				float OperationLetters();
+	void MenuOBJ();					float OperationOBJ();
+	void MenuXOR();					float OperationXOR();
+	void MenuClearBlock();			float OperationClearBlock();
+	void MenuMasking();				float OperationMasking();
+	void MenuBlur();				float OperationBlur();
+	void MenuShiftTrim();			float OperationShiftTrim();
+	void MenuLoadSave();			float OperationLoadSave();
+	void MenuLimiterCompressor();	float OperationLimiterCompressor();
+	void MenuCopyPaste();			float OperationCopyPaste();
+	void MenuLogging();				float OperationLogging();
+	void MenuScreenshot();			float OperationScreenshot();
+	void MenuClearLightLevels();	float OperationClearLightLevels();
+	void MenuPointLight();			float OperationPointLight();
+	void MenuConeLight();			float OperationConeLight();
+	void MenuDirectionalLight();	float OperationDirectionalLight();
+	void MenuFakeGI();				float OperationFakeGI();
+	void MenuAmbientOcclusion();	float OperationAmbientOcclusion();
+	void MenuLightMash();			float OperationLightMash();
+
+	void MenuApplicationSettings();
+	void MenuRenderingSettings();
+	void MenuPostProcessingSettings();
+
+	// and some helpers
+	void MenuInit();
+	void MenuPopulate();
+	void MenuLayout( bool* open );
+	int currentlySelectedMenuItem = -1;
+	void MenuSplash();
+	void DrawTextEditorV();
+	bool wantCapturePostprocessScreenshot = false;
+	float postprocessScreenshotScaleFactor = 1.0f;
+	void OrangeText( const char* string );
+	void ColorPickerHelper( bool& draw, int& mask, glm::vec4& color );
+	void CollapsingSection( string labelString, category_t x, unsigned int& current );
+	ImFont* defaultFont;
+	ImFont* titleFont;
+
+//==============================================================================
+	glm::vec3 GetColorForTemperature( float temperature ); // 6500.0 is white
+	std::vector<uint8_t> BayerData( int dimension );
+	std::vector<uint8_t> Make4Channel( std::vector<uint8_t> input );
+
+	void newHeightmapPerlin();
+	void newHeightmapDiamondSquare();
+	void newHeightmapXOR();
+	void newHeightmapAND();
+
+	void CapturePostprocessScreenshot();
+	void SendUniforms( json j );
+	void AddToLog( json j );
+	void DumpLog();
+	void BlockDispatch();
+
+	void updateSavesList();
+	std::vector<string> savesList;
+	bool hasEnding( std::string fullString, std::string ending );
+	bool hasPNG( std::string filename );
+
+	// json adder helper functions
+	void AddBool( json& j, string label, bool value );
+	void AddInt( json& j, string label, int value );
+	void AddFloat( json& j, string label, float value );
+	void AddIvec3( json& j, string label, glm::ivec3 value );
+	void AddVec3( json& j, string label, glm::vec3 value );
+	void AddVec4( json& j, string label, glm::vec4 value );
+
+	string processAddEscapeSequences( string input );
+
+	int selectedPalette = 0;
+	bool paletteResendFlag = true;
+
+	// operation logging
+	std::vector< json > log;
 
 //==============================================================================
 
@@ -46,6 +136,9 @@ public:
 
 			// create the textures
 			CreateTextures();
+
+			// setup for menus
+			MenuInit();
 		}
 	}
 
@@ -66,6 +159,9 @@ public:
 			profilerWindow.gpuGraph.LoadFrameData( &tasks_GPU[ 0 ], tasks_GPU.size() );
 			profilerWindow.Render(); // GPU graph is presented on top, CPU on bottom
 		}
+
+		static bool showMenu = true;
+		MenuLayout( &showMenu );
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
 
