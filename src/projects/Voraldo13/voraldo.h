@@ -127,7 +127,6 @@ public:
 
 	string processAddEscapeSequences( string input );
 
-	int selectedPalette = 0;
 	bool paletteResendFlag = true;
 
 	// operation logging

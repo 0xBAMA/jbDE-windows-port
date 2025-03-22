@@ -2593,7 +2593,6 @@ void Voraldo13::MenuPostProcessingSettings () {
 		" Vlachos", " Triangle Remap Vlachos", " Triangle Remap Uniform Noise",
 		" Triangle Remap Uniform Noise ( Three Channel )" };
 
-
 	ImGui::Text( " " );
 	switch ( render.ditherMode ) {
 	case 0: // No dither
@@ -2607,30 +2606,18 @@ void Voraldo13::MenuPostProcessingSettings () {
 
 	case 2: // palette based
 	// if mode is palette, give a picker for the palette
-		// imgui has some kind of text filtering thing, tbd - would need a text entry field
 
-		ImGui::Text( "TODO: needs to change to use the new palette stuff" );
-
-		/*
-		ImGui::Combo( "Palette", &selectedPalette, paletteLabels.data(), paletteLabels.size() );
-		if ( ImGui::IsItemEdited() ) {
-			paletteResendFlag = true;
-		}
-		ImGui::SameLine();
-		if ( ImGui::Button( "Random" ) ) {
-			paletteResendFlag = true;
-			std::mt19937_64 gen;
-			std::random_device r;
-			std::seed_seq s{ r(), r(), r(), r(), r(), r(), r(), r(), r() };
-			gen = std::mt19937_64( s );
-			std::uniform_int_distribution< int > pick( 0, paletteLabels.size() - 1 );
-			selectedPalette = pick( gen );
-		}
+	{
+		// return value tells if anything was changed internally
+		static int colorLimit = 64;
+		paletteResendFlag |= ColorPickerElement( render.ditherPaletteMin, render.ditherPaletteMax, render.ditherPaletteIndex, colorLimit, "dither" );
 
 		ImGui::Combo( "Colorspace", &render.ditherSpaceSelect, colorspaceModesList, IM_ARRAYSIZE( colorspaceModesList ) );
+		paletteResendFlag |= ImGui::IsItemEdited(); // colorspace change requires recomputing the LUT
 		ImGui::Combo( "Dither Pattern", &render.ditherPattern, ditherPatternList, IM_ARRAYSIZE( ditherPatternList ) );
-		*/
+		// pattern does not require recompute, it's just a new pattern used for thresholding between closest/second closest
 		break;
+	}
 
 	default:
 		break;
