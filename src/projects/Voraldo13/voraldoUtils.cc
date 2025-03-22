@@ -347,7 +347,7 @@ void Voraldo13::updateSavesList() {
 		}
 	};
 	savesList.clear();
-	std::filesystem::path p( "data/saves" );
+	std::filesystem::path p( "../src/projects/Voraldo13/saves" );
 	std::filesystem::directory_iterator start( p );
 	std::filesystem::directory_iterator end;
 	std::transform( start, end, std::back_inserter( savesList ), pathLeafString() );

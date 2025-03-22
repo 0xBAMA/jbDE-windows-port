@@ -1849,14 +1849,12 @@ void Voraldo13::MenuLoadSave () {
 
 		static bool respectMask = false;
 
-		ImGui::Text( "TODO - currently fucked, load and save" );
-
 		if ( ImGui::Button( " Load " ) ) {
-			// Image loadedImage( savesList[ listboxSelected ], LODEPNG );
+			Image_4U loadedImage( savesList[ listboxSelected ] );
 
 			// buffer to the loadbuffer
-			// glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
-			// glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loadedImage.data.data()[ 0 ] );
+			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
+			glTexImage3D( GL_TEXTURE_3D, 0, GL_RGBA8, blockDim.x, blockDim.y, blockDim.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, &loadedImage.GetImageDataBasePtr()[ 0 ] );
 
 			// call the copyLoadbuffer shader
 			SwapBlocks();
@@ -1886,13 +1884,13 @@ void Voraldo13::MenuLoadSave () {
 			}
 
 			// blahblah save it
-			std::vector<uint8_t> bytesToSave;
+			std::vector< uint8_t > bytesToSave;
 			bytesToSave.resize( blockDim.x * blockDim.y * blockDim.z * 4 );
-			// glBindTexture( GL_TEXTURE_3D, textures[ "Color Block Front" ] );
-			// glGetTexImage( GL_TEXTURE_3D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &bytesToSave[ 0 ] );
+			glBindTexture( GL_TEXTURE_3D, textureManager.Get( render.flipColorBlocks ? "Color Block 1" : "Color Block 0" ) );
+			glGetTexImage( GL_TEXTURE_3D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &bytesToSave[ 0 ] );
 
-			// Image saveImage( BLOCKDIM, BLOCKDIM * BLOCKDIM, &bytesToSave.data()[ 0 ] );
-			// saveImage.Save( "data/saves/" + saveString, LODEPNG );
+			Image_4U saveImage( blockDim.x, blockDim.y * blockDim.z, &bytesToSave.data()[ 0 ] );
+			saveImage.Save( string( "../src/projects/Voraldo13/saves/" ) + saveString );
 
 			// get the list with this included
 			updateSavesList();
