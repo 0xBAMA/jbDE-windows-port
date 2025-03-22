@@ -45,6 +45,9 @@ void Voraldo13::MenuInit() {
 
 	// load the records of the menu items
 	MenuPopulate();
+
+	// update the list of saves
+	updateSavesList();
 }
 
 void Voraldo13::MenuLayout( bool* p_open ) {
