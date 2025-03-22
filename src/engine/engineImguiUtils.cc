@@ -73,9 +73,12 @@ void engineBase::DrawTextEditor () {
 	ImGui::End();
 }
 
-void engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalette, int &colorLimit, string sublabel ) {
+bool engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalette, int &colorLimit, string sublabel ) {
+	bool edited = false;
 	ImGui::SliderFloat( ( string( "Min##" ) + sublabel ).c_str(), &min, 0.0f, 1.0f );
+	edited |= ImGui::IsItemEdited();
 	ImGui::SliderFloat( ( string( "Max##" ) + sublabel ).c_str(), &max, 0.0f, 1.0f );
+	edited |= ImGui::IsItemEdited();
 
 	static std::vector< const char* > paletteLabels;
 	if ( paletteLabels.size() == 0 ) {
@@ -90,7 +93,7 @@ void engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalet
 
 	ImGui::SliderInt( ( string( "Palette Color Count Limit##" ) + sublabel ).c_str(), &colorLimit, 0, 256 );
 	ImGui::Combo( ( string( "Palette##" ) + sublabel ).c_str(), &selectedPalette, paletteLabels.data(), paletteLabels.size() );
-	bool isUpdated = ImGui::IsItemEdited();
+	edited |= ImGui::IsItemEdited();
 
 	ImGui::SameLine();
 	if ( ImGui::Button( ( string( "Pick Random##" ) + sublabel ).c_str() ) ) {
@@ -99,6 +102,7 @@ void engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalet
 			selectedPalette = palette::PaletteIndex;
 		} while ( palette::paletteListLocal[ selectedPalette ].colors.size() > colorLimit );
 	}
+	edited |= ImGui::IsItemEdited();
 
 	const size_t paletteSize = palette::paletteListLocal[ selectedPalette ].colors.size();
 	ImGui::Text( "  Contains %.3lu colors:", palette::paletteListLocal[ palette::PaletteIndex ].colors.size() );
@@ -137,6 +141,7 @@ void engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalet
 			}
 		}
 	}
+	return edited;
 }
 
 // this will be removed, once everything is moved over

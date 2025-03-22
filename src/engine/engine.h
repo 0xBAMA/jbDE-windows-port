@@ -56,7 +56,7 @@ protected:
 	void ImguiFrameStart();
 	void ImguiFrameEnd();
 	void DrawTextEditor();
-	void ColorPickerElement( float& min, float& max, int& selectedPalette, int& colorLimit, string sublabel );
+	bool ColorPickerElement( float& min, float& max, int& selectedPalette, int& colorLimit, string sublabel );
 	void MenuLayout( bool * open );
 	void QuitConf( bool * open );
 
