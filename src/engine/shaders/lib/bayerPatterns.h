@@ -5,12 +5,20 @@ uint bayer2[] = {
 	192, 64
 };
 
+uint getBayer2 ( ivec2 loc ) {
+	return bayer2[ ( loc.x % 2 ) + 2 * ( loc.y % 2 ) ];
+}
+
 uint bayer4[] = {
 	0,  8,  2,  10,	/* values begin scaled to the range 0..15 */
 	12, 4,  14, 6,	/* so they need to be rescaled by 16 */
 	3,  11, 1,  9,
 	15, 7,  13, 5
 };
+
+uint getBayer4 ( ivec2 loc ) {
+	return 16 * bayer4[ ( loc.x % 4 ) + 4 * ( loc.y % 4 ) ];
+}
 
 uint bayer8[] = {
 	0, 32,  8, 40,  2, 34, 10, 42,   /* 8x8 Bayer ordered dithering  */
@@ -22,3 +30,7 @@ uint bayer8[] = {
 	15, 47,  7, 39, 13, 45,  5, 37,
 	63, 31, 55, 23, 61, 29, 53, 21
 };
+
+uint getBayer8 ( ivec2 loc ) {
+	return 4 * bayer8[ ( loc.x % 8 ) + 8 * ( loc.y % 8 ) ];
+}
