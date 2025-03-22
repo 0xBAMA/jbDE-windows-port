@@ -192,11 +192,20 @@ void Voraldo13::CreateTextures () {
 	if ( !paletteTexturesInitialized ) {
 		textureOptions_t opts;
 
-	// todo
-
-		// 2D texture to hold the palette data... why not just do all of the palettes, it's not a lot of memory and we can index with an int
+		// 2D texture to hold the palette data...
+		opts.width = 256;
+		opts.height = 1;
+		opts.depth = 1;
+		opts.dataType = GL_RGBA32F;
+		textureManager.Add( "Palette Color Data", opts );
 
 		// 3D texture to hold the LUT
+		opts.width = 256;
+		opts.height = 256;
+		opts.depth = 256;
+		opts.dataType = GL_RGBA32UI; // only need 16 bits, but whatever
+		opts.textureType = GL_TEXTURE_3D;
+		textureManager.Add( "Palette LUT", opts );
 	
 		// and then indicate that we don't have to do this work again
 		paletteTexturesInitialized = true;
