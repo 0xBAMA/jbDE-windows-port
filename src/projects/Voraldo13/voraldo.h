@@ -44,7 +44,7 @@ public:
 	// they should be dynamic at runtime
 
 	int tileSize = 64;
-	float SSFactor = 1.0f;			// supersampling factor for the accumulator
+	float SSFactor = 0.618f;		// supersampling factor for the accumulator
 	uvec3 blockDim = uvec3( 256u );	// size of the block
 
 //==============================================================================
