@@ -43,6 +43,10 @@ struct renderState {
 	int ditherNumBits = 4;
 	int ditherSpaceSelect = 0;
 	int ditherPattern = 0;
+	// specifically for the palette based version
+	float ditherPaletteMin = 0.0f;
+	float ditherPaletteMax = 1.0f;
+	int ditherPaletteIndex = 0;
 };
 
 #endif

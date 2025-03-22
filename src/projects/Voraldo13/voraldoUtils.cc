@@ -548,6 +548,21 @@ void Voraldo13::SendDitherParametersQ() {
 	textureManager.Bind( "Blue Noise", 0 );
 	glBindImageTexture( 1, textureManager.Get( "Display Texture" ), 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8UI ); // if it's stupid and works...
 }
+
+void Voraldo13::SendDitherParametersP() {
+	const GLuint shader = shaders[ "Dither Palette" ];
+	glUniform1i( glGetUniformLocation( shader, "colorspacePick" ), render.ditherSpaceSelect );
+	glUniform1i( glGetUniformLocation( shader, "patternSelector" ), render.ditherPattern );
+	glUniform1i( glGetUniformLocation( shader, "frameNumber" ), render.framesSinceStartup );
+	textureManager.Bind( "Palette Color Data", 4 );
+}
+
+void Voraldo13::SendSelectedPalette() {
+// todo
+	// update color data
+	// run compute shader to precompute LUT
+}
+
 void Voraldo13::CapturePostprocessScreenshot() {
 	wantCapturePostprocessScreenshot = false;
 	std::vector< float > imageBytesToSaveP;

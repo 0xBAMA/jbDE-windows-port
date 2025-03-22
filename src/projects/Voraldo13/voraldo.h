@@ -28,6 +28,9 @@ public:
 
 	// dithering helpers
 	void SendDitherParametersQ();
+	void SendSelectedPalette();
+	void SendDitherParametersP();
+
 	// bindset replacements
 	void RenderBindings();
 	void BasicOperationBindings();
