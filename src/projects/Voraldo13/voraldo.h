@@ -26,6 +26,8 @@ public:
 	void SendRaymarchParameters();
 	void SendTonemappingParameters();
 
+	// dithering helpers
+	void SendDitherParametersQ();
 	// bindset replacements
 	void RenderBindings();
 	void BasicOperationBindings();
@@ -261,7 +263,6 @@ public:
 
 				genColorMipmap();
 				genLightMipmap();
-				// bindSets[ "Rendering" ].apply();
 				const GLuint shader = shaders[ "Renderer" ];
 				glUseProgram( shader );
 				SendRaymarchParameters();
@@ -289,6 +290,32 @@ public:
 			glUseProgram( shaders[ "Tonemap" ] );
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
+		{ // dithering
+			scopedTimer Start( "Dithering" );
+
+			switch ( render.ditherMode ) {
+			case 0: // no dithering
+				break;
+
+			case 1: // quantize dither
+				glUseProgram( shaders[ "Dither Quantize" ] );
+				SendDitherParametersQ();
+				glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+				break;
+
+			case 2: // palette dither
+				glUseProgram( shaders[ "Dither Palette" ] );
+				SendSelectedPalette();
+				SendDitherParametersP();
+				glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+				break;
+
+			default:
+				break;
+			}
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 

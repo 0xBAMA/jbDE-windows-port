@@ -1,12 +1,11 @@
 #version 430
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoise;
-layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
-layout( binding = 2, rgba8ui ) uniform uimage2D displayTexture;
-layout( binding = 3, rgba8 ) uniform image2D pattern;
+layout( binding = 1, rgba8ui ) uniform uimage2D displayTexture;
 
 #include "VoraldoCompatibility/colorspaceConversions.h"
 #include "VoraldoCompatibility/ditherNoiseFuncs.h"
+#include "bayerPatterns.h"
 
 uniform int numBits;
 uniform int colorspacePick;
@@ -17,26 +16,30 @@ vec3 getNoise ( int mode ) {
 	const ivec2 location = ivec2( gl_GlobalInvocationID.xy );
 	switch ( mode ) {
 	case 0: // no pattern
-		return vec3( 0.0 );
+		return vec3( 0.0f );
 		break;
 
-	// texture based
+	// selected patterns:
 	case 1:
-	case 2:
-	case 3: // bayer matricies
-		return imageLoad( pattern, location % imageSize( pattern ) ).rrr;
+		return vec3( getBayer2( location ) ) / 255.0f;
 		break;
-	case 4: // blue noise
-		return imageLoad( blueNoise, location % imageSize( blueNoise ) ).rrr / 255.0;
+	case 2:
+		return vec3( getBayer4( location ) ) / 255.0f;
+		break;
+	case 3:
+		return vec3( getBayer8( location ) ) / 255.0f;
+		break;
+	case 4: // blue noise is the only texture based
+		return vec3( imageLoad( blueNoise, location % imageSize( blueNoise ) ).rrr ) / 255.0f;
 		break;
 	case 5:	// rgb blue noise
-		return imageLoad( blueNoise, location % imageSize( blueNoise ) ).rgb / 255.0;
+		return vec3( imageLoad( blueNoise, location % imageSize( blueNoise ) ).rgb ) / 255.0f;
 		break;
 	case 6: // cycled mono blue
-		return vec3( cycle( imageLoad( blueNoise, location % imageSize( blueNoise ) ).r / 255.0, frameNumber ) );
+		return vec3( cycle( imageLoad( blueNoise, location % imageSize( blueNoise ) ).r / 255.0f, frameNumber ) );
 		break;
 	case 7: // cycled rgb blue
-		return cycle( imageLoad( blueNoise, location % imageSize( blueNoise ) ).rgb / 255.0, frameNumber );
+		return cycle( imageLoad( blueNoise, location % imageSize( blueNoise ) ).rgb / 255.0f, frameNumber );
 		break;
 
 	// noise based
@@ -60,7 +63,7 @@ vec3 getNoise ( int mode ) {
 		break;
 
 	default:
-		return vec3( 0.0 );
+		return vec3( 0.0f );
 		break;
 	}
 }
@@ -68,7 +71,7 @@ vec3 getNoise ( int mode ) {
 vec4 quantize ( vec4 value ) {
 	// demofox's method https://www.shadertoy.com/view/4sKBWR
 	vec4 noiseValue = getNoise( patternSelector ).rgbr;
-	vec4 scale = vec4( exp2( float( numBits ) ) - 1.0 );
+	vec4 scale = vec4( exp2( float( numBits ) ) - 1.0f );
 	value = floor( value * scale + noiseValue ) / scale;
 	return value;
 }
