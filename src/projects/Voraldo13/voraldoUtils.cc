@@ -11,68 +11,95 @@ void Voraldo13::CompileShaders () {
 	// shape operations
 	shaders[ "AABB" ] = computeShader( base + "operations/AABB.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "AABB" ], -1, string( "AABB" ).c_str() );
+
 	shaders[ "Cylinder" ] = computeShader( base + "operations/cylinder.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Cylinder" ], -1, string( "Cylinder" ).c_str() );
+
 	shaders[ "Data Mask" ] = computeShader( base + "operations/dataMask.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Data Mask" ], -1, string( "Data Mask" ).c_str() );
+
 	shaders[ "Ellipsoid" ] = computeShader( base + "operations/ellipsoid.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Ellipsoid" ], -1, string( "Ellipsoid" ).c_str() );
+
 	shaders[ "Heightmap" ] = computeShader( base + "operations/heightmap.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Heightmap" ], -1, string( "Heightmap" ).c_str() );
+
 	shaders[ "Grid" ] = computeShader( base + "operations/grid.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Grid" ], -1, string( "Grid" ).c_str() );
+
 	shaders[ "Sphere" ] = computeShader( base + "operations/sphere.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Sphere" ], -1, string( "Sphere" ).c_str() );
+
 	shaders[ "Triangle" ] = computeShader( base + "operations/triangle.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Triangle" ], -1, string( "Triangle" ).c_str() );
+
 	shaders[ "XOR" ] = computeShader( base + "operations/xor.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "XOR" ], -1, string( "XOR" ).c_str() );
 
 	// utility operations
 	shaders[ "Box Blur" ] = computeShader( base + "operations/boxBlur.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Box Blur" ], -1, string( "Box Blur" ).c_str() );
+
 	shaders[ "Gaussian Blur" ] = computeShader( base + "operations/gaussBlur.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Gaussian Blur" ], -1, string( "Gaussian Blur" ).c_str() );
+
 	shaders[ "Clear" ] = computeShader( base + "operations/clear.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Clear" ], -1, string( "Clear" ).c_str() );
+
 	shaders[ "Load" ] = computeShader( base + "operations/load.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Load" ], -1, string( "Load" ).c_str() );
+
 	shaders[ "Mask Invert" ] = computeShader( base + "operations/maskInvert.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Mask Invert" ], -1, string( "Mask Invert" ).c_str() );
+
 	shaders[ "Mask Clear" ] = computeShader( base + "operations/maskClear.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Mask Clear" ], -1, string( "Mask Clear" ).c_str() );
+
 	shaders[ "Shift" ] = computeShader( base + "operations/shift.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Shift" ], -1, string( "Shift" ).c_str() );
 
 	// lighting operations
 	shaders[ "Light Clear" ] = computeShader( base + "lighting/clear.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Light Clear" ], -1, string( "Light Clear" ).c_str() );
+
 	shaders[ "Light Mash" ] = computeShader( base + "lighting/mash.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Light Mash" ], -1, string( "Light Mash" ).c_str() );
+
 	shaders[ "Fake GI" ] = computeShader( base + "lighting/fakeGI.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Fake GI" ], -1, string( "Fake GI" ).c_str() );
+
 	shaders[ "Directional Light" ] = computeShader( base + "lighting/directional.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Directional Light" ], -1, string( "Directional Light" ).c_str() );
+
 	shaders[ "Point Light" ] = computeShader( base + "lighting/point.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Point Light" ], -1, string( "Point Light" ).c_str() );
+
 	shaders[ "Cone Light" ] = computeShader( base + "lighting/cone.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Cone Light" ], -1, string( "Cone Light" ).c_str() );
+
 	shaders[ "Ambient Occlusion" ] = computeShader( base + "lighting/ambientOcclusion.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Ambient Occlusion" ], -1, string( "Ambient Occlusion" ).c_str() );
 
 	// color adjustments - uses custom tonemap shader
 	shaders[ "Tonemap" ] = computeShader( base + "tonemap.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Tonemap" ], -1, string( "Tonemap" ).c_str() );
+
 	shaders[ "Dither Quantize" ] = computeShader( base + "ditherQuantize.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Dither Quantize" ], -1, string( "Dither Quantize" ).c_str() );
+
 	shaders[ "Dither Palette" ] = computeShader( base + "ditherPalette.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Dither Palette" ], -1, string( "Dither Palette" ).c_str() );
+
+	shaders[ "Dither Palette LUT Precompute" ] = computeShader( base + "ditherLUTPrecompute.cs.glsl" ).shaderHandle;
+	glObjectLabel( GL_PROGRAM, shaders[ "Dither Palette LUT Precompute" ], -1, string( "Dither Palette LUT Precompute" ).c_str() );
 
 	// renderers
 	shaders[ "Image3D Raymarch" ] = computeShader( base + "renderers/raymarch.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Image3D Raymarch" ], -1, string( "Image3D Raymarch" ).c_str() );
+
 	shaders[ "Sampler Raymarch" ] = computeShader( base + "renderers/raymarchSampler.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Sampler Raymarch" ], -1, string( "Sampler Raymarch" ).c_str() );
+
 	shaders[ "Renderer" ] = shaders[ "Image3D Raymarch" ]; // default renderer
 }
 
