@@ -1282,24 +1282,147 @@ void Voraldo13::MenuLetters () {
 		ImGui::Separator();
 		ImGui::Indent( 16.0f );
 
-		ImGui::Text( "TODO" );
-
-		// static letterSelector l;
 		static int letterCount = 0;
 		static int numVariants = 0;
 		static bool respectMask = false;
-		static glm::vec4 color( 0.0f );
 
 		ImGui::SliderInt( "Letter Count", &letterCount, 0, 10000 );
 		ImGui::SliderInt( "Num Variants", &numVariants, 0, 49 );
 		ImGui::Checkbox( "Respect Mask", &respectMask );
-		ImGui::ColorEdit4( "Color", ( float * ) &color, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel );
+
+		static float paletteMin = 0.0f;
+		static float paletteMax = 1.0f;
+		static int paletteIndex = 0;
+		static int paletteLimit = 8;
+		ColorPickerElement( paletteMin, paletteMax, paletteIndex, paletteLimit, "letters" );
+
+		static float alphaMin = 0.0f;
+		static float alphaMax = 1.0f;
+		ImGui::SliderFloat( "Min Alpha", &alphaMin, 0.0f, 1.0f );
+		ImGui::SliderFloat( "Max Alpha", &alphaMax, 0.0f, 1.0f );
 
 		// this is another copy loadbuffer op
 		if ( ImGui::Button( "Draw" ) ) {
 			std::vector< uint8_t > data;
-			// data.resize( blockDim.x * blockDim.y * blockDim.z, * 4 );
-			// l.blockulate( letterCount, numVariants, BLOCKDIM, color, data );
+			data.resize( blockDim.x * blockDim.y * blockDim.z * 4, 0.0f );
+
+			// rng for picking palette
+			palette::PaletteIndex = paletteIndex;
+			rng palettePick( paletteMin, paletteMax );
+			rng alphaGen( alphaMin, alphaMax );
+
+			// rng for picking base position of letters
+			rngi xPosition( 0, blockDim.x );
+			rngi yPosition( 0, blockDim.y );
+			rngi zPosition( 0, blockDim.z );
+
+			// variations
+			rngi directionPick( 1, ( numVariants % 6 ) + 1);
+			rngi scalePick( 1, ( numVariants / 6 ) + 1 );
+
+			for ( int i = 0; i < letterCount; i++ ) {
+				rngi glyphPick = rngi( 0, glyphList.size() - 1 );
+				glyph l = glyphList[ glyphPick() ]; // randomly picked glyph
+
+				// pick a color for this glyph
+				vec4 color = vec4( palette::paletteRef( palettePick() ), alphaGen() );
+
+				int x = xPosition();
+				int y = yPosition();
+				int z = zPosition();
+				int dir = directionPick();
+				int scale = scalePick();
+
+				int xdim = l.glyphData.size();
+				int ydim = l.glyphData[ 1 ].size();
+				for ( int xx = 0; xx < xdim; xx++ )
+					for ( int yy = 0; yy < ydim; yy++ )
+						for ( int xs = 0; xs < scale; xs++ )
+							for ( int ys = 0; ys < scale; ys++ )
+								for ( int zs = 0; zs < scale; zs++ )
+									switch ( dir ) {
+									case 1:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x + xx * scale + xs;
+											int yyy = y + yy * scale + ys;
+											int zzz = z + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									case 2:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x - xx + xs;
+											int yyy = y + yy * scale + ys;
+											int zzz = z + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									case 3:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x + xx * scale + xs;
+											int yyy = y + yy * scale + ys;
+											int zzz = z + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									case 4:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x + xx * scale + xs;
+											int yyy = y - yy + ys;
+											int zzz = z + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									case 5:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x + xs;
+											int yyy = y + yy * scale + ys;
+											int zzz = z + xx * scale + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									case 6:
+										if ( l.glyphData[ xx ][ yy ] == 1 ) {
+											int xxx = x + xs;
+											int yyy = y + yy * scale + ys;
+											int zzz = z - xx + zs;
+											if ( xxx < 0 || xxx >= blockDim.x || yyy < 0 || yyy >= blockDim.y || zzz < 0 || zzz >= blockDim.z ) break;
+											int index = 4 * ( xxx + yyy * blockDim.x + zzz * blockDim.y * blockDim.z );
+											data[ index + 0 ] = color.x * 255;
+											data[ index + 1 ] = color.y * 255;
+											data[ index + 2 ] = color.z * 255;
+											data[ index + 3 ] = color.w * 255;
+										}
+										break;
+									default: break;
+									}
+			}
+
 
 			// buffer to the loadbuffer
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
