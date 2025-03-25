@@ -49,6 +49,11 @@ public:
 
 //==============================================================================
 // ImGui menu functions + associated operation functions
+	// need to figure out argument list for each one, to call in several places:
+		// inside the imgui functions
+		// inside the terminal commands
+		// details tbd, but something for the scripting interface
+
 	void MenuAABB();				float OperationAABB();
 	void MenuCylinderTube();		float OperationCylinderTube();
 	void MenuEllipsoid();			float OperationEllipsoid();
@@ -150,6 +155,15 @@ public:
 
 			// setup for menus
 			MenuInit();
+
+			/*
+			// thinking about adding command line interface for all the operations...
+			terminal.addCommand( std::vector< string > commandAndOptionalAliases_in,
+				std::vector< var_t > argumentList_in,
+				std::function< void( args_t args ) > func_in,
+				string description_in );
+			*/
+
 		}
 	}
 
