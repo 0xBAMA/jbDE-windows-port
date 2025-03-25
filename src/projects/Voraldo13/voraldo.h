@@ -345,7 +345,9 @@ public:
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Clear();
-			textRenderer.Update( ImGui::GetIO().DeltaTime );
+			if ( render.showTiming ) {
+				textRenderer.Update( ImGui::GetIO().DeltaTime );
+			}
 
 			// show terminal, if active - check happens inside
 			textRenderer.drawTerminal( terminal );
@@ -355,7 +357,7 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		{ // show trident with current orientation
+		if ( render.showTrident ) { // show trident with current orientation
 			scopedTimer Start( "Trident" );
 			trident.Update( textureManager.Get( "Display Texture" ) );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
