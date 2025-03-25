@@ -90,8 +90,8 @@ void Voraldo13::CompileShaders () {
 	shaders[ "Dither Palette" ] = computeShader( base + "ditherPalette.cs.glsl" ).shaderHandle;
 	glObjectLabel( GL_PROGRAM, shaders[ "Dither Palette" ], -1, string( "Dither Palette" ).c_str() );
 
-	shaders[ "Dither Palette LUT Precompute" ] = computeShader( base + "ditherLUTPrecompute.cs.glsl" ).shaderHandle;
-	glObjectLabel( GL_PROGRAM, shaders[ "Dither Palette LUT Precompute" ], -1, string( "Dither Palette LUT Precompute" ).c_str() );
+	// shaders[ "Dither Palette LUT Precompute" ] = computeShader( base + "ditherLUTPrecompute.cs.glsl" ).shaderHandle;
+	// glObjectLabel( GL_PROGRAM, shaders[ "Dither Palette LUT Precompute" ], -1, string( "Dither Palette LUT Precompute" ).c_str() );
 
 	// renderers
 	shaders[ "Image3D Raymarch" ] = computeShader( base + "renderers/raymarch.cs.glsl" ).shaderHandle;
@@ -623,9 +623,37 @@ void Voraldo13::SendDitherParametersP() {
 }
 
 void Voraldo13::SendSelectedPalette() {
-// todo
-	// update color data
-	// run compute shader to precompute LUT
+	// update color data for the palette
+	if ( paletteResendFlag ) {
+
+	// I don't know if this is worth trying
+		// there's some interesting opportunities here... using the interpolated color palette, I could expand any range into 256 colors...
+		// in the absence of any reason not to, I think I would prefer to do it that way - may need to revisit, tbd
+		/*
+		const int paletteSize = 256;
+		static vec3 colors[ paletteSize ];
+		palette::PaletteIndex = ditherPaletteIndex;
+		for ( int i = 0; i < paletteSize; i++ ) {
+			colors[ i ] = palette::paletteRef( RemapRange( float( i ), 0.0f, 256.0f, ditherPaletteMin, ditherPaletteMax ) );
+		}
+		*/
+
+	// else, we'll just use the colors out of the selected palette
+		const int paletteSize = palette::paletteListLocal[ render.ditherPaletteIndex ].colors.size();
+		vec4 colors[ 256 ];
+		for ( int i = 0; i < paletteSize; i++ ) {
+			colors[ i ] = vec4( vec3( palette::paletteListLocal[ render.ditherPaletteIndex ].colors[ i ] ) / 255.0f, 1.0f );
+		}
+
+		glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Palette Color Data" ) );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F, paletteSize, 1, 0, GL_RGBA, GL_FLOAT, &colors[ 0 ] );
+
+		// run compute shader to precompute LUT
+		// glUseProgram( shaders[ "Dither Palette LUT Precompute" ] );
+		// glDispatchCompute( 64, 64, 64 ); // hardcoded for 8-bit color space
+
+		paletteResendFlag = false;
+	}
 }
 
 void Voraldo13::CapturePostprocessScreenshot() {
