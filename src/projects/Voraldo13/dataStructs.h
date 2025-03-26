@@ -36,7 +36,7 @@ struct renderState {
 	bool flipColorBlocks = false;
 	uint32_t framesSinceStartup = 0;
 	uint32_t framesSinceLastInput = 0;
-	uint32_t numFramesHistory = 8; // how long to run after the last input - configurable via menu
+	uint32_t numFramesHistory = 32; // how long to run after the last input - configurable via menu
 
 	// dithering configuration
 	int ditherMode = 0;

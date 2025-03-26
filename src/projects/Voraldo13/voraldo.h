@@ -272,8 +272,7 @@ public:
 			// glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 
 			// don't render redundantly - only run for numFramesHistory frames after any state changes
-			// if ( render.framesSinceLastInput <= render.numFramesHistory ) {
-			if ( true ) {
+			if ( render.framesSinceLastInput <= render.numFramesHistory ) {
 
 				genColorMipmap();
 				genLightMipmap();
