@@ -1554,7 +1554,7 @@ void Voraldo13::MenuMasking () {
 		static bool useLightR;
 		static bool useLightG;
 		static bool useLightB;
-		static int amount;
+		static int amount = 255;
 
 		// unmask all
 		ImGui::Text( " " );
@@ -2062,7 +2062,7 @@ void Voraldo13::MenuClearLightLevels () {
 		ImGui::Separator();
 		ImGui::Indent( 16.0f );
 
-		static glm::vec4 color;
+		static glm::vec4 color = vec4( 1.0f );
 
 		ImGui::ColorEdit3( "Light Color", ( float * ) &color );
 		ImGui::SliderFloat( "Intensity Scalar", &color.a, 0.0f, 5.0f );
@@ -2284,46 +2284,15 @@ void Voraldo13::MenuFakeGI () {
 
 		ImGui::Text( " " );
 		if ( ImGui::Button( " Fake GI " ) ) {
-			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			LightingOperationBindings();
-			json j; // no buffer swap
+			json j;
 			j[ "shader" ] = "Fake GI";
 			j[ "bindset" ] = "Lighting Operation";
 			AddFloat( j, "sFactor", sfactor );
 			AddFloat( j, "alphaThreshold", alphaThreshold );
 			AddVec4( j, "skyIntensity", skyColor );
 			AddInt( j, "upDirection", upDirection );
-			SendUniforms( j );
 
-	/*
-	This has a sequential dependence - from the same guy who did the Voxel
-	Automata Terrain, Brent Werness:
-			"Totally faked the GI!  It just casts out 9 rays in upwards facing the
-		lattice directions.
-			If it escapes it gets light from the sky, otherwise it gets some
-		fraction of the light from whatever cell it hits.  Run from top to
-		bottom and you are set!"
-	*/
-
-			// allowing for nonuniform block sizing
-			uvec3 blockControl;
-			if ( upDirection == 0 || upDirection == 1 ) {
-				blockControl = blockDim.yzx;
-			} else if ( upDirection == 2 || upDirection == 3 ) {
-				blockControl = blockDim.zxy;
-			} else {
-				blockControl = blockDim.xyz;
-			}
-
-			const GLint shaderIndexLoc = glGetUniformLocation( shaders[ "Fake GI" ], "index" );
-			for ( int i = 0; i < blockControl.z; i++ ) {
-				// i is used for the mapping inside the shader
-				glUniform1i( shaderIndexLoc, i );
-				glDispatchCompute( ( blockControl.x + 7 ) / 8, ( blockControl.y + 7 ) / 8, 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-			}
-
-			setLightMipmapFlag();
+			OperationFakeGI( j );
 		}
 
 		ImGui::Unindent( 16.0f );
@@ -2337,6 +2306,46 @@ void Voraldo13::MenuFakeGI () {
 		ImGui::EndTabItem();
 	}
 	ImGui::EndTabBar();
+}
+
+float Voraldo13::OperationFakeGI ( json j ) {
+	Tick();
+
+	render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
+	LightingOperationBindings();
+	SendUniforms( j );
+
+	/*
+	This has a sequential dependence - from the same guy who did the Voxel
+	Automata Terrain, Brent Werness:
+			"Totally faked the GI!  It just casts out 9 rays in upwards facing the
+		lattice directions.
+			If it escapes it gets light from the sky, otherwise it gets some
+		fraction of the light from whatever cell it hits.  Run from top to
+		bottom and you are set!"
+	*/
+
+	// allowing for nonuniform block sizing
+	uvec3 blockControl;
+	if ( j[ "upDirection" ] == 0 || j[ "upDirection" ] == 1 ) {
+		blockControl = blockDim.yzx;
+	} else if ( j[ "upDirection" ] == 2 || j[ "upDirection" ] == 3 ) {
+		blockControl = blockDim.zxy;
+	} else {
+		blockControl = blockDim.xyz;
+	}
+
+	const GLint shaderIndexLoc = glGetUniformLocation( shaders[ "Fake GI" ], "index" );
+	for ( int i = 0; i < blockControl.z; i++ ) {
+		// i is used for the mapping inside the shader
+		glUniform1i( shaderIndexLoc, i );
+		glDispatchCompute( ( blockControl.x + 7 ) / 8, ( blockControl.y + 7 ) / 8, 1 );
+		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+	}
+
+	setLightMipmapFlag();
+
+	return Tock();
 }
 
 void Voraldo13::MenuAmbientOcclusion () {
@@ -2542,7 +2551,7 @@ void Voraldo13::MenuRenderingSettings () {
 	// picker for render mode shader
 	ImGui::SliderFloat( "Blend Factor", &render.blendFactor, 0.0f, 1.0f );
 	reset = reset || ImGui::IsItemEdited();
-	ImGui::SliderInt( "History Frames", ( int* ) &render.numFramesHistory, 0, 14 );
+	ImGui::SliderInt( "History Frames", ( int* ) &render.numFramesHistory, 0, 64 );
 	reset = reset || ImGui::IsItemEdited();
 	if( reset ) render.framesSinceLastInput = 0;
 
