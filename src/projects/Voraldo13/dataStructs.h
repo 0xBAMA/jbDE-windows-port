@@ -20,7 +20,7 @@ struct renderState {
 	float alphaCorrectionPower = 2.0f;
 	float jitterAmount = 1.0f;
 	float perspective = 0.2f;
-	int volumeSteps = 500;
+	int volumeSteps = 1200;
 
 	// TODO: stuff for the spherical camera - use perspective factor to multiply uv, I think
 		// maybe roll this into the rendermode? tbd
