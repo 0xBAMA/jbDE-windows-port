@@ -156,7 +156,7 @@ public:
 		switch ( source ) {
 		case shaderSource::fromFile:
 			// input becomes the shader source, loaded from the path
-			cout << endl << "Loading shader from file:" << input << endl;
+			cout << endl << "Loading shader from file:" << input;
 			input = LoadStringFromFile( input, success );
 			[[fallthrough]];
 		case shaderSource::fromString:
