@@ -97,6 +97,7 @@ bool engineBase::ColorPickerElement ( float &min, float &max, int &selectedPalet
 
 	ImGui::SameLine();
 	if ( ImGui::Button( ( string( "Pick Random##" ) + sublabel ).c_str() ) ) {
+		edited = true;
 		do {
 			palette::PickRandomPalette( true );
 			selectedPalette = palette::PaletteIndex;
