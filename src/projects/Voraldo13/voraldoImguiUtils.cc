@@ -102,7 +102,6 @@ void Voraldo13::MenuLayout( bool* p_open ) {
 			} else if ( isPicked( "Ellipsoid" ) ) {				MenuEllipsoid();
 			} else if ( isPicked( "Grid" ) ) {					MenuGrid();
 			} else if ( isPicked( "Heightmap" ) ) {				MenuHeightmap();
-			} else if ( isPicked( "Icosahedron" ) ) {			MenuIcosahedron();
 			} else if ( isPicked( "Noise" ) ) {					MenuNoise();
 			} else if ( isPicked( "Sphere" ) ) {				MenuSphere();
 			} else if ( isPicked( "Triangle" ) ) {				MenuTriangle();
@@ -514,26 +513,6 @@ void Voraldo13::MenuHeightmap () {
 			setColorMipmapFlag();
 		}
 
-		ImGui::Unindent( 16.0f );
-		ImGui::EndTabItem();
-	}
-	if ( ImGui::BeginTabItem( " Description " ) ) {
-		ImGui::Separator();
-		ImGui::Indent( 16.0f );
-
-		ImGui::Unindent( 16.0f );
-		ImGui::EndTabItem();
-	}
-	ImGui::EndTabBar();
-}
-
-void Voraldo13::MenuIcosahedron () {
-	OrangeText( "Icosahedron" );
-	ImGui::BeginTabBar( "icosahedron" );
-	if ( ImGui::BeginTabItem( " Controls " ) ) {
-		ImGui::Separator();
-		ImGui::Indent( 16.0f );
-		OrangeText( "Currently Unimplemented" );
 		ImGui::Unindent( 16.0f );
 		ImGui::EndTabItem();
 	}

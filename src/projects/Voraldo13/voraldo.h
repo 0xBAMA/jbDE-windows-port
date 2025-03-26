@@ -59,7 +59,6 @@ public:
 	void MenuEllipsoid();			float OperationEllipsoid();
 	void MenuGrid();				float OperationGrid();
 	void MenuHeightmap();			float OperationHeightmap();
-	void MenuIcosahedron();			float OperationIcosahedron();
 	void MenuNoise();				float OperationNoise();
 	void MenuSphere();				float OperationSphere();
 	void MenuTriangle();			float OperationTriangle();
