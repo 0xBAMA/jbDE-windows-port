@@ -81,6 +81,9 @@ add_library( tinyBVH STATIC src/utils/tinyBVH_impl.cc )
 # TinyXML XML serdes
 add_library( tinyXML2 STATIC src/utils/Serialization/tinyXML2/tinyxml2.cc )
 
+# yaml-cpp
+add_subdirectory( ${PROJECT_SOURCE_DIR}/src/utils/Serialization/yaml-cpp )
+
 # Image Libs
 add_library( tinyEXR STATIC src/utils/imageLibs/tinyEXR/tinyexr.cc src/utils/imageLibs/tinyEXR/miniz/miniz.c )
 add_library( STB_ImageUtilsWrapper STATIC src/utils/imageLibs/stb/impl.cc )
@@ -122,6 +125,7 @@ target_link_libraries(
 	BigInt
 	tinyEXR
 	tinyXML2
+	yaml-cpp
 	autocomplete
 	tinyBVH
 	STB_ImageUtilsWrapper

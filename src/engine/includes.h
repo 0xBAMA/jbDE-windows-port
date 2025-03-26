@@ -195,6 +195,9 @@ using json = nlohmann::json;
 #include "../utils/Serialization/tinyXML2/tinyxml2.h"
 using XMLDocument = tinyxml2::XMLDocument;
 
+// YAML lib
+#include "../utils/Serialization/yaml-cpp/include/yaml-cpp/yaml.h"
+
 // .PLY file format I/O
 #include "../utils/happly/happly.h"
 
