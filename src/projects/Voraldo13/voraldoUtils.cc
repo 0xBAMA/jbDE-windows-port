@@ -344,37 +344,25 @@ void Voraldo13::newHeightmapAND() {
 }
 
 void Voraldo13::MenuPopulate() {
-	std::ifstream i( "../src/projects/Voraldo13/menuConfig.json" );
-	json j; i >> j;
-	
-	YAML::Node config;
-	int idx = 0;
+	YAML::Node config = YAML::LoadFile( "../src/projects/Voraldo13/menuConfig.yaml" );
+	int numEntries = config[ "Entries" ].size();
+	for ( int i = 0; i < numEntries; i++ ) {
 
-	for ( auto& element : j[ "Entries" ] ) {
-		// construct each menu entry and add
-		string entryLabel = element[ "Label" ];
-		category_t entryCategory = category_t::none;
-		if ( element[ "Category" ] == string( "Shapes" ) )
-			entryCategory = category_t::shapes;
-		else if ( element[ "Category" ] == string( "Utilities" ) )
-			entryCategory = category_t::utilities;
-		else if ( element[ "Category" ] == string( "Lighting" ) )
-			entryCategory = category_t::lighting;
-		else if ( element[ "Category" ] == string( "Settings" ) )
-			entryCategory = category_t::settings;
-		menu.entries.push_back( menuEntry( entryLabel, entryCategory ) );
+		category_t entryCategoryType = category_t::none;
+		string entryCategory = config[ "Entries" ][ i ][ "Category" ].as<string>();
+		string entryLabel = config[ "Entries" ][ i ][ "Label" ].as<string>();
 
-		// create the corresponding yaml entry
-		YAML::Node entryNode;
-		entryNode[ "Label" ] = string( element[ "Label" ] );
-		entryNode[ "Category" ] = string( element[ "Category" ] );
-		entryNode[ "Description" ] = string( element[ "Description" ] );
-		config[ "Entries" ].push_back( entryNode );
-		idx++;
+		if ( entryCategory == string( "Shapes" ) )
+			entryCategoryType = category_t::shapes;
+		else if ( entryCategory == string( "Utilities" ) )
+			entryCategoryType = category_t::utilities;
+		else if ( entryCategory == string( "Lighting" ) )
+			entryCategoryType = category_t::lighting;
+		else if ( entryCategory == string( "Settings" ) )
+			entryCategoryType = category_t::settings;
+
+		menu.entries.push_back( menuEntry( entryLabel, entryCategoryType ) );
 	}
-
-	// YAML::Node config = YAML::LoadFile( "menuConfig.yaml" );
-	cout << endl << config << endl << endl;
 }
 
 // used in load/save operation to check extension
