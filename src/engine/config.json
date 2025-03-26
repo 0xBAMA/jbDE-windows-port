@@ -174,7 +174,7 @@
 		"SDLDisplayModeDump": false,
 		"SDL_WINDOW_BORDERLESS": true,
 		"SDL_WINDOW_FULLSCREEN": true,
-		"SDL_WINDOW_INPUT_GRABBED": true,
+		"SDL_WINDOW_INPUT_GRABBED": false,
 		"SDL_WINDOW_RESIZABLE": false,
 		"SRGBFramebuffer": true,
 		"allowMultipleViewports": false,
