@@ -1288,6 +1288,9 @@ void Voraldo13::MenuLetters () {
 		ImGui::SliderInt( "Letter Count", &letterCount, 0, 10000 );
 		ImGui::SliderInt( "Num Variants", &numVariants, 0, 49 );
 		ImGui::Checkbox( "Respect Mask", &respectMask );
+		
+		static glm::vec4 color = vec4( 0.0f );
+		ImGui::ColorEdit4( "Negative Space Color", ( float * ) &color, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel );
 
 		static float paletteMin = 0.0f;
 		static float paletteMax = 1.0f;
@@ -1304,6 +1307,12 @@ void Voraldo13::MenuLetters () {
 		if ( ImGui::Button( "Draw" ) ) {
 			std::vector< uint8_t > data;
 			data.resize( blockDim.x * blockDim.y * blockDim.z * 4, 0.0f );
+			for ( int i = 0; i < data.size(); i += 4 ) {
+				data[ i + 0 ] = color.r;
+				data[ i + 1 ] = color.g;
+				data[ i + 2 ] = color.b;
+				data[ i + 3 ] = color.a;
+			}
 
 			// rng for picking palette
 			palette::PaletteIndex = paletteIndex;
