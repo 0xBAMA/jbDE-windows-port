@@ -1,0 +1,97 @@
+Entries:
+  - Label: AABB
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Cylinder/Tube
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Ellipsoid
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Grid
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Heightmap
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Noise
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Sphere
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Triangle
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: User Shader
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: VAT
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Spaceship Generator
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Letters
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: XOR
+    Category: Shapes
+    Description: Placeholder Description
+  - Label: Clear
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Masking
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Blur
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Shift/Trim
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Load/Save
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Limiter/Compressor
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Copy/Paste
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Logging
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Screenshot
+    Category: Utilities
+    Description: Placeholder Description
+  - Label: Clear Levels
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Point Light
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Cone Light
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Directional Light
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Fake GI
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Ambient Occlusion
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Mash
+    Category: Lighting
+    Description: Placeholder Description
+  - Label: Application Settings
+    Category: Settings
+    Description: Placeholder Description
+  - Label: Rendering Settings
+    Category: Settings
+    Description: Placeholder Description
+  - Label: Post Processing
+    Category: Settings
+    Description: Placeholder Description

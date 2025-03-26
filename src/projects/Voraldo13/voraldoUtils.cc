@@ -346,6 +346,10 @@ void Voraldo13::newHeightmapAND() {
 void Voraldo13::MenuPopulate() {
 	std::ifstream i( "../src/projects/Voraldo13/menuConfig.json" );
 	json j; i >> j;
+	
+	YAML::Node config;
+	int idx = 0;
+
 	for ( auto& element : j[ "Entries" ] ) {
 		// construct each menu entry and add
 		string entryLabel = element[ "Label" ];
@@ -359,7 +363,18 @@ void Voraldo13::MenuPopulate() {
 		else if ( element[ "Category" ] == string( "Settings" ) )
 			entryCategory = category_t::settings;
 		menu.entries.push_back( menuEntry( entryLabel, entryCategory ) );
+
+		// create the corresponding yaml entry
+		YAML::Node entryNode;
+		entryNode[ "Label" ] = string( element[ "Label" ] );
+		entryNode[ "Category" ] = string( element[ "Category" ] );
+		entryNode[ "Description" ] = string( element[ "Description" ] );
+		config[ "Entries" ].push_back( entryNode );
+		idx++;
 	}
+
+	// YAML::Node config = YAML::LoadFile( "menuConfig.yaml" );
+	cout << endl << config << endl << endl;
 }
 
 // used in load/save operation to check extension
