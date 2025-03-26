@@ -9,6 +9,18 @@
 struct bbox {
 	glm::ivec3 mins;
 	glm::ivec3 maxs;
+
+	const int getSmallestAxis() const {
+		glm::ivec3 ranges = maxs - mins;
+		int minRange = min( min( ranges.x, ranges.y ), ranges.z );
+		if ( ranges.x == minRange ) {
+			return 0;
+		} else if ( ranges.y == minRange ) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
 };
 
 // custom specialization of std::hash can be injected in namespace std
@@ -47,6 +59,7 @@ public:
 	void flipBlock();
 	void mirrorBlock();
 	void squareBlock();
+	void arrayMod();
 	void genSpaceship( int numOps, float _spread, int _minXYScale, int _maxXYScale, int _minZScale, int _maxZScale, int _paletteIndex, float _paletteMin, float _paletteMax, float _alphaMin, float _alphaMax, std::vector< glyph > &glyphList );
 	void getData( std::vector< uint8_t > &data, int dim );
 };
@@ -213,6 +226,40 @@ inline void spaceshipGenerator::squareBlock () {
 	model = newmodel;
 }
 
+inline void spaceshipGenerator::arrayMod () {
+	// how many times to repeat the contents
+	rngi numRepeatsPick( 2, 5 );
+	const int numRepeats = numRepeatsPick();
+
+	// setup for array mod
+	squareBlock();
+	const bbox b = getModelBBox();
+
+	// which axis to repeat on
+	// rngi axisPick( 0, 2 );
+	// const int axis = axisPick();
+	int axis = b.getSmallestAxis();
+
+	// create the new model to write into...
+	std::unordered_map< glm::ivec3, glm::vec4 > newModel;
+
+	ivec3 offset = ivec3( 0 );
+	switch ( axis ) {
+	case 0: offset = ivec3( b.maxs.x, 0, 0 ); break;
+	case 1: offset = ivec3( 0, b.maxs.y, 0 ); break;
+	case 2: offset = ivec3( 0, 0, b.maxs.z ); break;
+	}
+	for ( auto& [ p, m ] : model ) {
+		for ( int i = 0; i < numRepeats; i++ ) {
+			newModel[ p + i * offset ] = m;
+		}
+	}
+
+	// replace existing model with the contents
+	model.clear();
+	model = newModel;
+}
+
 inline void spaceshipGenerator::genSpaceship ( int numOps, float _spread, int _minXYScale, int _maxXYScale, int _minZScale, int _maxZScale, int _paletteIndex, float _paletteMin, float _paletteMax, float _alphaMin, float _alphaMax, std::vector< glyph > &glyphList ) {
 	spread = _spread;
 	minXYScale = _minXYScale;
@@ -230,7 +277,7 @@ inline void spaceshipGenerator::genSpaceship ( int numOps, float _spread, int _m
 		stampRandomGlyph( glyphList );
 	}
 	for ( int i = 0; i < numOps; i++ ) {
-		switch( opPick() % 5 ) {
+		switch( opPick() % 6 ) {
 		case 0:
 		case 1:
 			for ( uint8_t j = 0; j < 22; j++ ) {
@@ -240,6 +287,7 @@ inline void spaceshipGenerator::genSpaceship ( int numOps, float _spread, int _m
 		case 2: mirrorBlock(); flipBlock(); mirrorBlock(); break;
 		case 3: mirrorBlock(); break;
 		case 4: shaveBlock(); break;
+		case 5: arrayMod(); break;
 		default: break;
 		}
 	}
