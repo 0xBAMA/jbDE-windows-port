@@ -6,14 +6,15 @@ set( CMAKE_VERBOSE_MAKEFILE ON )
 set( CMAKE_CXX_STANDARD 20 )
 set( CMAKE_CXX_STANDARD_REQUIRED True )
 
-# Add Debug and Release build configurations
-# set( CMAKE_CXX_FLAGS_DEBUG "-g" )
-# set( CMAKE_CXX_FLAGS_RELEASE "-O4" )
-
-# this works on windows
-set( CMAKE_CXX_FLAGS_RELEASE "/O2" )
-set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" )
-set( CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" )
+# platform specific compiler flags
+if(UNIX)
+	set( CMAKE_CXX_FLAGS_DEBUG "-g" )
+	set( CMAKE_CXX_FLAGS_RELEASE "-O4" )
+elseif(WIN32)
+	set( CMAKE_CXX_FLAGS_RELEASE "/O2" )
+	set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi" )
+	set( CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF" )
+endif()
 
 # I think opening the console is breaking steam deck usage... not sure how to disable
 # set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS /SUBSYSTEM:WINDOWS )
