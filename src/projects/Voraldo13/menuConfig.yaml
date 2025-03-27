@@ -2,6 +2,17 @@ Entries:
   - Label: AABB
     Category: Shapes
     Description: Placeholder Description
+    Parameters:
+      - Display Name: Mins
+        Type: vec3
+      - Display Name: Maxs
+        Type: vec3
+      - Display Name: Draw
+        Type: bool
+      - Display Name: Mask
+        Type: uint8
+      - Display Name: Color
+        Type: vec4
 
   - Label: Cylinder/Tube
     Category: Shapes
