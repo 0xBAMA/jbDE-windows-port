@@ -1,18 +1,6 @@
 #include "../../../engine/engine.h"
 #include "generate.h"
 
-namespace std {
-	template<> struct hash< glm::ivec3 > {
-		// custom specialization of std::hash can be injected in namespace std
-		std::size_t operator()( glm::ivec3 const& s ) const noexcept {
-			std::size_t h1 = std::hash< int >{}( s.x );
-			std::size_t h2 = std::hash< int >{}( s.y );
-			std::size_t h3 = std::hash< int >{}( s.z );
-			return h1 ^ ( h2 << 4 ) ^ ( h3 << 8 );
-		}
-	};
-} // key hash needed for std::unordered_map
-
 struct ChorizoConfig_t {
 	GLuint vao;
 	GLuint shapeParametersBuffer;

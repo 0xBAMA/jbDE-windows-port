@@ -82,6 +82,19 @@ using glm::mat3;
 using glm::mat4;
 using glm::normalize;
 
+// key hash needed for std::unordered_map with ivec3 keys
+namespace std {
+	template<> struct hash< glm::ivec3 > {
+		// custom specialization of std::hash can be injected in namespace std
+		std::size_t operator()( glm::ivec3 const& s ) const noexcept {
+			std::size_t h1 = std::hash< int >{}( s.x );
+			std::size_t h2 = std::hash< int >{}( s.y );
+			std::size_t h3 = std::hash< int >{}( s.z );
+			return h1 ^ ( h2 << 4 ) ^ ( h3 << 8 );
+		}
+	};
+}
+
 //// tracy profiler annotation
  // remove this when adding Tracy
 #define ZoneScoped (void)0
@@ -202,6 +215,6 @@ using XMLDocument = tinyxml2::XMLDocument;
 #include "../utils/happly/happly.h"
 
 // tinyBVH software BVH build/traversal
- #include "../utils/tinybvh/tiny_bvh.h"
+#include "../utils/tinybvh/tiny_bvh.h"
 
 #endif

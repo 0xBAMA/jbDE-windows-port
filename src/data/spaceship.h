@@ -23,18 +23,6 @@ struct bbox {
 	}
 };
 
-// custom specialization of std::hash can be injected in namespace std
-namespace std { // this is required for the use of std::unordered_map
-	template<> struct hash< glm::ivec3 > {
-		std::size_t operator()( glm::ivec3 const& s ) const noexcept {
-			std::size_t h1 = std::hash< int >{}( s.x );
-			std::size_t h2 = std::hash< int >{}( s.y );
-			std::size_t h3 = std::hash< int >{}( s.z );
-			return h1 ^ ( h2 << 4 ) ^ ( h3 << 8 );
-		}
-	};
-}
-
 class spaceshipGenerator {
 public:
 	spaceshipGenerator () {}
