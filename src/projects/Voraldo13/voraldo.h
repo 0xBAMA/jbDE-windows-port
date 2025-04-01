@@ -76,11 +76,11 @@ public:
 	void MenuCopyPaste();			float OperationCopyPaste();
 	void MenuLogging();				float OperationLogging();
 	void MenuScreenshot();			float OperationScreenshot();
-	void MenuClearLightLevels();	float OperationClearLightLevels();
+	void MenuClearLightLevels();	float OperationClearLightLevels( json j );
 	void MenuPointLight();			float OperationPointLight();
 	void MenuConeLight();			float OperationConeLight();
 	void MenuDirectionalLight();	float OperationDirectionalLight();
-	void MenuFakeGI();				float OperationFakeGI();
+	void MenuFakeGI();				float OperationFakeGI( json j );
 	void MenuAmbientOcclusion();	float OperationAmbientOcclusion();
 	void MenuLightMash();			float OperationLightMash();
 
@@ -238,6 +238,62 @@ public:
 			}
 			if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
 				CompileShaders();
+			}
+			if ( inputHandler.getState4( KEY_P ) == KEYSTATE_RISING ) {
+			// I want controls like this... this is much too verbose - I want to make it something like
+				// RunScript( ... ) and it's just going to load a YAML file with a series of operations
+
+				float sumTime = 0.0f;
+
+				{ // clear the lighting
+					json j;
+					j[ "shader" ] = "Light Clear";
+					j[ "bindset" ] = "Lighting Operation";
+
+					AddVec4( j, "color", vec4( 0.0f ) );
+
+					sumTime += OperationClearLightLevels( j );
+				}
+
+				{ // apply the fake GI from a couple angles
+					json j;
+					j[ "shader" ] = "Fake GI";
+					j[ "bindset" ] = "Lighting Operation";
+
+					float sfactor = 0.028f;
+					float alphaThreshold = 0.105f;
+					glm::vec4 skyColor = glm::vec4( 0.76f, 0.63f, 0.49f, 0.08f );
+					int upDirection = 0;
+
+					AddFloat( j, "sFactor", sfactor );
+					AddFloat( j, "alphaThreshold", alphaThreshold );
+					AddVec4( j, "skyIntensity", skyColor );
+					AddInt( j, "upDirection", upDirection );
+
+					sumTime += OperationFakeGI( j );
+
+					skyColor = glm::vec4( 0.49f, 0.62f, 0.76f, 0.05f );
+					upDirection = 2;
+
+					AddFloat( j, "sFactor", sfactor );
+					AddFloat( j, "alphaThreshold", alphaThreshold );
+					AddVec4( j, "skyIntensity", skyColor );
+					AddInt( j, "upDirection", upDirection );
+
+					sumTime += OperationFakeGI( j );
+
+					skyColor = glm::vec4( 0.76f, 0.52f, 0.49f, 0.05f );
+					upDirection = 4;
+
+					AddFloat( j, "sFactor", sfactor );
+					AddFloat( j, "alphaThreshold", alphaThreshold );
+					AddVec4( j, "skyIntensity", skyColor );
+					AddInt( j, "upDirection", upDirection );
+
+					sumTime += OperationFakeGI( j );
+				}
+
+				cout << "Lighting Operation Complete in " << sumTime << "ms" << endl;
 			}
 		}
 	}

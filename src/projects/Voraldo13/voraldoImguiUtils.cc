@@ -2068,16 +2068,12 @@ void Voraldo13::MenuClearLightLevels () {
 		ImGui::SliderFloat( "Intensity Scalar", &color.a, 0.0f, 5.0f );
 
 		if ( ImGui::Button( "Clear Levels" ) ) {
-			render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
-			LightingOperationBindings();
 			json j;
 			j[ "shader" ] = "Light Clear";
 			j[ "bindset" ] = "Lighting Operation";
 			AddVec4( j, "color", color );
-			SendUniforms( j );
 			AddToLog( j );
-			BlockDispatch();
-			setLightMipmapFlag();
+			OperationClearLightLevels( j );
 		}
 		ImGui::Unindent( 16.0f );
 		ImGui::EndTabItem();
@@ -2090,6 +2086,19 @@ void Voraldo13::MenuClearLightLevels () {
 		ImGui::EndTabItem();
 	}
 	ImGui::EndTabBar();
+}
+
+float Voraldo13::OperationClearLightLevels( json j ) {
+	Tick();
+
+	render.framesSinceLastInput = 0; // no swap, but will require a renderer refresh
+	LightingOperationBindings();
+	SendUniforms( j );
+
+	BlockDispatch();
+	setLightMipmapFlag();
+
+	return Tock();
 }
 
 void Voraldo13::MenuPointLight () {
@@ -2292,6 +2301,7 @@ void Voraldo13::MenuFakeGI () {
 			AddVec4( j, "skyIntensity", skyColor );
 			AddInt( j, "upDirection", upDirection );
 
+			AddToLog( j );
 			OperationFakeGI( j );
 		}
 
