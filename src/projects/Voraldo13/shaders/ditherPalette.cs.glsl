@@ -76,8 +76,8 @@ float getDistance ( vec4 input1, vec4 input2 ) {
 vec4 findClosestTwoAndPick ( vec4 readValue ) {
 	const int numEntries = imageSize( palette ).x;
 
-	vec4 closestVal = vec4( -5.0f );
-	vec4 secondClosest = vec4( -5.0f );
+	vec4 closestVal = vec4( 0.0f );
+	vec4 secondClosest = vec4( 0.0f );
 	vec4 temp;
 	float tempDistance;
 
@@ -104,7 +104,7 @@ void main () {
 	uvec4 originalColor = imageLoad( displayTexture, location );
 
 	// vec4 writeValue = imageLoad( palette, ivec2( location.x % imageSize( palette ).x, 0 ) );
-	vec4 writeValue = findClosestTwoAndPick( vec4( originalColor.xyz, 1.0 ) / 255.0 );
+	vec4 writeValue = findClosestTwoAndPick( vec4( originalColor.xyz, 1.0 ) );
 
 	imageStore( displayTexture, location, uvec4( writeValue * 255.0 ) );
 }

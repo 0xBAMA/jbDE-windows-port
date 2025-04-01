@@ -230,7 +230,7 @@ void Voraldo13::CreateTextures () {
 		opts.width = 256;
 		opts.height = 256;
 		opts.depth = 256;
-		opts.dataType = GL_RGBA32UI; // only need 16 bits, but whatever
+		opts.dataType = GL_R32UI; // only need 16 bits (2x 8-bit indices), but whatever
 		opts.textureType = GL_TEXTURE_3D;
 		textureManager.Add( "Palette LUT", opts );
 	
@@ -360,6 +360,8 @@ void Voraldo13::MenuPopulate() {
 			entryCategoryType = category_t::lighting;
 		else if ( entryCategory == string( "Settings" ) )
 			entryCategoryType = category_t::settings;
+
+		// add parameters...
 
 		menu.entries.push_back( menuEntry( entryLabel, entryCategoryType ) );
 	}
@@ -622,7 +624,10 @@ void Voraldo13::SendDitherParametersP() {
 	glUniform1i( glGetUniformLocation( shader, "colorspacePick" ), render.ditherSpaceSelect );
 	glUniform1i( glGetUniformLocation( shader, "patternSelector" ), render.ditherPattern );
 	glUniform1i( glGetUniformLocation( shader, "frameNumber" ), render.framesSinceStartup );
-	textureManager.Bind( "Palette Color Data", 4 );
+
+	textureManager.Bind( "Blue Noise", 0 );
+	glBindImageTexture( 1, textureManager.Get( "Display Texture" ), 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8UI );
+	textureManager.Bind( "Palette Color Data", 2 );
 }
 
 void Voraldo13::SendSelectedPalette() {
@@ -632,21 +637,19 @@ void Voraldo13::SendSelectedPalette() {
 	// I don't know if this is worth trying
 		// there's some interesting opportunities here... using the interpolated color palette, I could expand any range into 256 colors...
 		// in the absence of any reason not to, I think I would prefer to do it that way - may need to revisit, tbd
-		/*
 		const int paletteSize = 256;
-		static vec3 colors[ paletteSize ];
-		palette::PaletteIndex = ditherPaletteIndex;
+		static vec4 colors[ paletteSize ];
+		palette::PaletteIndex = render.ditherPaletteIndex;
 		for ( int i = 0; i < paletteSize; i++ ) {
-			colors[ i ] = palette::paletteRef( RemapRange( float( i ), 0.0f, 256.0f, ditherPaletteMin, ditherPaletteMax ) );
+			colors[ i ] = vec4( palette::paletteRef( RemapRange( float( i ), 0.0f, 256.0f, render.ditherPaletteMin, render.ditherPaletteMax ) ), 1.0f );
 		}
-		*/
 
 	// else, we'll just use the colors out of the selected palette
-		const int paletteSize = palette::paletteListLocal[ render.ditherPaletteIndex ].colors.size();
-		vec4 colors[ 256 ];
-		for ( int i = 0; i < paletteSize; i++ ) {
-			colors[ i ] = vec4( vec3( palette::paletteListLocal[ render.ditherPaletteIndex ].colors[ i ] ) / 255.0f, 1.0f );
-		}
+	//	const int paletteSize = palette::paletteListLocal[ render.ditherPaletteIndex ].colors.size();
+	//	vec4 colors[ 256 ];
+	//	for ( int i = 0; i < paletteSize; i++ ) {
+	//		colors[ i ] = vec4( vec3( palette::paletteListLocal[ render.ditherPaletteIndex ].colors[ i ] ) / 255.0f, 1.0f );
+	//	}
 
 		glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Palette Color Data" ) );
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA32F, paletteSize, 1, 0, GL_RGBA, GL_FLOAT, &colors[ 0 ] );
