@@ -1,0 +1,38 @@
+Voraldo14:
+  Operations:
+    - AABB
+    - Cylinder/Tube
+    - Ellipsoid
+    - Grid
+    - Heightmap
+    - Noise
+    - Sphere
+    - Triangle
+    - User Shader
+    - VAT
+    - Spaceship Generator
+    - Letters
+    - XOR
+    - Clear
+    - Masking
+    - Blur
+    - Shift/Trim
+    - Load/Save
+    - Limiter/Compressor
+    - Copy/Paste
+    - Logging
+    - Screenshot
+
+  Lighting:
+    - Clear Levels
+    - Point Light
+    - Cone Light
+    - Directional Light
+    - Fake GI
+    - Ambient Occlusion
+    - Mash
+
+  Settings:
+    - Application Settings
+    - Rendering Settings
+    - Post Processing

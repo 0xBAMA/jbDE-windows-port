@@ -43,7 +43,37 @@ public:
 			profilerWindow.Render(); // GPU graph is presented on top, CPU on bottom
 		}
 
+		{
+			ImGui::Begin( "TreeTest" );
 
+			static YAML::Node menuConfig = YAML::LoadFile( "../src/projects/Voraldo14/menu.yaml" );
+
+			static int selected_index = -1;
+			static std::unordered_map<std::string, int> indexMap;
+
+			int idx = 0;
+			for ( const auto& category : menuConfig[ "Voraldo14" ] ) {
+				const ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanLabelWidth;
+				if ( ImGui::TreeNodeEx( category.first.as<string>().c_str(), baseFlags ) ) {
+					for ( const auto& operation : category.second ) {
+						std::string operationName = operation.as<std::string>();
+
+						// Assign a unique index to each entry
+						indexMap[ operationName ] = idx;
+
+						// Selectable items - constrain to the width of the string, so that it prevents hilighting the whole row
+						if ( ImGui::Selectable( operationName.c_str(), selected_index == idx, 0, ImGui::CalcTextSize( operationName.c_str() ) ) ) {
+							selected_index = idx;
+						}
+
+						idx++;
+					}
+					ImGui::TreePop();
+				}
+			}
+
+			ImGui::End();
+		}
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
 	}
