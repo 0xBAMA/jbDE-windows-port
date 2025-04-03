@@ -642,3 +642,15 @@ target_link_libraries( Voraldo13
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Voraldo14
+# =================================================================================================
+add_executable( Voraldo14
+	src/projects/Voraldo14/main.cc
+)
+
+target_link_libraries( Voraldo14
+	PUBLIC
+	engineBase
+)
