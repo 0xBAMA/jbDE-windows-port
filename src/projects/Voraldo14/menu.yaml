@@ -1,27 +1,164 @@
 Voraldo14:
   Operations:
-    - AABB
-    - Cylinder/Tube
-    - Ellipsoid
-    - Grid
-    - Heightmap
-    - Noise
-    - Sphere
-    - Triangle
-    - User Shader
-    - VAT
-    - Spaceship Generator
-    - Letters
-    - XOR
-    - Clear
-    - Masking
-    - Blur
-    - Shift/Trim
-    - Load/Save
-    - Limiter/Compressor
-    - Copy/Paste
-    - Logging
-    - Screenshot
+    - AABB:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Cylinder:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Ellipsoid:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Grid:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Heightmap:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Noise:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Sphere:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Triangle:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - User Shader:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - VAT:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - SpaceshipGen:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Letters:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - XOR:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Clear:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Masking:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Blur:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Shift/Trim:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Load/Save:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Copy/Paste:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
+
+    - Screenshot:
+      parameters:
+        - item1
+        - item2
+        - item3
+      shader: AABB
+      bindset: Basic
 
   Lighting:
     - Clear Levels
