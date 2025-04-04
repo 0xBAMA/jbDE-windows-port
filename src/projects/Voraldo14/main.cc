@@ -48,8 +48,8 @@ public:
 
 			static YAML::Node menuConfig = YAML::LoadFile( "../src/projects/Voraldo14/menu.yaml" );
 
-			static int selected_index = -1;
-			static std::unordered_map<std::string, int> indexMap;
+			static int selectedIndex = -1;
+			static std::unordered_map<int, string> indexMap;
 
 			int idx = 0;
 			for ( const auto& category : menuConfig[ "Voraldo14" ] ) {
@@ -79,6 +79,10 @@ public:
 					ImGui::TreePop();
 				}
 			}
+
+			ImGui::SetCursorPosX( 200 );
+			ImGui::SetCursorPosY( 25 );
+			ImGui::Text( "Selected Item: %s", indexMap[ selectedIndex ] );
 
 			ImGui::End();
 		}
