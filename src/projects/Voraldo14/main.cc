@@ -53,17 +53,25 @@ public:
 
 			int idx = 0;
 			for ( const auto& category : menuConfig[ "Voraldo14" ] ) {
-				const ImGuiTreeNodeFlags baseFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanLabelWidth;
-				if ( ImGui::TreeNodeEx( category.first.as<string>().c_str(), baseFlags ) ) {
+				if ( ImGui::TreeNodeEx( category.first.as<string>().c_str(), ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanLabelWidth ) ) {
 					for ( const auto& operation : category.second ) {
-						std::string operationName = operation.as<std::string>();
 
-						// Assign a unique index to each entry
-						indexMap[ operationName ] = idx;
+						// getting the string label
+						string operationName = operation.begin()->first.as<string>();
+
+						// Identifying the operation associated with each selection state
+						indexMap[ idx ] = operationName;
 
 						// Selectable items - constrain to the width of the string, so that it prevents hilighting the whole row
-						if ( ImGui::Selectable( operationName.c_str(), selected_index == idx, 0, ImGui::CalcTextSize( operationName.c_str() ) ) ) {
-							selected_index = idx;
+						if ( ImGui::Selectable( operationName.c_str(), selectedIndex == idx, 0, ImGui::CalcTextSize( operationName.c_str() ) ) ) {
+							selectedIndex = idx;
+
+							/*
+							if ( operation.begin()->second[ "parameters" ].IsSequence() )
+								for ( const auto& item : operation.begin()->second[ "parameters" ] ) {
+									ImGui::Text( item.as<string>().c_str() );
+								}
+							*/
 						}
 
 						idx++;
