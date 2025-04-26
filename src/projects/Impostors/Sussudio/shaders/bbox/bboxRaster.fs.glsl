@@ -80,12 +80,11 @@ void main () {
 
 		const float theta = parameters.data[ 7 ];
 		const float phi = parameters.data[ 8 ];
-		const float psi = parameters.data[ 9 ];
+		// const float psi = parameters.data[ 9 ];
 
 		const mat3 transform = // not sure if this is correct
 			Rotate3D( -phi, vec3( 1.0f, 0.0f, 0.0f ) ) *
-			Rotate3D( -theta, vec3( 0.0f, 1.0f, 0.0f ) ) *
-			Rotate3D( -psi, vec3( 0.0f, 0.0f, 1.0f ) );
+			Rotate3D( -theta, vec3( 0.0f, 1.0f, 0.0f ) );
 
 		const vec3 rayDirectionAdjusted = ( transform * rayDirection );
 		const vec3 rayOriginAdjusted = transform * ( rayOrigin - centerPoint );
@@ -105,12 +104,11 @@ void main () {
 
 		const float theta = parameters.data[ 7 ];
 		const float phi = parameters.data[ 8 ];
-		const float psi = parameters.data[ 9 ];
+		// const float psi = parameters.data[ 9 ];
 
 		const mat3 transform = // not sure if this is correct
 			Rotate3D( -phi, vec3( 1.0f, 0.0f, 0.0f ) ) *
-			Rotate3D( -theta, vec3( 0.0f, 1.0f, 0.0f ) ) *
-			Rotate3D( -psi, vec3( 0.0f, 0.0f, 1.0f ) );
+			Rotate3D( -theta, vec3( 0.0f, 1.0f, 0.0f ) );
 
 		const vec3 rayDirectionAdjusted = ( transform * rayDirection );
 		const vec3 rayOriginAdjusted = transform * ( rayOrigin - centerPoint );

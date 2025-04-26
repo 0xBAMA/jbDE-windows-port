@@ -98,11 +98,10 @@ mat4 RoundedBoxBounds ( parameters_t parameters ) {
 
 	const float theta = parameters.data[ 7 ];
 	const float phi = parameters.data[ 8 ];
-	const float psi = parameters.data[ 9 ];
+	// const float psi = parameters.data[ 9 ];
 
 	// need to apply euler angles, angle axis
-	const mat3 base = Rotate3D( psi, vec3( 0.0f, 0.0f, 1.0f ) )
-		* Rotate3D( theta, vec3( 0.0f, 1.0f, 0.0f ) )
+	const mat3 base = Rotate3D( theta, vec3( 0.0f, 1.0f, 0.0f ) )
 		* Rotate3D( phi, vec3( 1.0f, 0.0f, 0.0f ) )
 		* mat3( scaleFactors.x + roundingFactor, 0.0f, 0.0f,
 				0.0f, scaleFactors.y + roundingFactor, 0.0f,
@@ -127,11 +126,10 @@ mat4 EllipsoidBounds ( parameters_t parameters ) {
 
 	const float theta = parameters.data[ 7 ];
 	const float phi = parameters.data[ 8 ];
-	const float psi = parameters.data[ 9 ];
+	// const float psi = parameters.data[ 9 ];
 
 	// need to apply euler angles, angle axis
-	const mat3 base = Rotate3D( psi, vec3( 0.0f, 0.0f, 1.0f ) )
-		* Rotate3D( theta, vec3( 0.0f, 1.0f, 0.0f ) )
+	const mat3 base = Rotate3D( theta, vec3( 0.0f, 1.0f, 0.0f ) )
 		* Rotate3D( phi, vec3( 1.0f, 0.0f, 0.0f ) )
 		* mat3( scaleFactors.x, 0.0f, 0.0f,
 				0.0f, scaleFactors.y, 0.0f,
