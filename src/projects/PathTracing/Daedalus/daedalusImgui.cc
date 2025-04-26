@@ -117,7 +117,7 @@ void Daedalus::ShowDaedalusConfigWindow() {
 						}
 					};
 				// list of exrs, kept in Documents/EXRs/ (which is ../EXRs/, from the working directory that I use)
-					std::filesystem::path p( "../EXRs" );
+					std::filesystem::path p( "../../EXRs" );
 					std::filesystem::directory_iterator start( p );
 					std::filesystem::directory_iterator end;
 					std::transform( start, end, std::back_inserter( savesList ), pathLeafString() );
