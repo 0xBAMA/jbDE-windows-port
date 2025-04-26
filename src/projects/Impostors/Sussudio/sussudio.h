@@ -139,6 +139,9 @@ struct atlasRenderer_t {
 	// todo: organization pass on all this
 	glm::mat4 viewTransform = glm::mat4( 1.0f );
 
+	// how are we supporting ortho?
+	vec3 eyePosition = vec3( 0.0f, 0.0f, -1.0f );
+
 	atlasRenderer_t () {}
 
 	void AddGeometry () {
@@ -267,7 +270,8 @@ struct atlasRenderer_t {
 		shader = bboxRasterShader;
 		glUseProgram( shader );
 
-		glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ),1, false, glm::value_ptr( viewTransform ) );
+		glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
+		glUniform3f( glGetUniformLocation( shader, "eyePosition" ), eyePosition.x, eyePosition.y, eyePosition.z );
 		glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
 
 		// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
