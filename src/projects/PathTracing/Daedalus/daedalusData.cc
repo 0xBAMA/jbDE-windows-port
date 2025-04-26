@@ -458,9 +458,9 @@ void Daedalus::ClearColorGradingVectorscopeBuffer() {
 
 void Daedalus::PrepGlyphBuffer() {
 	// block dimensions
-	uint32_t texW = 128;
-	uint32_t texH = 96;
-	uint32_t texD = 64;
+	uint32_t texW = 64;
+	uint32_t texH = 64;
+	uint32_t texD = 256;
 
 	Image_4U data( texW, texH * texD );
 
@@ -471,8 +471,9 @@ void Daedalus::PrepGlyphBuffer() {
 	rngi xPick = rngi( 0, texW - 1 ); rngi xDPick = rngi( 4, 20 );
 	rngi yPick = rngi( 0, texH - 1 ); rngi yDPick = rngi( 4, 12 );
 	rngi zPick = rngi( 0, texD - 1 ); rngi zDPick = rngi( 4, 10 );
-	rngi glyphPick = rngi( 176, 223 );
 	rngi thinPick = rngi( 0, 4 );
+	// rngi glyphPick = rngi( 176, 223 );
+	rngi glyphPick = rngi( 0, 255 );
 
 	// look at a random, narrow slice of a random palette
 	palette::PickRandomPalette( true );

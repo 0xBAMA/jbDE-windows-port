@@ -19,8 +19,6 @@ public:
 
 			// Next is the initialization of the impostor stuff
 			atlasRenderer.textureManager = &textureManager;
-			atlasRenderer.AddGeometry();
-			atlasRenderer.RenderAtlas();
 
 		}
 	}
@@ -55,7 +53,7 @@ public:
 		// update the current view of the impostor geometry
 		atlasRenderer.AddGeometry();
 		atlasRenderer.RenderAtlas();
-}
+	}
 
 	void ComputePasses () {
 		ZoneScoped;
