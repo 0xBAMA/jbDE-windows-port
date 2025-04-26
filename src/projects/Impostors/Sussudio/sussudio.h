@@ -100,3 +100,180 @@ struct geometryManager_t {
 	std::vector< float > parametersList;
 	int count;
 };
+
+// ============================================================================================================================
+struct atlasRendererConfig_t {
+	int numViewsX = 9;
+	int numViewsY = 9;
+
+	int resolution = 256;
+};
+
+// ============================================================================================================================
+struct atlasRenderer_t {
+
+	// mostly for sizing the framebuffers right now
+	atlasRendererConfig_t atlasRenderConfig;
+
+	// raster target (depth + color attachments)
+	GLuint targetFramebuffer; // todo - useful for batch generating atlas info as needed
+
+	// local pointer to the texture manager
+	textureManager_t * textureManager;
+
+	// containing list of potentially many primitives that will be used for generating the atlas views
+	geometryManager_t geometryManager;
+
+	// OpenGL stuff
+	GLuint vao;
+	GLuint vbo;
+
+	// for rendering the primitives in the geometry manager
+	GLuint bboxComputeShader; // precomputing the bounding boxes
+	GLuint bboxRasterShader; // rasterizing then raytracing
+
+	// buffers used to generate the atlas views
+	GLuint primitiveGeometryBuffer; // A: 16 floats describing each primitive (directly from geometryManager)
+	GLuint bboxTransformsPrecomputed; // B: 4x4 matrix computed by bboxComputeShader from data in primitiveGeometryBuffer
+
+	// todo: organization pass on all this
+	glm::mat4 viewTransform = glm::mat4( 1.0f );
+
+	atlasRenderer_t () {}
+
+	void AddGeometry () {
+		// remove any existing primitives
+		geometryManager.Clear();
+
+		// give the geometryManager a set of primitives
+		//	I'd like to do some simple L system stuff
+
+		// distribute a random set of N primitives... need to test some ranges
+		bool randomDistribution = true;
+		if ( randomDistribution ) {
+
+			palette::PickRandomPalette( true );
+
+			rngN position = rngN( 0.0f, 0.25f );
+			rng sizeD = rng( 0.001f, 0.05f );
+			rngN color = rngN( 0.5f, 0.2f );
+
+			for ( int i = 0; i < 100; i++ ) {
+				// add some capped cone primitives
+				geometryManager.AddCappedCone(
+					vec3( position(), position(), position() ),
+					vec3( position(), position(), position() ),
+					sizeD(), sizeD(), vec4( palette::paletteRef( color() ), 1.0f ) );
+
+				// add some rounded box primitives
+				geometryManager.AddRoundedBox(
+					vec3( position(), position(), position() ),
+					vec3( sizeD(), sizeD(), sizeD() ),
+					vec3( sizeD(), sizeD(), sizeD() ),
+					sizeD() / 10.0f, vec4( palette::paletteRef( color() ), 1.0f ) );
+
+				// add some ellipsoid primitives
+				geometryManager.AddEllipsoid(
+					vec3( position(), position(), position() ),
+					vec3( sizeD(), sizeD(), sizeD() ),
+					vec3( sizeD(), sizeD(), sizeD() ),
+					vec4( palette::paletteRef( color() ), 1.0f ) );
+			}
+		}
+
+		// then as a last preparation step, iterate through and resize/recenter everything to fit in the -1..1 unit cube
+	}
+
+	void PrepSceneParameters() {
+	/*
+		// const float time = SDL_GetTicks() / 10000.0f;
+		static rng jitterAmount = rng( 0.0f, 1.0f );
+		const vec2 pixelJitter = vec2( jitterAmount() - 0.5f, jitterAmount() - 0.5f ) * 0.001f;
+		const vec3 localEyePos = ChorizoConfig.eyePosition;
+		const float aspectRatio = 1.0f; // for the time being, square aspect ratio is fine
+
+		ChorizoConfig.projTransform = glm::perspective( glm::radians( ChorizoConfig.FoV ), aspectRatio, ChorizoConfig.nearZ, ChorizoConfig.farZ );
+		ChorizoConfig.projTransformInverse = glm::inverse( ChorizoConfig.projTransform );
+
+		ChorizoConfig.viewTransform = glm::lookAt( localEyePos, ChorizoConfig.eyePosition + ChorizoConfig.basisZ * ChorizoConfig.focusDistance, ChorizoConfig.basisY );
+		ChorizoConfig.viewTransformInverse = glm::inverse( ChorizoConfig.viewTransform );
+
+		ChorizoConfig.combinedTransform = ChorizoConfig.projTransform * ChorizoConfig.viewTransform;
+		ChorizoConfig.combinedTransformInverse = glm::inverse( ChorizoConfig.combinedTransform );
+	*/
+
+	}
+
+	void RenderAtlas () {
+		// create the framebuffers at the specified resolution (if they don't exist... problems doing this in the constructor)
+		//	this is not crucial for intial testing, but will be moreso after I confirm that I have something on the screen
+
+		// using the current set of geometry in the geometryManager
+		// create two buffers, sized based on the number of primitives:
+		//	A: primitive geometry (16 floats per)
+		//	B: bbox transforms (16 floats per)
+
+		const int numPrimitives = geometryManager.count;
+
+		static bool firstTime = true;
+		if ( firstTime ) {
+			firstTime = false;
+			glGenBuffers( 1, &primitiveGeometryBuffer );
+			glGenBuffers( 1, &bboxTransformsPrecomputed );
+
+			glGenVertexArrays( 1, &vao );
+			glGenBuffers( 1, &vbo );
+
+			// bbox compute shader ( A -> B precomputing transforms )
+			bboxComputeShader = computeShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxPrecompute.cs.glsl" ).shaderHandle;
+
+			// bbox raster shaders ( B used during vertex shader, A used again during fragment shader )
+			bboxRasterShader = regularShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.vs.glsl",
+				"../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.fs.glsl" ).shaderHandle;
+		}
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, primitiveGeometryBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, numPrimitives * 16 * sizeof( float ), ( GLvoid* ) &geometryManager.parametersList[ 0 ], GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, primitiveGeometryBuffer );
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, bboxTransformsPrecomputed );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, numPrimitives * 16 * sizeof( float ), NULL, GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, bboxTransformsPrecomputed );
+
+		// vao/vbo binding
+		glBindVertexArray( vao );
+		glBindBuffer( GL_ARRAY_BUFFER, vbo );
+
+		// other OpenGL config
+		glEnable( GL_CULL_FACE );
+		glCullFace( GL_BACK );
+		glFrontFace( GL_CCW );
+		glDisable( GL_BLEND );
+
+		// first step is to precompute the bounding box transforms into buffer B (this only runs one time for static geometry usage like this)
+		// each rendered view will then rasterize the transformed boxes, and do the ray-primitive testing in the fragment shader
+		// the raytrace itself will be referring back to buffer A for the primitive parameters
+		GLuint shader = bboxComputeShader;
+		glUseProgram( shader );
+		const int workgroupsRoundedUp = ( numPrimitives + 63 ) / 64;
+		glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+
+		// update the atlas views on the framebuffer, one at a time
+		//	for x
+		//		for y
+		//			render the appropriately rotated view with some obnoxious blue noise supersampling in the fragment shader
+
+
+		shader = bboxRasterShader;
+		glUseProgram( shader );
+
+		glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ),1, false, glm::value_ptr( viewTransform ) );
+		glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
+
+		// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		// glViewport( 0, 0, config.width, config.height );
+		glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
+	}
+
+};
