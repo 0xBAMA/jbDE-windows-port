@@ -132,5 +132,10 @@ void main () {
 		// write deferred surface results (depth, id, normal... what else?)
 		// outColor = vec4( 0.0f, 1.0f, 0.0f, 1.0f );
 		outColor = vec4( ( normal + vec3( 1.0f ) ) / 2.0f, 1.0f );
+
+		// writing correct depths
+		const vec4 projectedPosition = viewTransform * vec4( rayOrigin + result * rayDirection, 1.0f );
+		gl_FragDepth = ( projectedPosition.z / projectedPosition.w + 1.0f ) * 0.5f;
+
 	}
 }
