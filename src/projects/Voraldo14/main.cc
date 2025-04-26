@@ -1,17 +1,9 @@
 #include "../../engine/engine.h"
 
-int bitfieldExtract ( int a, int b, int c ) {
-	int mask = ~( 0xffffffff << c );
-	if ( b > 0 )
-		return ( a >> ( b - 1 ) ) & mask;
-	else
-		return a & mask;
-}
-
-class engineDemo final : public engineBase { // sample derived from base engine class
+class Voraldo14 final : public engineBase { // sample derived from base engine class
 public:
-	engineDemo () { Init(); OnInit(); PostInit(); }
-	~engineDemo () { Quit(); }
+	Voraldo14 () { Init(); OnInit(); PostInit(); }
+	~Voraldo14 () { Quit(); }
 
 	void OnInit () {
 		ZoneScoped;
@@ -31,7 +23,6 @@ public:
 
 	void ImguiPass () {
 		ZoneScoped;
-		showDemoWindow = true;
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 		if ( tonemap.showTonemapWindow ) {
 			TonemapControlsWindow();
@@ -182,7 +173,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
-	engineDemo engineInstance;
+	Voraldo14 engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }
