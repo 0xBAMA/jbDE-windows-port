@@ -654,3 +654,16 @@ target_link_libraries( Voraldo14
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Sussudio
+# =================================================================================================
+add_executable( Sussudio
+	src/projects/Impostors/Sussudio/main.cc
+)
+
+target_link_libraries( Sussudio
+	PUBLIC
+	engineBase
+)
+
