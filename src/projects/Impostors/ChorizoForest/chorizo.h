@@ -298,6 +298,7 @@ public:
 
 		// do trees, positioned by their location on the map
 		palette::PaletteIndex = ChorizoConfig.treePaletteID;
+		rng jitterT( -0.01f, 0.01f );
 		for ( int i = 0; i < localCopy.numCopies; i++ ) {
 			cout << "\radding trees " << i + 1 << " / " << localCopy.numCopies;
 			// place the base point, consider also the z axis on the map
@@ -305,6 +306,21 @@ public:
 			const vec2 pick = vec2( x(), y() );
 			const float heightValue = -p.model.GetAtXY( pick.x, pick.y )[ 0 ];
 			localCopy.basePoint = vec3( ( pick.x / float( w ) - 0.5f ) * scale.x, ( pick.y / float( h ) - 0.5f ) * scale.y, ( heightValue * heightScale - 0.5f ) * 10.0f );
+
+			localCopy.rotateJitterMin += jitterT();
+			localCopy.rotateJitterMax += jitterT();
+			localCopy.branchTilt += jitterT();
+			localCopy.branchJitterMin += jitterT();
+			localCopy.branchJitterMax += jitterT();
+			localCopy.branchLength += jitterT();
+			localCopy.branchRadius += jitterT();
+			localCopy.lengthShrink += jitterT();
+			localCopy.radiusShrink += jitterT();
+			localCopy.shrinkJitterMin += jitterT();
+			localCopy.shrinkJitterMax += jitterT();
+			localCopy.paletteJitter += jitterT();
+			localCopy.terminateChance += jitterT();
+
 			TreeRecurse( localCopy );
 		}
 
