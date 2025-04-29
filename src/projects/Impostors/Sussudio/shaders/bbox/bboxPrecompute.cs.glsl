@@ -40,7 +40,7 @@ mat4 CapsuleBounds( parameters_t parameters ) {
 	const vec3 refVector = 0.5f * d * ( ( length( d ) + 2.0f * radius ) / length( d ) );
 
 	vec3 displacementVector = normalize( d );
-	const vec3 up = vec3( 1.0f, 1.0f, 1.0f );
+	const vec3 up = normalize( vec3( 1.0f, 1.0f, 1.0f ) );
 	if ( dot( normalize( displacementVector ), up ) > 0.999f ) {
 		// is it along some reference vector? if yes, we need to do the math with some linearly independent vector
 		displacementVector = normalize( vec3( 1.0f, 1.0f, 0.0f ) );
@@ -75,7 +75,7 @@ mat4 CappedConeBounds( parameters_t parameters ) {
 	const vec3 d = ( pointA - pointB );
 	const vec3 refVector = 0.5f * d * ( ( length( d ) + 2.0f * radius ) / length( d ) );
 	vec3 displacementVector = normalize( d );
-	const vec3 up = vec3( 1.0f, 1.0f, 1.0f );
+	const vec3 up = normalize( vec3( 1.0f, 1.0f, 1.0f ) );
 	if ( dot( normalize( displacementVector ), up ) > 0.999f )
 		displacementVector = normalize( vec3( 1.0f, 1.0f, 0.0f ) );
 	const vec3 firstOrthoVec = radius * normalize( cross( up, displacementVector ) );
