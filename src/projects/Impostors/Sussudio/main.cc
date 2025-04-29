@@ -19,6 +19,7 @@ public:
 
 			// Next is the initialization of the impostor stuff
 			atlasRenderer.textureManager = &textureManager;
+			atlasRenderer.AddGeometry();
 
 		}
 	}
@@ -51,7 +52,6 @@ public:
 		ZoneScoped; scopedTimer Start( "API Geometry" );
 
 		// update the current view of the impostor geometry
-		atlasRenderer.AddGeometry();
 		atlasRenderer.RenderAtlas();
 	}
 
