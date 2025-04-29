@@ -3,11 +3,11 @@
 #include "consistentPrimitives.glsl.h"
 #include "mathUtils.h"
 
+// ===================================================================================================
 #define CAPSULE		0
 #define CAPPEDCONE	1
 #define ROUNDEDBOX	2
 #define ELLIPSOID	3
-
 // ===================================================================================================
 // input to the bounds stage, used again by fragment raytracing
 // ===================================================================================================
@@ -27,21 +27,24 @@ layout( binding = 1, std430 ) buffer transformsBuffer {
 	mat4 transforms[];
 };
 
+// ===================================================================================================
+// size of the buffers
+uniform float numPrimitives;
+
 // vertex shader needs to output a primitive ID, to pull parameters from parametersList[]
-	// this is used to get the raytraced intersection
+	// this is used to get the primitive parameters for evaluating raytraced intersection
 
 in flat uint vofiIndex;
 in vec3 vofiPosition;
 out vec4 outColor;
 
-uniform vec3 eyePosition;	// location of the viewer... what about ortho case? I think the atlas is ortho
-uniform float numPrimitives;
+// information assisting the orthographic ray calc
 uniform ivec2 viewportBase;
+uniform ivec2 viewportSize;
 
+// ===================================================================================================
 void main () {
-	// going to do pixel-stratified jitter for now because I think it resolves nicer...
-		// if I do decide to do more TAA stuff in the future, I'll want to make it view-stratified
-	
+
 	// I think the thing to do here is to look at the screenspace derivatives, since I'll have them
 		// this will be on the interpolated vofiPosition, so we can get that to jitter the far end
 		// of the view ray, across the pixel footprint
@@ -49,9 +52,14 @@ void main () {
 		// it might be a good thing to be able to do this multiple times and get an alpha result...
 			// view stratified jitter makes the occlusion problem simpler, too, I think
 
-	const vec3 eyeVectorToFragment = vofiPosition - eyePosition; // add ddx/ddy logic
-	const vec3 rayOrigin = eyePosition;
-	const vec3 rayDirection = normalize( eyeVectorToFragment );
+	// pixel location, offset by the viewport base location
+	ivec2 viewportLocation = ivec2( gl_FragCoord.xy ) - viewportBase;
+	mat4 inverseViewTransform = inverse( viewTransform );
+	vec3 rayOrigin = ( inverseViewTransform * vec4(
+		2.0f * ( float( viewportLocation.x ) + 0.5f ) / float( viewportSize.x ) - 1.0f,
+		2.0f * ( float( viewportLocation.y ) + 0.5f ) / float( viewportSize.y ) - 1.0f,
+		-2.0f, 0.0f ) ).xyz;
+	vec3 rayDirection = ( inverseViewTransform * vec4( 0.0f, 0.0f, 1.0f, 0.0f ) ).xyz;
 
 	// ray results...
 	float result = MAX_DIST_CP;
