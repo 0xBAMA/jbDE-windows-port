@@ -103,10 +103,10 @@ struct geometryManager_t {
 
 // ============================================================================================================================
 struct atlasRendererConfig_t {
-	int numViewsX = 9;
-	int numViewsY = 9;
+	int numViewsX = 3;
+	int numViewsY = 3;
 
-	int resolution = 256;
+	int resolution = 1024;
 };
 
 // ============================================================================================================================
@@ -162,11 +162,13 @@ struct atlasRenderer_t {
 			rngN color = rngN( 0.5f, 0.2f );
 
 			for ( int i = 0; i < 100; i++ ) {
+			/*
 				// add some capped cone primitives
 				geometryManager.AddCappedCone(
 					vec3( position(), position(), position() ),
 					vec3( position(), position(), position() ),
 					sizeD(), sizeD(), vec4( palette::paletteRef( color() ), 1.0f ) );
+			*/
 
 				// add some rounded box primitives
 				geometryManager.AddRoundedBox(
@@ -175,12 +177,14 @@ struct atlasRenderer_t {
 					vec3( sizeD(), sizeD(), sizeD() ),
 					sizeD() / 10.0f, vec4( palette::paletteRef( color() ), 1.0f ) );
 
+			/*
 				// add some ellipsoid primitives
 				geometryManager.AddEllipsoid(
 					vec3( position(), position(), position() ),
 					vec3( sizeD(), sizeD(), sizeD() ),
 					vec3( sizeD(), sizeD(), sizeD() ),
 					vec4( palette::paletteRef( color() ), 1.0f ) );
+			*/
 			}
 		}
 
@@ -262,22 +266,27 @@ struct atlasRenderer_t {
 		glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
 
 		// update the atlas views on the framebuffer, one at a time
-		//	for x
-		//		for y
 		//			render the appropriately rotated view with some obnoxious blue noise supersampling in the fragment shader
-
-
 		shader = bboxRasterShader;
 		glUseProgram( shader );
-
-		glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
-		glUniform3f( glGetUniformLocation( shader, "eyePosition" ), eyePosition.x, eyePosition.y, eyePosition.z );
-		glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
-
-		// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-		// glViewport( 0, 0, config.width, config.height );
-		glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
+
+		for ( int y = 0; y < atlasRenderConfig.resolution * atlasRenderConfig.numViewsY; y += atlasRenderConfig.resolution ) {
+			for ( int x = 0; x < atlasRenderConfig.resolution * atlasRenderConfig.numViewsX; x += atlasRenderConfig.resolution ) {
+
+				glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
+				glUniform3f( glGetUniformLocation( shader, "eyePosition" ), eyePosition.x, eyePosition.y, eyePosition.z );
+				glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
+				glUniform2i( glGetUniformLocation( shader, "viewportBase" ), x, y );
+
+				// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
+				glViewport( x, y, atlasRenderConfig.resolution, atlasRenderConfig.resolution );
+				glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
+			}
+		}
+
+
+
 	}
 
 };
