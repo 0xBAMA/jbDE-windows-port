@@ -36,6 +36,7 @@ out vec4 outColor;
 
 uniform vec3 eyePosition;	// location of the viewer... what about ortho case? I think the atlas is ortho
 uniform float numPrimitives;
+uniform ivec2 viewportBase;
 
 void main () {
 	// going to do pixel-stratified jitter for now because I think it resolves nicer...
@@ -127,13 +128,16 @@ void main () {
 		// outColor = vec4( 1.0f, 0.0f, 0.0f, 1.0f );
 		discard; // nohit condition
 	} else {
-		// write deferred surface results (depth, id, normal... what else?)
-		// outColor = vec4( 0.0f, 1.0f, 0.0f, 1.0f );
-		outColor = vec4( ( normal + vec3( 1.0f ) ) / 2.0f, 1.0f );
-
 		// writing correct depths
 		const vec4 projectedPosition = viewTransform * vec4( rayOrigin + result * rayDirection, 1.0f );
 		gl_FragDepth = ( projectedPosition.z / projectedPosition.w + 1.0f ) * 0.5f;
+
+		// write deferred surface results (depth, id, normal... what else?)
+		// outColor = vec4( 0.0f, 1.0f, 0.0f, 1.0f );
+		// outColor = vec4( gl_FragCoord.xy / 1024.0f, 0.0f, 1.0f );
+		outColor = vec4( ( gl_FragCoord.xy - viewportBase ) / 1024.0f, 0.0f, 1.0f );
+		// outColor = vec4( ( normal + vec3( 1.0f ) ) / 2.0f, 1.0f );
+		// outColor = projectedPosition;
 
 	}
 }
