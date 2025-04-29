@@ -1,0 +1,11 @@
+- Ryan Brucks Post
+	https://shaderbits.com/blog/octahedral-impostors
+	https://madarapremawardana.medium.com/the-only-imposter-who-come-in-handy-octahedral-imposters-e2b002379a98
+
+- Octahedral mapping
+	https://www.shadertoy.com/view/NsfBWf
+
+- Viewport semantics:
+	- Atlas type usage is super easy, just drawing squares
+	- Raster ops are kept easy in NDC, but gl_FragCoord has to be offset by the base point ( using the first two args to glViewport )
+		- e.g. pixel location on viewport is gl_FragCoord - ivec2( viewportBaseX, viewportBaseY )

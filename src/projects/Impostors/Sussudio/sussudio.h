@@ -103,10 +103,10 @@ struct geometryManager_t {
 
 // ============================================================================================================================
 struct atlasRendererConfig_t {
-	int numViewsX = 3;
-	int numViewsY = 3;
+	int numViewsX = 9;
+	int numViewsY = 9;
 
-	int resolution = 1024;
+	int resolution = 256;
 };
 
 // ============================================================================================================================
@@ -271,13 +271,21 @@ struct atlasRenderer_t {
 		glUseProgram( shader );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+		mat4 baseTransform = glm::mat4( glm::angleAxis( 0.001f * SDL_GetTicks(), vec3( 0.0f, 0.0f, 1.0f ) ) );
+
 		for ( int y = 0; y < atlasRenderConfig.resolution * atlasRenderConfig.numViewsY; y += atlasRenderConfig.resolution ) {
+
+			viewTransform = glm::mat4( glm::angleAxis( ( y / atlasRenderConfig.resolution ) * 6.28f / atlasRenderConfig.numViewsY, vec3( 1.0f, 0.0f, 0.0f ) ) ) * baseTransform;
+
 			for ( int x = 0; x < atlasRenderConfig.resolution * atlasRenderConfig.numViewsX; x += atlasRenderConfig.resolution ) {
+			
+				viewTransform = glm::mat4( glm::angleAxis( 6.28f / atlasRenderConfig.numViewsX, vec3( 0.0f, 1.0f, 0.0f ) ) ) * viewTransform;
 
 				glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
 				glUniform3f( glGetUniformLocation( shader, "eyePosition" ), eyePosition.x, eyePosition.y, eyePosition.z );
 				glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
 				glUniform2i( glGetUniformLocation( shader, "viewportBase" ), x, y );
+				glUniform2i( glGetUniformLocation( shader, "viewportSize" ), atlasRenderConfig.resolution, atlasRenderConfig.resolution );
 
 				// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
 				glViewport( x, y, atlasRenderConfig.resolution, atlasRenderConfig.resolution );
