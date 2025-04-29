@@ -158,17 +158,15 @@ struct atlasRenderer_t {
 			palette::PickRandomPalette( true );
 
 			rngN position = rngN( 0.0f, 0.25f );
-			rng sizeD = rng( 0.001f, 0.05f );
+			rng sizeD = rng( 0.01f, 0.1f );
 			rngN color = rngN( 0.5f, 0.2f );
 
-			for ( int i = 0; i < 100; i++ ) {
-			/*
+			for ( int i = 0; i < 10; i++ ) {
 				// add some capped cone primitives
 				geometryManager.AddCappedCone(
 					vec3( position(), position(), position() ),
 					vec3( position(), position(), position() ),
 					sizeD(), sizeD(), vec4( palette::paletteRef( color() ), 1.0f ) );
-			*/
 
 				// add some rounded box primitives
 				geometryManager.AddRoundedBox(
@@ -177,14 +175,12 @@ struct atlasRenderer_t {
 					vec3( sizeD(), sizeD(), sizeD() ),
 					sizeD() / 10.0f, vec4( palette::paletteRef( color() ), 1.0f ) );
 
-			/*
 				// add some ellipsoid primitives
 				geometryManager.AddEllipsoid(
 					vec3( position(), position(), position() ),
 					vec3( sizeD(), sizeD(), sizeD() ),
 					vec3( sizeD(), sizeD(), sizeD() ),
 					vec4( palette::paletteRef( color() ), 1.0f ) );
-			*/
 			}
 		}
 
@@ -292,9 +288,5 @@ struct atlasRenderer_t {
 				glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
 			}
 		}
-
-
-
 	}
-
 };
