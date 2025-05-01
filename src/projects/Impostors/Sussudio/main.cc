@@ -55,12 +55,13 @@ public:
 
 		// update the current view of the impostor geometry
 		atlasRenderer.RenderAtlas();
+
 	}
 
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // dummy draw - draw something into accumulatorTexture
+		{ // API draw result now available, drawing into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
@@ -108,9 +109,9 @@ public:
 		ZoneScoped;
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
 		DrawAPIGeometry();			// draw any API geometry desired
-	//	ComputePasses();			// multistage update of displayTexture
-	//	BlitToScreen();				// fullscreen triangle copying to the screen
-		if ( 1 ) {
+		ComputePasses();			// multistage update of displayTexture
+		BlitToScreen();				// fullscreen triangle copying to the screen
+		{
 			scopedTimer Start( "ImGUI Pass" );
 			ImguiFrameStart();		// start the imgui frame
 			ImguiPass();			// do all the gui stuff
