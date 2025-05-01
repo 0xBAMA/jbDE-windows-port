@@ -67,7 +67,7 @@ void main () {
 		2.0f * ( float( viewportLocation.x ) + blueN.x ) / float( viewportSize.x ) - 1.0f,
 		2.0f * ( float( viewportLocation.y ) + blueN.y ) / float( viewportSize.y ) - 1.0f,
 		-2.0f, 0.0f ) ).xyz;
-	vec3 rayDirection = ( inverseViewTransform * vec4( 0.0f, 0.0f, 1.0f, 0.0f ) ).xyz;
+	vec3 rayDirection = normalize( ( inverseViewTransform * vec4( 0.0f, 0.0f, 1.0f, 0.0f ) ).xyz );
 
 	// ray results...
 	float result = MAX_DIST_CP;
