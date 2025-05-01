@@ -22,6 +22,7 @@ public:
 			atlasRenderer.CompileShaders();
 			atlasRenderer.CreateFramebuffers();
 			atlasRenderer.AddGeometry();
+			atlasRenderer.PrepAtlasTransforms();
 
 		}
 	}

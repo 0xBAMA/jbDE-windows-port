@@ -102,11 +102,17 @@ struct geometryManager_t {
 };
 
 // ============================================================================================================================
-struct atlasRendererConfig_t {
-	int numViewsX = 9;
-	int numViewsY = 9;
+#define SPHERICAL 0
+#define OCTAHEDRAL 1
+#define HEMIOCTAHEDRAL 2
 
-	int resolution = 256;
+struct atlasRendererConfig_t {
+	const int numViewsX = 9;
+	const int numViewsY = 9;
+
+	const int resolution = 256;
+
+	const int impostorType = SPHERICAL;
 };
 
 // ============================================================================================================================
@@ -258,6 +264,7 @@ struct atlasRenderer_t {
 		}
 
 		// then as a last preparation step, iterate through and resize/recenter everything to fit in the -1..1 unit cube
+
 	}
 
 	void PrepSceneParameters() {
@@ -280,9 +287,59 @@ struct atlasRenderer_t {
 
 	}
 
+	vector< vector< ivec2 > > viewportOffsets;
+	vector< vector< mat4 > > atlasTransforms;
+	// here, we can setup to do spherical, octahedral, hemioctahedral atlases
+	void PrepAtlasTransforms () {
+
+		// setup memory
+		atlasTransforms.resize( atlasRenderConfig.numViewsX );
+		viewportOffsets.resize( atlasRenderConfig.numViewsX );
+		for ( int i = 0; i < atlasRenderConfig.numViewsX; i++ ) {
+			atlasTransforms[ i ].resize( atlasRenderConfig.numViewsY );
+			viewportOffsets[ i ].resize( atlasRenderConfig.numViewsY );
+		}
+
+		// populate the transforms
+		mat4 baseTransform = glm::scale( vec3( 1.0f / sqrt( 3.0f ) ) ); // need to fit -1 to 1 inside of NDC in all cases (cube diagonal is worst case)
+		const int nx = atlasRenderConfig.numViewsX;
+		const int ny = atlasRenderConfig.numViewsY;
+		for ( int x = 0; x < nx; x++ ) {
+			for ( int y = 0; y < ny; y++ ) {
+
+				// where on the atlas to render to
+				viewportOffsets[ x ][ y ] = ivec2( x * atlasRenderConfig.resolution, y * atlasRenderConfig.resolution );
+
+				// the view transform to use
+				switch ( atlasRenderConfig.impostorType ) {
+				case SPHERICAL: {
+					// figure out what theta and phi are...
+					const float theta = tau * ( float( x ) + 0.5f ) / nx;
+					const float phi = pi * ( ( ( float( y ) + 0.5f ) / ny ) - 0.5f );
+
+					// deciding on Z up, basic spherical transform
+					atlasTransforms[ x ][ y ] = glm::mat4(
+						glm::angleAxis( theta, vec3( 0.0f, 0.0f, 1.0f ) ) *
+						glm::angleAxis( phi, vec3( 1.0f, 0.0f, 0.0f ) ) ) * baseTransform;
+
+					break;
+				}
+
+				case OCTAHEDRAL: {
+					// todo - https://www.shadertoy.com/view/NsfBWf mapping code is in the top of the image buffer
+					break;
+				}
+
+				case HEMIOCTAHEDRAL: {
+					// todo - https://aras-p.info/texts/CompactNormalStorage.html has some resources on the mapping
+					break;
+				}
+				}
+			}
+		}
+	}
+
 	void RenderAtlas () {
-		// create the framebuffers at the specified resolution (if they don't exist... problems doing this in the constructor)
-		//	this is not crucial for intial testing, but will be moreso after I confirm that I have something on the screen
 
 		// using the current set of geometry in the geometryManager
 		// create two buffers, sized based on the number of primitives:
@@ -325,26 +382,29 @@ struct atlasRenderer_t {
 		glUseProgram( shader );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+		// blue noise jitter
 		textureManager->BindImageForShader( "Blue Noise", "blueNoise", shader, 0 );
 		static rngi noiseOffset = rngi( 0, 512 );
 		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-		// start with a scale transform to correctly size it so that -1..1 cube can't render off-viewport
-		mat4 baseTransform = glm::scale( vec3( 1.0f / sqrt( 3.0f ) ) );
-
 		// iterate through the atlas entries
-		for ( int y = 0; y < atlasRenderConfig.resolution * atlasRenderConfig.numViewsY; y += atlasRenderConfig.resolution ) {
-			viewTransform = glm::mat4( glm::angleAxis( ( y / atlasRenderConfig.resolution ) * 6.28f / atlasRenderConfig.numViewsY, vec3( 1.0f, 0.0f, 0.0f ) ) ) * baseTransform;
-			for ( int x = 0; x < atlasRenderConfig.resolution * atlasRenderConfig.numViewsX; x += atlasRenderConfig.resolution ) {
-				viewTransform = glm::mat4( glm::angleAxis( 6.28f / atlasRenderConfig.numViewsX, vec3( 0.0f, 1.0f, 0.0f ) ) ) * viewTransform;
+		const int nx = atlasRenderConfig.numViewsX;
+		const int ny = atlasRenderConfig.numViewsY;
+		for ( int x = 0; x < nx; x++ ) {
+			for ( int y = 0; y < ny; y++ ) {
 
-				glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
+				// viewport base locations
+				const int vpx = viewportOffsets[ x ][ y ].x;
+				const int vpy = viewportOffsets[ x ][ y ].y;
+
+				// transform, etc
+				glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( atlasTransforms[ x ][ y ] ) );
 				glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
-				glUniform2i( glGetUniformLocation( shader, "viewportBase" ), x, y );
+				glUniform2i( glGetUniformLocation( shader, "viewportBase" ), vpx, vpy );
 				glUniform2i( glGetUniformLocation( shader, "viewportSize" ), atlasRenderConfig.resolution, atlasRenderConfig.resolution );
 
-				// glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ ( ChorizoConfig.frameCount++ % 2 ) ] );
-				glViewport( x, y, atlasRenderConfig.resolution, atlasRenderConfig.resolution );
+				// set viewport and draw
+				glViewport( vpx, vpy, atlasRenderConfig.resolution, atlasRenderConfig.resolution );
 				glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
 			}
 		}
