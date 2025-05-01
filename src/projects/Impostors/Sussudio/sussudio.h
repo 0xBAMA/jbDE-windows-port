@@ -197,6 +197,32 @@ struct atlasRenderer_t {
 					100.0f * vec3( sizeD(), sizeD(), sizeD() ),
 					vec4( palette::paletteRef( color() ), 1.0f ) );
 			}
+
+			vec3 p0, p1;
+			for ( int copy = 0; copy < 3; copy++ )
+			for ( int axis = 0; axis < 3; axis++ ) {
+				for ( float low : { -0.98f, 0.98f } ) {
+					for ( float high : { -0.98f, 0.98f } ) {
+						switch ( axis ) {
+						case 0:
+							p0 = vec3( 0.98f, low, high );
+							p1 = vec3( -0.98f, low, high );
+							break;
+
+						case 1:
+							p0 = vec3( low, 0.98f, high );
+							p1 = vec3( low, -0.98f, high );
+							break;
+
+						case 2:
+							p0 = vec3( low, high, 0.98f );
+							p1 = vec3( low, high, -0.98f );
+							break;
+						}
+						geometryManager.AddCapsule( p0, p1, 0.01f, vec4( palette::paletteRef( color() ), 1.0f ) );
+					}
+				}
+			}
 		}
 
 		// then as a last preparation step, iterate through and resize/recenter everything to fit in the -1..1 unit cube
