@@ -19,6 +19,8 @@ public:
 
 			// Next is the initialization of the impostor stuff
 			atlasRenderer.textureManager = &textureManager;
+			atlasRenderer.CompileShaders();
+			atlasRenderer.CreateFramebuffers();
 			atlasRenderer.AddGeometry();
 
 		}

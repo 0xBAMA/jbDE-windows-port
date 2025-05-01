@@ -144,6 +144,20 @@ struct atlasRenderer_t {
 
 	atlasRenderer_t () {}
 
+	void CompileShaders () {
+		glGenBuffers( 1, &primitiveGeometryBuffer );
+		glGenBuffers( 1, &bboxTransformsPrecomputed );
+
+		glGenVertexArrays( 1, &vao );
+		glGenBuffers( 1, &vbo );
+
+		// bbox compute shader ( A -> B precomputing transforms )
+		bboxComputeShader = computeShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxPrecompute.cs.glsl" ).shaderHandle;
+
+		// bbox raster shaders ( B used during vertex shader, A used again during fragment shader )
+		bboxRasterShader = regularShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.vs.glsl",
+			"../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.fs.glsl" ).shaderHandle;
+	}
 	void AddGeometry () {
 		// remove any existing primitives
 		geometryManager.Clear();
@@ -217,23 +231,6 @@ struct atlasRenderer_t {
 		//	B: bbox transforms (16 floats per)
 
 		const int numPrimitives = geometryManager.count;
-
-		static bool firstTime = true;
-		if ( firstTime ) {
-			firstTime = false;
-			glGenBuffers( 1, &primitiveGeometryBuffer );
-			glGenBuffers( 1, &bboxTransformsPrecomputed );
-
-			glGenVertexArrays( 1, &vao );
-			glGenBuffers( 1, &vbo );
-
-			// bbox compute shader ( A -> B precomputing transforms )
-			bboxComputeShader = computeShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxPrecompute.cs.glsl" ).shaderHandle;
-
-			// bbox raster shaders ( B used during vertex shader, A used again during fragment shader )
-			bboxRasterShader = regularShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.vs.glsl",
-				"../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.fs.glsl" ).shaderHandle;
-		}
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, primitiveGeometryBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, numPrimitives * 16 * sizeof( float ), ( GLvoid* ) &geometryManager.parametersList[ 0 ], GL_DYNAMIC_COPY );
