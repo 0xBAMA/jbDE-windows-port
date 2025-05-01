@@ -28,6 +28,13 @@ layout( binding = 1, std430 ) buffer transformsBuffer {
 };
 
 // ===================================================================================================
+layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
+uniform ivec2 noiseOffset;
+vec4 blue ( ivec2 loc ) {
+	loc = ( loc + noiseOffset ) % imageSize( blueNoiseTexture ).xy;
+	return vec4( imageLoad( blueNoiseTexture, loc ) ) / 255.0f;
+}
+// ===================================================================================================
 // size of the buffers
 uniform float numPrimitives;
 
@@ -55,9 +62,10 @@ void main () {
 	// pixel location, offset by the viewport base location
 	ivec2 viewportLocation = ivec2( gl_FragCoord.xy ) - viewportBase;
 	mat4 inverseViewTransform = inverse( viewTransform );
+	vec4 blueN = blue( ivec2( gl_FragCoord.xy ) );
 	vec3 rayOrigin = ( inverseViewTransform * vec4(
-		2.0f * ( float( viewportLocation.x ) + 0.5f ) / float( viewportSize.x ) - 1.0f,
-		2.0f * ( float( viewportLocation.y ) + 0.5f ) / float( viewportSize.y ) - 1.0f,
+		2.0f * ( float( viewportLocation.x ) + blueN.x ) / float( viewportSize.x ) - 1.0f,
+		2.0f * ( float( viewportLocation.y ) + blueN.y ) / float( viewportSize.y ) - 1.0f,
 		-2.0f, 0.0f ) ).xyz;
 	vec3 rayDirection = ( inverseViewTransform * vec4( 0.0f, 0.0f, 1.0f, 0.0f ) ).xyz;
 

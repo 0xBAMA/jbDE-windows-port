@@ -268,6 +268,9 @@ struct atlasRenderer_t {
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
 		mat4 baseTransform = glm::mat4( glm::angleAxis( 0.001f * SDL_GetTicks(), vec3( 0.0f, 0.0f, 1.0f ) ) );
+		textureManager->BindImageForShader( "Blue Noise", "blueNoise", shader, 0 );
+		static rngi noiseOffset = rngi( 0, 512 );
+		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
 		for ( int y = 0; y < atlasRenderConfig.resolution * atlasRenderConfig.numViewsY; y += atlasRenderConfig.resolution ) {
 
