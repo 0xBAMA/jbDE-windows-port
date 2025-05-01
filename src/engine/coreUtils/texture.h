@@ -21,6 +21,7 @@ inline size_t bytesPerPixel ( GLint type ) {
 
 	// three channel formats
 	case GL_RGB8:				return 3 * 1; break;
+	case GL_RGB32F:				return 3 * 4; break;
 
 	// four channel formats
 	case GL_RGBA8:
