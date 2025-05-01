@@ -295,11 +295,10 @@ struct atlasRenderer_t {
 		static rngi noiseOffset = rngi( 0, 512 );
 		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-		static PerlinNoise p;
-		mat4 baseTransform = glm::mat4( glm::angleAxis( float( p.noise( 0.000135f * SDL_GetTicks(),
-			0.0001f * SDL_GetTicks(), 0.0f ) * 3.14f ), vec3( 0.0f, 0.0f, 1.0f ) ) )
-			* glm::scale( vec3( 1.0f / sqrt( 3.0f ) ) ); // correctly sized so that -1..1 cube can't render off-viewport
+		// start with a scale transform to correctly size it so that -1..1 cube can't render off-viewport
+		mat4 baseTransform = glm::scale( vec3( 1.0f / sqrt( 3.0f ) ) );
 
+		// iterate through the atlas entries
 		for ( int y = 0; y < atlasRenderConfig.resolution * atlasRenderConfig.numViewsY; y += atlasRenderConfig.resolution ) {
 			viewTransform = glm::mat4( glm::angleAxis( ( y / atlasRenderConfig.resolution ) * 6.28f / atlasRenderConfig.numViewsY, vec3( 1.0f, 0.0f, 0.0f ) ) ) * baseTransform;
 			for ( int x = 0; x < atlasRenderConfig.resolution * atlasRenderConfig.numViewsX; x += atlasRenderConfig.resolution ) {
