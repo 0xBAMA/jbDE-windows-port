@@ -136,14 +136,6 @@ public:
 				}
 			}
 
-			glBindFramebuffer( GL_FRAMEBUFFER, ChorizoConfig.primaryFramebuffer[ 1 ] );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureManager.Get( "Framebuffer Depth 1" ), 0 );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureManager.Get( "Framebuffer Primitive ID 1" ), 0 );
-			glDrawBuffers( 1, bufs );
-			if ( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE ) {
-				cout << "back framebuffer creation successful" << newline << newline;
-			}
-
 			// bind default framebuffer
 			glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 		}
