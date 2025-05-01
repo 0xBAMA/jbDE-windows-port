@@ -71,6 +71,7 @@ void engineBase::BlitToScreen () {
 	glDepthMask( GL_FALSE );
 
 	const ivec2 windowSize = window.GetWindowSize();
+	glViewport( 0, 0, windowSize.x, windowSize.y );
 	glUniform2f( glGetUniformLocation( shader, "resolution" ), windowSize.x, windowSize.y );
 	textureManager.BindTexForShader( "Display Texture", "current", shaders[ "Display" ], 0 );
 	glDrawArrays( GL_TRIANGLES, 0, 3 );
