@@ -177,7 +177,8 @@ struct atlasRenderer_t {
 		opts.dataType = GL_RG32UI;
 		textureManager->Add( "Framebuffer ID", opts );
 		// ==== Normal Vector =================
-		opts.dataType = GL_R32UI;
+		// opts.dataType = GL_R32UI;
+		opts.dataType = GL_RGB32F;
 		textureManager->Add( "Framebuffer Normal", opts );
 		// ====================================
 
