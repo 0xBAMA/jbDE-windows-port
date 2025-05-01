@@ -139,9 +139,7 @@ struct atlasRenderer_t {
 	// todo: organization pass on all this
 	glm::mat4 viewTransform = glm::mat4( 1.0f );
 
-	// how are we supporting ortho?
-	vec3 eyePosition = vec3( 0.0f, 0.0f, -1.0f );
-
+	// init
 	atlasRenderer_t () {}
 
 	void CompileShaders () {
@@ -305,7 +303,6 @@ struct atlasRenderer_t {
 				viewTransform = glm::mat4( glm::angleAxis( 6.28f / atlasRenderConfig.numViewsX, vec3( 0.0f, 1.0f, 0.0f ) ) ) * viewTransform;
 
 				glUniformMatrix4fv( glGetUniformLocation( shader, "viewTransform" ), 1, false, glm::value_ptr( viewTransform ) );
-				glUniform3f( glGetUniformLocation( shader, "eyePosition" ), eyePosition.x, eyePosition.y, eyePosition.z );
 				glUniform1i( glGetUniformLocation( shader, "numPrimitives" ), numPrimitives );
 				glUniform2i( glGetUniformLocation( shader, "viewportBase" ), x, y );
 				glUniform2i( glGetUniformLocation( shader, "viewportSize" ), atlasRenderConfig.resolution, atlasRenderConfig.resolution );
