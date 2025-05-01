@@ -2,6 +2,7 @@
 
 #include "consistentPrimitives.glsl.h"
 #include "mathUtils.h"
+#include "normalEncodeDecode.h"
 
 // ===================================================================================================
 #define CAPSULE		0
@@ -31,8 +32,11 @@ layout( binding = 1, std430 ) buffer transformsBuffer {
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 uniform ivec2 noiseOffset;
 vec4 blue ( ivec2 loc ) {
+/*
 	loc = ( loc + noiseOffset ) % imageSize( blueNoiseTexture ).xy;
 	return vec4( imageLoad( blueNoiseTexture, loc ) ) / 255.0f;
+*/
+	return vec4( 0.5f );
 }
 // ===================================================================================================
 // size of the buffers
@@ -43,7 +47,11 @@ uniform float numPrimitives;
 
 in flat uint vofiIndex;
 in vec3 vofiPosition;
-out vec4 outColor;
+// out vec4 outColor;
+
+out float gl_FragDepth;
+layout( location = 0 ) out uvec4 primitiveIDTarget;
+layout( location = 1 ) out uvec4 normalTarget;
 
 // information assisting the orthographic ray calc
 uniform ivec2 viewportBase;
@@ -141,6 +149,7 @@ void main () {
 	}
 
 	if ( result == MAX_DIST_CP ) {
+		// outColor = vec4( 1.0f, 0.0f, 0.0f, 1.0f );
 		discard; // nohit condition
 	} else {
 		// writing correct depths
@@ -148,6 +157,11 @@ void main () {
 		gl_FragDepth = ( projectedPosition.z / projectedPosition.w + 1.0f ) * 0.5f;
 
 		// write other deferred surface results (geometry id, normal... what else?)
-		outColor = vec4( ( normal + vec3( 1.0f ) ) / 2.0f, 1.0f );
+
+		// primitive ID is a passthrough
+		primitiveIDTarget.x = vofiIndex;
+
+		// normals
+		normalTarget.x = encode( normal );
 	}
 }
