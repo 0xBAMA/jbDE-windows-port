@@ -127,6 +127,7 @@ struct atlasRenderer_t {
 	// OpenGL stuff
 	GLuint vao;
 	GLuint vbo;
+	GLuint framebuffer;
 
 	// for rendering the primitives in the geometry manager
 	GLuint bboxComputeShader; // precomputing the bounding boxes
@@ -156,6 +157,39 @@ struct atlasRenderer_t {
 		bboxRasterShader = regularShader( "../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.vs.glsl",
 			"../src/projects/Impostors/Sussudio/shaders/bbox/bboxRaster.fs.glsl" ).shaderHandle;
 	}
+
+	void CreateFramebuffers () {
+		// == Framebuffer Textures ============
+		textureOptions_t opts;
+		// ==== Depth =========================
+		opts.dataType = GL_DEPTH_COMPONENT32;
+		opts.textureType = GL_TEXTURE_2D;
+		opts.width = atlasRenderConfig.numViewsX * atlasRenderConfig.resolution;
+		opts.height = atlasRenderConfig.numViewsY * atlasRenderConfig.resolution;
+		textureManager->Add( "Framebuffer Depth", opts );
+		// ==== Primitive ID ==================
+		opts.dataType = GL_RG32UI;
+		textureManager->Add( "Framebuffer ID", opts );
+		// ==== Normal Vector =================
+		opts.dataType = GL_R32UI;
+		textureManager->Add( "Framebuffer Normal", opts );
+		// ====================================
+
+		// == Framebuffer Objects =============
+		glGenFramebuffers( 1, &framebuffer );
+		const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 }; // 2x 32-bit primitive ID/instance ID, 2x half float encoded normals
+
+		glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
+		glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureManager->Get( "Framebuffer Depth" ), 0 );
+		glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureManager->Get( "Framebuffer ID" ), 0 );
+		glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, textureManager->Get( "Framebuffer Normal" ), 0 );
+		glDrawBuffers( 2, bufs );
+		if ( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE ) {
+			cout << "framebuffer creation successful" << endl;
+		}
+
+	}
+
 	void AddGeometry () {
 		// remove any existing primitives
 		geometryManager.Clear();
@@ -283,8 +317,10 @@ struct atlasRenderer_t {
 		const int workgroupsRoundedUp = ( numPrimitives + 63 ) / 64;
 		glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
 
+		// bind the current framebuffer
+		glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
+
 		// update the atlas views on the framebuffer, one at a time
-		//			render the appropriately rotated view with some obnoxious blue noise supersampling in the fragment shader
 		shader = bboxRasterShader;
 		glUseProgram( shader );
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
@@ -312,5 +348,10 @@ struct atlasRenderer_t {
 				glDrawArrays( GL_TRIANGLES, 0, 36 * numPrimitives );
 			}
 		}
+
+		// revert to default framebuffer
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+		// eventually want to add some stuff here to mix the result of several passes
 	}
 };
