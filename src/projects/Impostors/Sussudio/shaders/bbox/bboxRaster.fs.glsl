@@ -51,8 +51,7 @@ in vec3 vofiPosition;
 
 out float gl_FragDepth;
 layout( location = 0 ) out uvec4 primitiveIDTarget;
-// layout( location = 1 ) out uvec4 normalTarget;
-layout( location = 1 ) out vec4 normalTarget;
+layout( location = 1 ) out uvec4 normalTarget;
 
 // information assisting the orthographic ray calc
 uniform ivec2 viewportBase;
@@ -163,7 +162,6 @@ void main () {
 		primitiveIDTarget.x = vofiIndex;
 
 		// normals
-		// normalTarget.x = encode( normal );
-		normalTarget.xyz = normal;
+		normalTarget.x = encode( normal );
 	}
 }
