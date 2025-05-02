@@ -1665,8 +1665,33 @@ float deSDFSDF(vec3 p){
     return min(.65-length(fract(p+.5)-.5),p.y+.2);
 }
 
+
+float sdBox ( vec3 p, vec3 s ) {
+  p = abs( p ) - s;
+  return max( p.x, max( p.y, p.z ) );
+}
+#define rotGG(j) mat2(cos(j),-sin(j),sin(j),cos(j))
+float deJeyko ( vec3 p ) {
+  // vec3 n = vec3( 0.1f, 0.9f, 0.8f );
+  vec3 n = vec3( 0.73f, 0.3f, 0.8f );
+  float d = 10e7;
+  vec3 sz = vec3( 1.0, 0.5, 0.5 ) / 2.0;
+  for( int i = 0; i < 16; i++ ){
+    float b = sdBox( p, sz );
+    sz *= vec3( 0.74, 0.5, 0.74 );
+    d = min( b, d );
+    p = abs( p );
+    p.xy *= rotGG( -0.9 + n.x );
+    p.yz *= rotGG( 0.6 - n.y * 0.3 );
+    p.xz *= rotGG( -0.2 + n.y * 0.1 );
+    p.xy -= sz.xy * 2.0;
+  }
+  return d;
+}
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
+#include "pbrConstants.glsl"
 //=============================================================================================================================
 float de( in vec3 p ) {
 	const vec3 pOriginal = p;
@@ -1683,6 +1708,25 @@ float de( in vec3 p ) {
 			// set material specifics - hitColor, hitSurfaceType, hitRoughness
 		// }
 	// }
+
+	{
+		const float d = deJeyko( p );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+
+
+			// float noiseValue = ( snoise3D( p * 6.18f ) + 1.0f ) / 2.0f;
+			hitColor = mix( tire, nvidia, 0.1f );
+			// hitColor = vec3( 0.99f );
+			// hitColor = iron;
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : METALLIC;
+			// hitRoughness = noiseValue;
+			// hitSurfaceType = MIRROR;
+		}
+	}
+
+	return sceneDist;
 
 	// pModInterval1( p.x, 1.0f, -5.0f, 5.0f );
 	// pModInterval1( p.y, 4.0f, -2.0f, 2.0f );
