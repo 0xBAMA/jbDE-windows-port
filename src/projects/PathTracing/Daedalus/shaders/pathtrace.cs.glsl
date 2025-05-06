@@ -1670,14 +1670,91 @@ float sdBox ( vec3 p, vec3 s ) {
   p = abs( p ) - s;
   return max( p.x, max( p.y, p.z ) );
 }
+float sdBox2 ( vec3 p, vec3 s ) {
+  p.y += 0.1f * s.x;
+  p = abs( p ) - s;
+  return max( p.x, max( p.y, p.z ) );
+}
+float deLipsoid(vec3 p, vec3 r) {
+    // vec3 r = vec3(0.2, 0.25, 0.05); // the radii on each axis
+    float k0 = length(p/r);
+    float k1 = length(p/(r*r));
+    return k0*(k0-1.0)/k1;
+}
+float deLipsoid2(vec3 p, vec3 r) {
+    // vec3 r = vec3(0.2, 0.25, 0.05); // the radii on each axis
+	p.y += 0.1f * r.x;
+    float k0 = length(p/r);
+    float k1 = length(p/(r*r));
+    return k0*(k0-1.0)/k1;
+}
+float deRings( vec3 p ) {
+  float w = 0.9f;
+  float t = 0.03f;
+  return length(vec2(p.x * p.y * p.z, length(p) - w)) - t;
+}
+float deRings2( vec3 p ) {
+  float w = 0.875f;
+  float t = 0.031f;
+  return length(vec2(p.x * p.y * p.z, length(p) - w)) - t;
+}
+ float deStar(vec3 p){
+    vec3 Q;
+    float i,d=1.;
+    Q=p;
+    d=.4*pi;
+    Q.yx*=rotate2D(floor(atan(Q.x,Q.y)/d+.5)*d);
+    Q.zx=abs(Q.zx);
+    return d=max(Q.z-.06,(Q.y*.325+Q.x+Q.z*1.5)/1.83-.05);
+  }
 #define rotGG(j) mat2(cos(j),-sin(j),sin(j),cos(j))
+
+// const vec3 pivot = vec3( 0.5f, 0.4f, 0.0f );
+// const vec3 pivot = vec3( 0.1f, 0.9f, 0.8f );
+const vec3 pivot = vec3( -0.33f, 1.3f, 0.8f );
+// const vec3 pivot = vec3( -0.2f, 1.0f, 0.6f );
+// const vec3 pivot = vec3( 0.6f, 0.7f, 0.8f );
+const int iterations = 22;
+
 float deJeyko ( vec3 p ) {
   // vec3 n = vec3( 0.1f, 0.9f, 0.8f );
-  vec3 n = vec3( 0.73f, 0.3f, 0.8f );
+  // vec3 n = vec3( -0.33f, 1.3f, 0.8f );
+  // vec3 n = vec3( -0.2f, 1.0f, 0.6f );
+  // vec3 n = vec3( 0.6f, 0.7f, 0.8f );
+  vec3 n = pivot;
   float d = 10e7;
   vec3 sz = vec3( 1.0, 0.5, 0.5 ) / 2.0;
-  for( int i = 0; i < 16; i++ ){
-    float b = sdBox( p, sz );
+  for( int i = 0; i < iterations; i++ ){
+    // float b = sdBox( p, sz.xyx );
+	float b = deLipsoid( p, sz );
+	// float b = distance( p, vec3( 0.0f ) ) - sz.x;
+	// float b = deRings( p / sz.x ) * sz.x;
+	// float b = deStar( p / sz.x ) * sz.x;
+    sz *= vec3( 0.74, 0.5, 0.74 );
+    d = min( b, d );
+    p = abs( p );
+    p.xy *= rotGG( -0.9 + n.x );
+    p.yz *= rotGG( 0.6 - n.y * 0.3 );
+    p.xz *= rotGG( -0.2 + n.y * 0.1 );
+    p.xy -= sz.xy * 2.0;
+  }
+  return d;
+}
+
+float deJeyko2 ( vec3 p ) {
+  // vec3 n = vec3( 0.1f, 0.9f, 0.8f );
+  // vec3 n = vec3( -0.33f, 1.3f, 0.8f );
+  // vec3 n = vec3( -0.2f, 1.0f, 0.6f );
+  // vec3 n = vec3( 0.6f, 0.7f, 0.8f );
+  vec3 n = pivot;
+  float d = 10e7;
+  vec3 sz = vec3( 1.0, 0.5, 0.5 ) / 2.0;
+  for( int i = 0; i < iterations; i++ ){
+    // float b = sdBox( p, sz.xyx );
+    // float b = sdBox2( p, sz.xyx );
+	float b = deLipsoid2( p, sz );
+	// float b = deRings2( p / sz.x ) * sz.x;
+	// float b = deRings( p / sz.x ) * sz.x;
     sz *= vec3( 0.74, 0.5, 0.74 );
     d = min( b, d );
     p = abs( p );
@@ -1708,21 +1785,68 @@ float de( in vec3 p ) {
 			// set material specifics - hitColor, hitSurfaceType, hitRoughness
 		// }
 	// }
+	
+	const vec3 bboxDim = vec3( 10.0f );
 
 	{
-		const float d = deJeyko( p );
+		const float d = max( max( deJeyko( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 
-
 			// float noiseValue = ( snoise3D( p * 6.18f ) + 1.0f ) / 2.0f;
-			hitColor = mix( tire, nvidia, 0.1f );
+			// hitColor = mix( tire, nvidia, 0.1f );
 			// hitColor = vec3( 0.99f );
-			// hitColor = iron;
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitColor = tire * 3.0f;
+			// hitColor = mix( nickel, vec3( 0.99f ), 0.1f );
+			// hitColor = mix( sapphire, nickel, noiseValue );
+			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : METALLIC;
 			// hitRoughness = noiseValue;
-			// hitSurfaceType = MIRROR;
+			// hitSurfaceType = LUMARBLE2;
+			
+			/*
+			hitColor = mix( gold, vec3( 0.99f ), -0.5f );
+			hitRoughness = 0.1f;
+			hitSurfaceType = METALLIC;
+			*/
+
+			// hitSurfaceType = DIFFUSE;
+			// hitColor = nvidia * 0.1f;
+			
+			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitColor = vec3( 0.99f );
+			
+			hitSurfaceType = MALACHITE;
+		}
+	}
+
+	if ( false ) {
+		const float d = max( max( deJeyko2( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitColor = vec3( 0.99f );
+			// hitColor = blood;
+
+			// hitSurfaceType = DIFFUSE;
+			// hitColor = nvidia * 0.1f;
+
+			hitColor = mix( gold, vec3( 0.99f ), -0.2f );
+			// hitColor = mix( nickel, brass, 0.2f );
+			// hitColor = brass;
+			hitRoughness = 0.1f;
+			hitSurfaceType = METALLIC;
+		}
+	}
+
+
+	if ( true ) {
+		const float d = sdBox( p - vec3( 0.0f, 0.0f, 1.0f ), vec3( 0.1f, 5.0f, 0.1f ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = EMISSIVE;
+			hitColor = vec3( 20.618f );
 		}
 	}
 
@@ -1855,17 +1979,7 @@ float de( in vec3 p ) {
 	// 	}
 	// }
 
-	// {
-	// 	p = pOriginal;
-	// 	p.y = -p.y;
-	// 	const float d = deSDFSDF( p );
-	// 	sceneDist = min( sceneDist, d );
-	// 	if ( sceneDist == d && d < epsilon ) {
-	// 		hitSurfaceType = DIFFUSE;
-	// 		// hitSurfaceType = EMISSIVE;
-	// 		hitColor = vec3( 0.618f );
-	// 	}
-	// }
+
 
 	// {
 	// 	p = pOriginal;
