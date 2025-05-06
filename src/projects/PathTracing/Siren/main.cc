@@ -1318,9 +1318,9 @@ public:
 		uint32_t texH = 64;
 		uint32_t texD = 512;
 
-		texW = 256;
-		texH = 256;
-		texD = 1024;
+		texW = 800;
+		texH = 800;
+		texD = 800;
 
 		Image_4U data( texW, texH * texD );
 
@@ -1381,8 +1381,8 @@ public:
 			// }
 
 			// frame test
-			const ivec3 numBeams = ivec3( 2, 2, 4 );
-			const ivec3 beamWidths = ivec3( 12, 16, 46 );
+			const ivec3 numBeams = ivec3( 2, 2, 6 );
+			const ivec3 beamWidths = ivec3( 12, 12, 83 );
 			const bool xValid = ( x % ( ( texW - beamWidths.x / 2 ) / numBeams.x ) < beamWidths.x );
 			const bool yValid = ( y % ( ( texH - beamWidths.y / 2 ) / numBeams.y ) < beamWidths.y );
 			const bool zValid = ( z % ( ( texD - beamWidths.z / 2 ) / numBeams.z ) < beamWidths.z );
@@ -1424,11 +1424,12 @@ public:
 				for ( uint32_t z = 0; z < texD; z++ ) {
 					// noise test
 					int i = index++;
+
 					float noiseValue = noiseOutput[ i ];
 					float noiseValue2 = noiseOutput2[ i ];
 					// if ( noiseValue < -0.4f ) {
 					// if ( ( z / texD ) < heightmapRead ) {
-					if ( float( z ) / float( texD ) < heightmapRead && noiseValue < -0.3f ) {
+					if ( float( z ) / float( texD ) < heightmapRead && noiseValue * noiseValue2 < -0.3f ) {
 						// vec3 c = palette::paletteRef( abs( noiseValue2 ) ) * 255.0f;
 						vec3 c = palette::paletteRef( abs( heightmapRead ) ) * 255.0f;
 						col = color_4U( { ( uint8_t ) c.x, ( uint8_t ) c.y, ( uint8_t ) c.z, ( uint8_t ) glyphPick() } );
