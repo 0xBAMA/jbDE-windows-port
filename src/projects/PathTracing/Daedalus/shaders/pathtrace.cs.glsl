@@ -2059,6 +2059,89 @@ intersection_t raymarch( in ray_t ray ) {
 	intersection.frontfaceHit = ( dot( intersection.normal, ray.direction ) <= 0.0f );
 	return intersection;
 }
+
+//=============================================================================================================================
+// plane-based convex polyhedra intersector, from Eric Haines' "Fast Ray-Convex Polyhedron Intersection"
+intersection_t convexPolyhedraIntersect ( in vec3 rayOrigin, in vec3 rayDirection, uint polyhedraSeed, float tMax ) {
+	// the rng is deterministic, so we evaluate these in order and get the same results, for a given seed
+	uint rngSeedCache = seed;
+	seed = polyhedraSeed;
+
+	float tNear = -1000.0f;
+	float tFar = tMax;
+
+	vec3 frontNormalCantidate;
+	vec3 backNormalCantidate;
+
+	for ( int i = 0; i < 6; i++ ) {
+		// deterministic rng for generating normals
+		vec3 planeNormal = RandomUnitVector();
+		float planeOffset = -1.0f + NormalizedRandomFloat();
+
+		// precompute terms
+		float vd = rayDirection.x * planeNormal.x + rayDirection.y * planeNormal.y + rayDirection.z * planeNormal.z;
+		float vn = rayOrigin.x * planeNormal.x + rayOrigin.y * planeNormal.y + rayOrigin.z * planeNormal.z + planeOffset;
+
+		if ( vd == 0.0f ) { // parallel ray
+			if ( vn > 0.0f ) { // half space partition, ray is outside
+				return DefaultIntersection();
+			}
+		} else {
+			float t = -vn / vd;
+			if ( vd < 0.0f ) { // we're considering a frontface hit
+				if ( t > tFar ) { // spatial partitioning has collapsed
+					return DefaultIntersection();
+				}
+				if ( t > tNear ) { // we are considering a new nearest hit ( frontface )
+					frontNormalCantidate = planeNormal;
+					tNear = t;
+				}
+			} else { // we're considering a backface hit
+				if ( t < tNear ) { // backface closer than nearest collapses partition
+					return DefaultIntersection();
+				}
+				if ( t < tFar ) { // we're considering a new nearest hit ( backface )
+					backNormalCantidate = planeNormal;
+					tFar = t;
+				}
+			}
+		}
+	}
+
+	// restore rng state
+	seed = rngSeedCache;
+
+	// evaluate results
+	intersection_t result = DefaultIntersection();
+
+	// result.albedo = vec3( 1.0f, 0.0f, 0.0f );
+	result.albedo = vec3( 0.99f );
+	result.IoR = 1.0f / 1.6f;
+	// result.IoR = 1.6f;
+	result.roughness = 0.0f;
+
+	if ( tNear >= 0.0f ) { // outside, hitting front face
+		result.dTravel = tNear;
+		result.normal = frontNormalCantidate;
+		result.frontfaceHit = true;
+		// result.materialID = REFRACTIVE;
+		result.materialID = MIRROR;
+		return result;
+	} else {
+		if ( tFar < tMax ) { // inside, hitting back face
+			result.dTravel = tFar;
+			result.normal = -backNormalCantidate;
+			result.frontfaceHit = true;
+			// result.materialID = REFRACTIVE_BACKFACE;
+			result.materialID = MIRROR;
+			return result;
+		} else { // inside but far face beyond tMax, miss
+			return DefaultIntersection();
+		}
+	}
+}
+
+
 //=============================================================================================================================
 //	explicit intersection primitives
 //		refactor this, or put it in a header, it's a bunch of ugly shit
@@ -2544,9 +2627,11 @@ intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
 	intersection_t MaskedPlane		= maskedPlaneEnable		? MaskedPlaneIntersect( ray )	: DefaultIntersection();
 	intersection_t ExplicitList		= explicitListEnable	? ExplicitListIntersect( ray )	: DefaultIntersection();
+	intersection_t convexPolyhedra	= DefaultIntersection();
+	// intersection_t convexPolyhedra	= convexPolyhedraIntersect( ray.origin, ray.direction, 4200690926, DefaultIntersection().dTravel );
 
 	intersection_t result = DefaultIntersection();
-	float minDistance = vmin( vec4( SDFResult.dTravel, VoxelResult.dTravel, MaskedPlane.dTravel, ExplicitList.dTravel ) );
+	float minDistance = min( vmin( vec4( SDFResult.dTravel, VoxelResult.dTravel, MaskedPlane.dTravel, ExplicitList.dTravel ) ), convexPolyhedra.dTravel );
 	if ( minDistance == SDFResult.dTravel ) {
 		result = SDFResult;
 	} else if ( minDistance == VoxelResult.dTravel ) {
@@ -2556,6 +2641,8 @@ intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	} else if ( minDistance == ExplicitList.dTravel ) {
 		result = ExplicitList;
 		// result.IoR = 1.0f / 1.7f; // hack to make marble IoR constant
+	// } else if ( minDistance == convexPolyhedra.dTravel ) {
+		// result = convexPolyhedra;
 	}
 	return result;
 }
