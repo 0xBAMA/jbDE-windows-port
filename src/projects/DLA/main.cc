@@ -7,6 +7,12 @@ public:
 	DLA () { Init(); OnInit(); PostInit(); }
 	~DLA () { Quit(); }
 
+	DLAModelGPU d;
+
+	float zoom = 2.0f;
+	float verticalOffset = 2.0f;
+	vec3 viewerPosition = vec3( 6.0f, 6.0f, 6.0f );
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -15,13 +21,14 @@ public:
 			// something to put some basic data in the accumulator texture
 			shaders[ "Draw" ] = computeShader( "../src/projects/DLA/shaders/draw.cs.glsl" ).shaderHandle;
 
+			/*
 			const int numThreads = 4;
 			std::thread threads[ numThreads ]; // create thread pool
 			for ( int id = 0; id < numThreads; id++ ) { // do work
 				threads[ id ] = std::thread(
 					[ this, id ]() {
 
-						DLAModel d;
+						DLAModelCPU d;
 						d.Init();
 						d.threadIDX = id;
 						d.RunBatch( 10000 );
@@ -32,13 +39,55 @@ public:
 
 			for ( int id = 0; id <= numThreads; id++ )
 				threads[ id ].join();
+			*/
+
+			d.textureManager = &textureManager;
+			d.Init();
+			d.Run( 100 );
 		}
 	}
 
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
+		const bool* state = SDL_GetKeyboardState( NULL );
 
+		if ( state[ SDL_SCANCODE_RIGHT ] ) {
+			glm::quat rot = glm::angleAxis( -0.01f, vec3( 0.0f, 0.0f, 1.0f ) );
+			viewerPosition = ( rot * vec4( viewerPosition, 0.0f ) ).xyz();
+		}
+
+		if ( state[ SDL_SCANCODE_LEFT ] ) {
+			glm::quat rot = glm::angleAxis( 0.01f, vec3( 0.0f, 0.0f, 1.0f ) );
+			viewerPosition = ( rot * vec4( viewerPosition, 0.0f ) ).xyz();
+		}
+
+		if ( state[ SDL_SCANCODE_UP ] ) {
+			verticalOffset += 0.1f;
+		}
+
+		if ( state[ SDL_SCANCODE_DOWN ] ) {
+			verticalOffset -= 0.1f;
+		}
+
+		// zoom in and out with plus/minus
+		if ( state[ SDL_SCANCODE_MINUS ] ) {
+			zoom += 0.1f;
+		}
+
+		if ( state[ SDL_SCANCODE_EQUALS ] ) {
+			zoom -= 0.1f;
+		}
+
+		if ( state[ SDL_SCANCODE_R ] ) {
+			textureManager.ZeroTexture3D( "DLA Texture" );
+			d.ResetParticles();
+			d.ResetField();
+		}
+
+		if ( state[ SDL_SCANCODE_Y ] ) {
+			d.ReloadShaders();
+		}
 	}
 
 	void ImguiPass () {
@@ -70,8 +119,15 @@ public:
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			glUseProgram( shaders[ "Draw" ] );
-			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			const GLuint shader = shaders[ "Draw" ];
+			glUseProgram( shader );
+
+			textureManager.BindImageForShader( "DLA Texture", "DLATexture", shader, 2 );
+			glUniform1f( glGetUniformLocation( shader, "zoom" ), zoom );
+			glUniform1f( glGetUniformLocation( shader, "verticalOffset" ), verticalOffset );
+			glUniform3fv( glGetUniformLocation( shader, "viewerPosition" ), 1, glm::value_ptr( viewerPosition ) );
+			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -103,17 +159,12 @@ public:
 			textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
-
-		{ // show trident with current orientation
-			// scopedTimer Start( "Trident" );
-			// trident.Update( textureManager.Get( "Display Texture" ) );
-			// glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-		}
 	}
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-		// application-specific update code
+
+		d.Run( 1 );
 	}
 
 	void OnRender () {
@@ -141,7 +192,6 @@ public:
 		terminal.update( inputHandler );
 
 		// event handling
-		HandleTridentEvents();
 		HandleCustomEvents();
 		HandleQuitEvents();
 

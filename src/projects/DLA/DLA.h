@@ -1,6 +1,6 @@
 #include "../../engine/includes.h"
 
-class DLAModel {
+class DLAModelCPU {
 public:
 	std::vector< vec3 > unanchoredParticles;
 	std::unordered_map< ivec3, std::vector< vec3 > > anchoredParticles; // on a quantized grid
@@ -155,6 +155,117 @@ public:
 		*/
 	}
 
-	~DLAModel() {};
-	DLAModel () {};
+	~DLAModelCPU() {};
+	DLAModelCPU () {};
+};
+
+class DLAModelGPU {
+public:
+	GLuint particleBuffer;
+	GLuint DLASimShader;
+
+	textureManager_t * textureManager;
+	int32_t numParticles = ( 1 << 22 );
+
+	int32_t blockDim = 512;
+
+	void ReloadShaders () {
+		DLASimShader = computeShader( "../src/projects/DLA/shaders/dla.cs.glsl" ).shaderHandle;
+	}
+
+	void ResetParticles () {
+		rngi texelPick( 0, blockDim - 1 );
+		vector< vec4 > particlePositions;
+		particlePositions.reserve( numParticles );
+		for ( int i = 0; i < numParticles; i++ ) {
+			particlePositions.push_back( vec4( texelPick(), texelPick(), texelPick(), texelPick() ) );
+		}
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, particleBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, sizeof( vec4 ) * numParticles, ( GLvoid* ) &particlePositions.data()[ 0 ], GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, particleBuffer );
+	}
+
+	void ResetField () {
+		// 3D uint texture for DLA deposition
+		Image_4U DLABuffer( blockDim, blockDim * blockDim );
+		rng pick( 0, tau );
+		for ( int i = 0; i < 500; i++ ) {
+			// make sure that there's at least a couple seed texels
+			// DLABuffer.SetAtXY( texelPick(), texelPick() + texelPick() * blockDim, color_4U( { 1, 0, 0, 0 } ) );
+
+
+			/*
+			// ivec3 loc = ivec3( texelPick(), texelPick(), texelPick() );
+			ivec3 loc = ivec3( blockDim ) / 8;
+			rngi jitter( -8, 8 );
+			for ( int j = 0; j < 64; j++ ) {
+				DLABuffer.SetAtXY( loc.x + jitter(), loc.y + jitter() + ( loc.z + jitter() ) * blockDim, color_4U( { 1, 0, 0, 0 } ) );
+			}
+			*/
+
+
+			float value = pick();
+			ivec3 loc = ivec3(
+				( blockDim / 12.0f ) * sin( value ) + blockDim / 8,
+				( blockDim / 12.0f ) * cos( value ) + blockDim / 8,
+				int( pick() ) + blockDim / 8
+			);
+			cout << "writing at " << loc.x << " " << loc.y << " " << loc.z << endl;
+			DLABuffer.SetAtXY( loc.x, loc.y + loc.z * blockDim, color_4U( { 1, 0, 0, 0 } ) );
+		}
+
+		{
+			textureManager->Remove( "DLA Texture" );
+			textureOptions_t opts;
+			opts.width = blockDim;
+			opts.height = blockDim;
+			opts.depth = blockDim;
+			opts.textureType = GL_TEXTURE_3D;
+			opts.dataType = GL_R32UI;
+			opts.minFilter = GL_NEAREST;
+			opts.magFilter = GL_NEAREST;
+			opts.wrap = GL_CLAMP_TO_BORDER;
+			opts.initialData = ( void* ) DLABuffer.GetImageDataBasePtr();
+			textureManager->Add( "DLA Texture", opts );
+		}
+	}
+
+	void Init () {
+
+		rngi texelPick( 0, blockDim - 1 );
+
+		// buffer for particle locations
+		glGenBuffers( 1, &particleBuffer );
+		ResetParticles();
+
+		// clear the buffer
+		ResetField();
+
+		// shader for updating the DLA sim
+		ReloadShaders();
+	}
+
+	void Run ( int iterations ) {
+
+	// run N iterations on the existing model (will be able to repeat this)
+		glUseProgram( DLASimShader );
+
+		// bind particle buffer
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, particleBuffer );
+
+		// bind 3D texture
+		textureManager->BindImageForShader( "DLA Texture", "DLATexture", DLASimShader, 0 );
+
+		// seeding the RNG
+		static rngi rngSeeder( 0, 10000000 );
+		glUniform1i( glGetUniformLocation( DLASimShader, "randomSeed" ), rngSeeder() );
+
+		// run the shader
+		const uint32_t workgroupsRoundedUp = ( numParticles + 63 ) / 64;
+		glDispatchCompute( 64, workgroupsRoundedUp / 64, 1 );
+		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+	}
+
+	// something to visualize realtime update?
 };
