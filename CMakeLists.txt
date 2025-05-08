@@ -667,3 +667,14 @@ target_link_libraries( Sussudio
 	engineBase
 )
 
+# =================================================================================================
+# DLA
+# =================================================================================================
+add_executable( DLA
+	src/projects/DLA/main.cc
+)
+
+target_link_libraries( DLA
+	PUBLIC
+	engineBase
+)
