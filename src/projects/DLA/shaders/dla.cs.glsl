@@ -33,14 +33,15 @@ void main () {
 	seed = randomSeed + 69420 * index;
 
 	// apply a jitter to the location
-	const float jitterMagnitude = 2.0f * 4.0f;
+	// const float jitterMagnitude = 2.0f * 20.0f;
 	vec4 oldPosition = particleList[ index ];
+	const float jitterMagnitude = 2.0f * 10.0f * perlinfbm( oldPosition.xyz, 0.05f, 3 );
 	// vec4 newPosition = oldPosition + vec4( curlNoise( oldPosition.xyz * 0.0001f ) * vec3( jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ), jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ), jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ) ), 0.0f );
 	vec4 newPosition = oldPosition + vec4( jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ), jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ), jitterMagnitude * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
 
 	// apply some wind
 	// newPosition.xyz += vec3( 0.0f, 0.0f, 5.0f );
-	newPosition.xyz += curlNoise( newPosition.xyz * 0.05f ) * 0.2f;
+	newPosition.xyz += curlNoise( newPosition.xyz * 0.0005f ) * 1.0f;
 
 	// quantized position
 	ivec3 pos = ivec3( newPosition );

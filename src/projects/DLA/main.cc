@@ -19,7 +19,6 @@ public:
 			Block Start( "Additional User Init" );
 
 			// something to put some basic data in the accumulator texture
-			shaders[ "Draw" ] = computeShader( "../src/projects/DLA/shaders/draw.cs.glsl" ).shaderHandle;
 
 			/*
 			const int numThreads = 4;
@@ -44,6 +43,8 @@ public:
 			d.textureManager = &textureManager;
 			d.Init();
 			d.Run( 100 );
+
+			shaders[ "Draw" ] = d.DLADrawShader;
 		}
 	}
 
@@ -87,6 +88,7 @@ public:
 
 		if ( state[ SDL_SCANCODE_Y ] ) {
 			d.ReloadShaders();
+			shaders[ "Draw" ] = d.DLADrawShader;
 		}
 	}
 

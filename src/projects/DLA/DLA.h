@@ -163,13 +163,15 @@ class DLAModelGPU {
 public:
 	GLuint particleBuffer;
 	GLuint DLASimShader;
+	GLuint DLADrawShader;
 
 	textureManager_t * textureManager;
 	int32_t numParticles = ( 1 << 22 );
 
-	int32_t blockDim = 512;
+	int32_t blockDim = 1000;
 
 	void ReloadShaders () {
+		DLADrawShader = computeShader( "../src/projects/DLA/shaders/draw.cs.glsl" ).shaderHandle;
 		DLASimShader = computeShader( "../src/projects/DLA/shaders/dla.cs.glsl" ).shaderHandle;
 	}
 

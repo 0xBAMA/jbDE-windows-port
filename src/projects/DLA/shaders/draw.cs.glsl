@@ -53,7 +53,8 @@ uint sampleBlock ( ivec3 pos ) {
 
 vec3 colorFromIterations ( int i ) {
 	// return vec3( 1.0f - exp( -0.005f * i ) ) * vec3( 0.618f, 0.1618f, 0.1f );
-	return vec3( 1.0f - exp( -0.005f * i ) ) * -vec3( 0.618f, 0.1618f, 0.1f );
+	// return vec3( 1.0f - exp( -0.00025f * i ) ) * -vec3( 0.618f, 0.1618f, 0.1f );
+	return vec3( exp( -0.00025f * i ) ) * -vec3( 0.1618f, 0.618f, 0.5f );
 }
 
 #include "mathUtils.h"
