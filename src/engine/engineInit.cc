@@ -19,6 +19,9 @@ void engineBase::LoadConfig () {
 		config.windowTitle				= j[ "system" ][ "windowTitle" ];
 		config.width					= j[ "system" ][ "screenWidth" ];
 		config.height					= j[ "system" ][ "screenHeight" ];
+
+		if ( config.forceResolution != ivec2( -1 ) ) { config.width = config.forceResolution.x; config.height = config.forceResolution.y; }
+
 		config.linearFilter				= j[ "system" ][ "linearFilterDisplayTex" ];
 		config.windowOffset.x			= j[ "system" ][ "windowOffset" ][ "x" ];
 		config.windowOffset.y			= j[ "system" ][ "windowOffset" ][ "y" ];

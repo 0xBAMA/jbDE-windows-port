@@ -3,7 +3,7 @@
 
 class SpaceGame final : public engineBase { // sample derived from base engine class
 public:
-	SpaceGame () { Init(); OnInit(); PostInit(); }
+	SpaceGame () { config.forceResolution = ivec2( 640, 360 ); Init(); OnInit(); PostInit(); }
 	~SpaceGame () { Quit(); }
 
 	spaceGameData_t spaceGameData;

@@ -26,6 +26,8 @@ struct configData {
 
 	bool oneShot = false;
 
+	ivec2 forceResolution = ivec2( -1 );
+
 	// anything else ... ?
 };
 
