@@ -387,6 +387,7 @@ public:
 		for ( auto layer : layers ) {
 			layer.Draw(); // data texture( 1 ) is bound internal to this function, since it is unique to each layer
 		}
+		glMemoryBarrier( GL_ALL_BARRIER_BITS );
 	}
 
 	int width, height;
