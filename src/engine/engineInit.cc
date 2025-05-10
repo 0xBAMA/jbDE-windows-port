@@ -374,6 +374,11 @@ void engineBase::TerminalSetup () {
 				byteString << std::setprecision( 4 ) << float( bytes ) / float( 1u << 30 ) << "GB";
 			}
 
+			int32_t longestTextureName = 0;
+			for ( auto& tex : textureManager.textures ) {
+				longestTextureName = min( max( int32_t( tex.label.length() + 2 ), longestTextureName ), 60 ); // pad 1 space either end, clamp at 60 chars
+			}
+
 			terminal.addLineBreak();
 			terminal.addHistoryLine( terminal.csb.append( "Texture Manager Report ", 3 ).flush() );
 			terminal.addHistoryLine( terminal.csb.append( "[ Summary: ", GREY_DD ).append( to_string( textureManager.Count() ) ).append( " textures in ", GREY_DD ).append( byteString.str() ).append( " total ]", GREY_DD ).flush() );
@@ -388,7 +393,7 @@ void engineBase::TerminalSetup () {
 			terminal.csb.append( cChar( GREY_DD, ( char ) 194 ) );
 			terminal.csb.append( string( 12, ( char ) 196 ), GREY_DD );
 			terminal.csb.append( cChar( GREY_DD, ( char ) 194 ) );
-			terminal.csb.append( string( 65, ( char ) 196 ), GREY_DD );
+			terminal.csb.append( string( longestTextureName + 14, ( char ) 196 ), GREY_DD );
 			terminal.csb.append( cChar( GREY_DD, ( char ) 191 ) );
 
 			terminal.addHistoryLine( terminal.csb.flush() );
@@ -403,7 +408,7 @@ void engineBase::TerminalSetup () {
 			terminal.csb.append( cChar( GREY_DD, VERTICAL_SINGLE ) );
 			terminal.csb.append( "FORMAT      " );
 			terminal.csb.append( cChar( GREY_DD, VERTICAL_SINGLE ) );
-			terminal.csb.append( "LABEL" + string( 60, ' ' ) );
+			terminal.csb.append( "LABEL" + string( longestTextureName + 9, ' ' ) );
 			terminal.csb.append( cChar( GREY_DD, VERTICAL_SINGLE ) );
 
 			terminal.addHistoryLine( terminal.csb.flush() );
@@ -418,7 +423,7 @@ void engineBase::TerminalSetup () {
 			terminal.csb.append( cChar( GREY_DD, ( char ) 216 ) );
 			terminal.csb.append( string( 12, HORIZONTAL_DOUBLE ), GREY_DD );
 			terminal.csb.append( cChar( GREY_DD, ( char ) 216 ) );
-			terminal.csb.append( string( 65, HORIZONTAL_DOUBLE ), GREY_DD );
+			terminal.csb.append( string( longestTextureName + 14, HORIZONTAL_DOUBLE ), GREY_DD );
 			terminal.csb.append( cChar( GREY_DD, ( char ) 190 ) );
 
 			terminal.addHistoryLine( terminal.csb.flush() );
@@ -496,7 +501,7 @@ void engineBase::TerminalSetup () {
 				// appending the texture label, and the trailing
 				stringstream ss;
 				ss << tex.label;
-				string fill = string( 50 - ss.str().length(), '.' );
+				string fill = string( longestTextureName - ss.str().length(), '.' );
 				terminal.csb.append( ss.str(), 2 ).append( fill, 3 );
 
 				// now the number of bytes taken up by this texture
@@ -516,7 +521,7 @@ void engineBase::TerminalSetup () {
 			terminal.csb.append( cChar( GREY_DD, ( char ) 207 ) );
 			terminal.csb.append( string( 12, HORIZONTAL_DOUBLE ), GREY_DD );
 			terminal.csb.append( cChar( GREY_DD, ( char ) 207 ) );
-			terminal.csb.append( string( 41, HORIZONTAL_DOUBLE ), GREY_DD );
+			terminal.csb.append( string( longestTextureName - 9, HORIZONTAL_DOUBLE ), GREY_DD );
 			terminal.addHistoryLine( terminal.csb.append( " Total:  " ).append( GetWithThousandsSeparator( bytes ) ).append( " bytes", 2 ).flush() );
 
 			terminal.addLineBreak();
