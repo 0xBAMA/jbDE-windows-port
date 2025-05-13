@@ -1,3 +1,13 @@
+#include "../../engine/includes.h"
+
+void DrawMenuBasics( layerManager &textRenderer, textureManager_t &textureManager ) {
+	textRenderer.Clear();
+	textRenderer.layers[ 0 ].DrawDoubleFrame( uvec2( 0, textRenderer.numBinsHeight - 1 ), uvec2( textRenderer.numBinsWidth - 1, 0 ), GOLD );
+	string s( "[SpaceGame]" );
+	textRenderer.layers[ 0 ].WriteString( glm::uvec2( textRenderer.layers[ 1 ].width - s.length() - 2, 0 ), glm::uvec2( textRenderer.layers[ 1 ].width, 0 ), s, WHITE );
+	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+}
+
 struct spaceshipStats {
 public:
 	// maximum speeds ( forward and back )
