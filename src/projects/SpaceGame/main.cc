@@ -1,9 +1,14 @@
 #include "../../engine/engine.h"
 
+#include "game.h"
+
 class SpaceGame final : public engineBase { // sample derived from base engine class
+
 public:
-	SpaceGame () { config.forceResolution = ivec2( 640, 360 ); Init(); OnInit(); PostInit(); }
+	SpaceGame () { config.forceResolution = ivec2( 720, 480 ); Init(); OnInit(); PostInit(); }
 	~SpaceGame () { Quit(); }
+
+	spaceshipController controller;
 
 	void OnInit () {
 		ZoneScoped;
