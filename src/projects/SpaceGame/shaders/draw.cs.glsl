@@ -164,7 +164,31 @@ void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 
-	vec3 col = vec3( 0.0f );
+	vec2 iS = imageSize( accumulatorTexture ).xy;
+	vec2 centeredUV = writeLoc / iS - vec2( 0.5f );
+	centeredUV.x *= ( iS.x / iS.y );
+	centeredUV.y *= -1.0f;
+	centeredUV *= 10.0f;
+
+    // get a couple samples of the background
+    vec4 offset1 = blueNoiseRef( writeLoc );
+    vec4 offset2 = blueNoiseRef( writeLoc + ivec2( 256 ) );
+    vec2 basePt = writeLoc + vec2( time );
+    vec2 offset = 0.001f * ( positionVector * vec2( 1.0f, -1.0f ) ) + 0.1f * velocityVector;
+	vec3 col = (
+        nebulaBG( basePt + offset1.xy, offset ) +
+        nebulaBG( basePt + offset1.zw, offset ) +
+        nebulaBG( basePt + offset2.xy, offset ) +
+        nebulaBG( basePt + offset2.zw, offset ) ) / 4.0f;
+
+	// intersect with the ship
+	vec3 normal = vec3( 0.0f );
+	if ( MAX_DIST_CP > iSphere( vec3( centeredUV + velocityVector, -3.0f ), vec3( 0.0f, 0.0f, 1.0f ), normal, 0.2f ) ) {
+		col = vec3( 1.0f );
+	}
+	if ( MAX_DIST_CP > iSphere( vec3( centeredUV, -3.0f ), vec3( 0.0f, 0.0f, 1.0f ), normal, 0.01f ) ) {
+		col = vec3( 1.0f, 0.0f, 0.0f );
+	}
 
 	// write the data to the image
 	imageStore( accumulatorTexture, writeLoc, vec4( col, 1.0f ) );
