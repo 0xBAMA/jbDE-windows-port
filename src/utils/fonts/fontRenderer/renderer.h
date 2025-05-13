@@ -17,7 +17,7 @@ constexpr unsigned char TOP_LEFT_SINGLE_CORNER = 218;
 constexpr unsigned char TOP_RIGHT_SINGLE_CORNER = 191;
 constexpr unsigned char BOTTOM_LEFT_SINGLE_CORNER = 192;
 constexpr unsigned char BOTTOM_RIGHT_SINGLE_CORNER = 217;
-constexpr unsigned char VERTICAL_SINGLE = ( unsigned char ) 179;
+constexpr unsigned char VERTICAL_SINGLE = 179;
 constexpr unsigned char HORIZONTAL_SINGLE = 196;
 constexpr unsigned char TEE_UDR = ( unsigned char ) 198;
 
@@ -180,10 +180,18 @@ public:
 
 	void DrawDoubleFrame ( glm::uvec2 min, glm::uvec2 max, glm::ivec3 color ) {
 		bufferDirty = true;
-		WriteCharAt( min, cChar( color, TOP_LEFT_DOUBLE_CORNER ) );
-		WriteCharAt( glm::uvec2( max.x, min.y ), cChar( color, TOP_RIGHT_DOUBLE_CORNER ) );
-		WriteCharAt( glm::uvec2( min.x, max.y ), cChar( color, BOTTOM_LEFT_DOUBLE_CORNER ) );
-		WriteCharAt( max, cChar( color, BOTTOM_RIGHT_DOUBLE_CORNER ) );
+
+		glm::uvec2 minT = min;
+		glm::uvec2 maxT = max;
+		min.x = std::min( minT.x, maxT.x );
+		max.x = std::max( minT.x, maxT.x );
+		min.y = std::min( minT.y, maxT.y );
+		max.y = std::max( minT.y, maxT.y );
+
+		WriteCharAt( min, cChar( color, BOTTOM_LEFT_DOUBLE_CORNER ) );
+		WriteCharAt( glm::uvec2( max.x, min.y ), cChar( color, BOTTOM_RIGHT_DOUBLE_CORNER ) );
+		WriteCharAt( glm::uvec2( min.x, max.y ), cChar( color, TOP_LEFT_DOUBLE_CORNER ) );
+		WriteCharAt( max, cChar( color, TOP_RIGHT_DOUBLE_CORNER ) );
 		for ( unsigned int x = min.x + 1; x < max.x; x++  ){
 			WriteCharAt( glm::uvec2( x, min.y ), cChar( color, HORIZONTAL_DOUBLE ) );
 			WriteCharAt( glm::uvec2( x, max.y ), cChar( color, HORIZONTAL_DOUBLE ) );
@@ -196,10 +204,18 @@ public:
 
 	void DrawSingleFrame ( glm::uvec2 min, glm::uvec2 max, glm::ivec3 color ) {
 		bufferDirty = true;
-		WriteCharAt( min, cChar( color, TOP_LEFT_SINGLE_CORNER ) );
-		WriteCharAt( glm::uvec2( max.x, min.y ), cChar( color, TOP_RIGHT_SINGLE_CORNER ) );
-		WriteCharAt( glm::uvec2( min.x, max.y ), cChar( color, BOTTOM_LEFT_SINGLE_CORNER ) );
-		WriteCharAt( max, cChar( color, BOTTOM_RIGHT_SINGLE_CORNER ) );
+
+		glm::uvec2 minT = min;
+		glm::uvec2 maxT = max;
+		min.x = std::min( minT.x, maxT.x );
+		max.x = std::max( minT.x, maxT.x );
+		min.y = std::min( minT.y, maxT.y );
+		max.y = std::max( minT.y, maxT.y );
+
+		WriteCharAt( min, cChar( color, BOTTOM_LEFT_SINGLE_CORNER ) );
+		WriteCharAt( glm::uvec2( max.x, min.y ), cChar( color, BOTTOM_RIGHT_SINGLE_CORNER ) );
+		WriteCharAt( glm::uvec2( min.x, max.y ), cChar( color, TOP_LEFT_SINGLE_CORNER ) );
+		WriteCharAt( max, cChar( color, TOP_RIGHT_SINGLE_CORNER ) );
 		for ( unsigned int x = min.x + 1; x < max.x; x++  ){
 			WriteCharAt( glm::uvec2( x, min.y ), cChar( color, HORIZONTAL_SINGLE ) );
 			WriteCharAt( glm::uvec2( x, max.y ), cChar( color, HORIZONTAL_SINGLE ) );
