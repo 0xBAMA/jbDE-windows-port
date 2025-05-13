@@ -1,3 +1,19 @@
+struct spaceshipStats {
+public:
+	// maximum speeds ( forward and back )
+	float maxSpeedForward = 2.0f;
+	float maxSpeedBackward = 0.2f;
+
+	// turn rate
+	float turnRate = 0.003f;
+
+	// acceleration rate
+	float accelerationRate = 0.001f;
+
+	// deceleration rate
+	float decelerationRate = 0.0005f;
+};
+
 class spaceshipController {
 public:
 
