@@ -52,6 +52,10 @@ void engineBase::SendTonemappingParameters ( const bool passthrough ) {
 	glUniform1i( glGetUniformLocation( shader, "enableVignette" ), tonemap.enableVignette );
 	glUniform1f( glGetUniformLocation( shader, "vignettePower" ), tonemap.vignettePower );
 
+	// per-frame offset the noise used for dithering
+	static rngi noiseOffset( 0, 512 );
+	glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+
 	// problematic if missing
 	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 2 );
 

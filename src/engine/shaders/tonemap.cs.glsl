@@ -4,9 +4,10 @@ layout( binding = 0, rgba16f ) uniform image2D source;
 layout( binding = 1, rgba8ui ) uniform uimage2D displayTexture;
 layout( binding = 2, rgba8ui ) uniform uimage2D blueNoise;
 
+uniform ivec2 noiseOffset;
 vec4 blueNoiseRef( ivec2 pos ) {
-	pos.x = pos.x % imageSize( blueNoise ).x;
-	pos.y = pos.y % imageSize( blueNoise ).y;
+	pos.x = ( pos.x + noiseOffset.x ) % imageSize( blueNoise ).x;
+	pos.y = ( pos.y + noiseOffset.y ) % imageSize( blueNoise ).y;
 	return imageLoad( blueNoise, pos ) / 255.0f;
 }
 
@@ -45,7 +46,7 @@ void main () {
 
 		// small amount of functional ( not aesthetic ) dither, for banding issues incurred from the vignette
 			// this needs a toggle
-		originalValue.rgb = originalValue.rgb + blueNoiseRef( loc ).rgb * 0.005f;
+		originalValue.rgb = originalValue.rgb + blueNoiseRef( loc ).rgb * 0.001f;
 
 		vec3 color = Tonemap( tonemapMode, colorTempAdjust * ( saturation * originalValue.rgb ) );
 		color = GammaCorrect( gamma, color );
