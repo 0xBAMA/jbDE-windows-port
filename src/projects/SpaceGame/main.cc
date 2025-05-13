@@ -81,6 +81,7 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 		// application-specific update code
+		controller.Update( inputHandler );
 	}
 
 	void OnRender () {
