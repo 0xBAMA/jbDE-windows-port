@@ -58,25 +58,17 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		// shader to apply dithering
-			// ...
-
-		// other postprocessing
-			// ...
-
 		{
 			scopedTimer Start( "Text Rendering" );
-			textRenderer.Clear();
-			// textRenderer.Update( ImGui::GetIO().DeltaTime );
+
+			DrawMenuBasics( textRenderer, textureManager );
 
 			// show terminal, if active - check happens inside
+			textRenderer.Clear();
+			// textRenderer.Update( ImGui::GetIO().DeltaTime );
 			textRenderer.drawTerminal( terminal );
-
 			// put the result on the display
 			textRenderer.Draw( textureManager.Get( "Display Texture" ) );
-
-
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
 		{ // show trident with current orientation
