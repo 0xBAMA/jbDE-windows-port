@@ -7,7 +7,7 @@ public:
 	SpaceGame () { config.forceResolution = ivec2( 720, 480 ); Init(); OnInit(); PostInit(); }
 	~SpaceGame () { Quit(); }
 
-	spaceshipController controller;
+	universeController controller;
 
 	void OnInit () {
 		ZoneScoped;
@@ -52,10 +52,10 @@ public:
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-			vec2 v = controller.GetVelocityVector();
+			vec2 v = controller.ship.GetVelocityVector();
 			glUniform2f( glGetUniformLocation( shader, "velocityVector" ), v.x, v.y );
 
-			vec2 p = controller.GetPositionVector();
+			vec2 p = controller.ship.GetPositionVector();
 			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x, p.y );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
@@ -94,7 +94,7 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 		// application-specific update code
-		controller.Update( inputHandler );
+		controller.ship.Update( inputHandler );
 	}
 
 	void OnRender () {

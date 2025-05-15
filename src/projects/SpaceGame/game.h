@@ -128,3 +128,11 @@ public:
 	}
 
 };
+
+class universeController {
+public:
+	ivec2 sectorID = ivec2( 10 );
+
+	spaceshipController ship;
+
+};
