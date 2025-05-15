@@ -16,6 +16,26 @@ public:
 
 			shaders[ "Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/draw.cs.glsl" ).shaderHandle;
 
+			// load up the existing ship textures
+			textureOptions_t opts;
+			opts.dataType = GL_RGBA8;
+			opts.textureType = GL_TEXTURE_2D;
+			opts.minFilter = GL_LINEAR;
+			opts.magFilter = GL_LINEAR;
+			opts.borderColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+			Image_4U ship1( "../src/projects/SpaceGame/ship1.png" );
+			opts.width = ship1.Width();
+			opts.height = ship1.Height();
+			opts.initialData = ship1.GetImageDataBasePtr();
+			textureManager.Add( "Ship1", opts );
+			// pass the handles also to some sprite management layer...
+
+			Image_4U ship2( "../src/projects/SpaceGame/ship2.png" );
+			opts.width = ship2.Width();
+			opts.height = ship2.Height();
+			opts.initialData = ship2.GetImageDataBasePtr();
+			textureManager.Add( "Ship2", opts );
 		}
 	}
 
