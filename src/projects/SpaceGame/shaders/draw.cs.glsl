@@ -28,8 +28,7 @@ float random_at2(in vec2 p, float offset) {
 	return fract(p.x * p.y);
 }
 
-float random_at(vec2 uv, float offset)
-{
+float random_at(vec2 uv, float offset) {
     return fract(sin(uv.x * 113. + uv.y * 412. + offset) * 6339. - offset);
 }
 
@@ -60,25 +59,20 @@ float draw_star(in vec2 where, in float size, in float flare) {
 
 vec3 stars_layer(in vec2 where, float subdivisions) {
 	vec3 col = vec3(0.0);
-    
 	vec2 in_chunck_pos = fract(where) - 0.5;
 	vec2 chunck_pos = floor(where);
-    
     vec3 baseColor = BASE_COLOR;
 	
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
 			vec2 offset = vec2(float(x), float(y));
 			float n = random_at(mod_space(chunck_pos + offset, subdivisions), 39.392 * subdivisions);
-            
             float size = fract(n * 3263.9);
             size *= size;
             float flare = smoothstep(0.8, 1.0, size);
             float d = draw_star(in_chunck_pos - offset - vec2(n, fract(n * 41.0)), size, flare);
-            
             vec3 randomColor = vec3(fract(n * 931.45), fract(n * 2345.2), fract(n * 231.2));
 			vec3 color = mix(BASE_COLOR, randomColor, 0.3);
-            
             col += color * d;
 		}
 	}
@@ -87,24 +81,18 @@ vec3 stars_layer(in vec2 where, float subdivisions) {
 
 vec3 debris_layer(in vec2 where, in float subdivisions) {
 	vec3 col = vec3(0.0);
-	
 	vec2 in_chunck_pos = fract(where) - 0.5;
 	vec2 chunck_pos = floor(where);
 	
 	for (int y = -1; y <= 1; y++) {
 		for (int x = -1; x <= 1; x++) {
-			vec2 offset = vec2(float(x), float(y));
-            
-			float n = random_at(mod_space(chunck_pos + offset, subdivisions), 23.93);
-            
+			vec2 offset = vec2( float( x ), float( y ) );
+			float n = random_at( mod_space( chunck_pos + offset, subdivisions ), 23.93 );
             float tt = (n + time * (2.0 * + n - 1.0)) * TAU * 2.0;
             vec2 time_offset = vec2(sin(tt), cos(tt)) * 0.0025 * (0.5 + fract(n * 1450.23));
-            
             float d = smoothstep(0.013, 0.012, length(in_chunck_pos - offset - vec2(n, fract(n * 34.0)) + time_offset));
-            
 			vec3 randomColor = vec3(fract(n * 931.45), fract(n * 2345.2), fract(n * 231.2));
 			vec3 color = mix(BASE_COLOR, randomColor, 0.5) * 0.3 * (sin(tt) * 0.2 + 1.1);
-            
             col += color * d;
 		}
 	}
@@ -112,18 +100,18 @@ vec3 debris_layer(in vec2 where, in float subdivisions) {
 }
 
 vec3 smooth_noise(in vec2 where, in float subdivisions) {
-    vec2 chunck_pos = floor(mod_space(where, subdivisions));
-    vec2 in_chunck_pos = smoothstep(0.0, 1.0, fract(where));
+    vec2 chunck_pos = floor( mod_space( where, subdivisions ) );
+    vec2 in_chunck_pos = smoothstep( 0.0, 1.0, fract( where ) );
     return vec3(
         mix(
             mix(
-                random_at(mod_space(chunck_pos, subdivisions), 0.0),
-                random_at(mod_space(chunck_pos + vec2(1.0, 0.0), subdivisions), 0.0),
+                random_at( mod_space( chunck_pos, subdivisions ), 0.0 ),
+                random_at( mod_space( chunck_pos + vec2( 1.0, 0.0 ), subdivisions ), 0.0 ),
                 in_chunck_pos.x
             ),
             mix(
-                random_at(mod_space(chunck_pos + vec2(0.0, 1.0), subdivisions), 0.0),
-                random_at(mod_space(chunck_pos + vec2(1.0, 1.0), subdivisions), 0.0),
+                random_at( mod_space( chunck_pos + vec2( 0.0, 1.0 ), subdivisions ), 0.0 ),
+                random_at( mod_space( chunck_pos + vec2( 1.0, 1.0 ), subdivisions ), 0.0 ),
                 in_chunck_pos.x
             ),
             in_chunck_pos.y
@@ -132,7 +120,7 @@ vec3 smooth_noise(in vec2 where, in float subdivisions) {
 }
 
 vec3 cloud_layer(in vec2 where, in float subdivisions) {
-    vec3 col = vec3(0.0);
+    vec3 col = vec3( 0.0 );
     // col += smooth_noise(where * 0.5, subdivisions);
     col += smooth_noise(where, subdivisions);
     col += smooth_noise(where * 2.0, subdivisions) * 0.5 * vec3(0.6, 0.6, 1.0);
