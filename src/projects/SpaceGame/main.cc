@@ -13,8 +13,9 @@ public:
 		ZoneScoped;
 		{
 			Block Start( "Additional User Init" );
+			tonemap.tonemapMode = 0;
 
-			shaders[ "Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/draw.cs.glsl" ).shaderHandle;
+			CompileShaders();
 
 			// load up the existing ship textures
 			textureOptions_t opts;
@@ -43,6 +44,22 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
+		if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
+			CompileShaders();
+			logHighPriority( "Shaders Recompiled" );
+		}
+	}
+
+	void CompileShaders () {
+		shaders[ "Background Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/draw.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Background Draw" ], -1, string( "Background Draw" ).c_str() );
+
+		shaders[ "Sprite Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/sprite.cs.glsl" ).shaderHandle; // eventually atlas the textures etc to facilitate batching... not super important right now
+		glObjectLabel( GL_PROGRAM, shaders[ "Sprite Draw" ], -1, string( "Sprite Draw" ).c_str() );
+
+		// similar structure to text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer
+			// shaders[ "Line Draw" ] = computeShader().shaderHandle; // todo
+			// shaders[ "Line Draw Composite" ] = computeShader().shaderHandle; // todo
 	}
 
 	void ImguiPass () {
