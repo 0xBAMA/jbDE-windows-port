@@ -82,6 +82,20 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
+
+		if ( 0 ) {
+			scopedTimer Start( "Line Drawing" );
+			GLuint shader = shaders[ "Line Draw" ];
+			glUseProgram( shader );
+
+			// dispatch over a set of lines
+
+			shader = shaders[ "Line Draw Composite" ];
+			glUseProgram( shader );
+
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
 			scopedTimer Start( "Postprocess" );
 			bindSets[ "Postprocessing" ].apply();
