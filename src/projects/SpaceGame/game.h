@@ -50,6 +50,17 @@ void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManag
 	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 }
 
+void DrawBlockMenu ( string label, layerManager &textRenderer, textureManager_t &textureManager ) {
+	// solid color background
+	textRenderer.Clear();
+	textRenderer.layers[ 0 ].DrawRectConstant( uvec2( 5, 3 ), uvec2( textRenderer.numBinsWidth - 6, textRenderer.numBinsHeight - 4 ), cChar( GREY_DD, FILL_100 ) );
+	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+	// frame and top label
+	textRenderer.Clear();
+	textRenderer.layers[ 0 ].DrawDoubleFrame( uvec2( 5, textRenderer.numBinsHeight - 4 ), uvec2( textRenderer.numBinsWidth - 6, 3 ), GOLD );
+	textRenderer.layers[ 0 ].WriteString( uvec2( 8, textRenderer.numBinsHeight - 4 ), uvec2( textRenderer.layers[ 1 ].width, textRenderer.numBinsHeight - 5 ), label, WHITE );
+	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+}
 struct spaceshipStats {
 public:
 	// maximum speeds ( forward and back )
