@@ -1,6 +1,48 @@
 #include "../../engine/includes.h"
 
-void DrawMenuBasics( layerManager &textRenderer, textureManager_t &textureManager ) {
+#define HIGH 0
+#define MEDIUM 1
+#define LOW 2
+struct logEvent {
+	uint64_t timestamp; // millisecond-level accuracy from SDL_GetTicks()
+	int priority = LOW; // currently only showing HIGH priority on the readout
+	string message = string( "Error: No message" ); // keep this short... should not overflow one line
+	string additionalData = string( "N/A" ); // e.g. more extensive YAML description of an event, etc
+	ivec3 color = WHITE;
+};
+static deque< logEvent > logEvents;
+void submitEvent( logEvent lE ) {
+	logEvents.push_front( lE );
+}
+logEvent logLowPriority ( string s, ivec3 color = GREY_D ) {
+	logEvent l;
+	l.timestamp = SDL_GetTicks();
+	l.priority = LOW;
+	l.message = s;
+	l.color = color;
+	submitEvent( l );
+	return l;
+}
+logEvent logMediumPriority ( string s, ivec3 color = WHITE ) {
+	logEvent l;
+	l.timestamp = SDL_GetTicks();
+	l.priority = MEDIUM;
+	l.message = s;
+	l.color = color;
+	submitEvent( l );
+	return l;
+}
+logEvent logHighPriority ( string s, ivec3 color = RED ) {
+	logEvent l;
+	l.timestamp = SDL_GetTicks();
+	l.priority = HIGH;
+	l.message = fixedWidthTimeString() + ": " + s; // add current time
+	l.color = color;
+	submitEvent( l );
+	return l;
+}
+
+void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManager ) {
 	textRenderer.Clear();
 	textRenderer.layers[ 0 ].DrawDoubleFrame( uvec2( 0, textRenderer.numBinsHeight - 1 ), uvec2( textRenderer.numBinsWidth - 1, 0 ), GOLD );
 	string s( "[SpaceGame]" );
