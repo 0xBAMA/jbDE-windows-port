@@ -80,6 +80,11 @@ public:
 class spaceshipController {
 public:
 
+	spaceshipController () {
+
+		logHighPriority( "Ship Spawned" );
+	}
+
 	float angle = 0.0f;
 	float velocity = 0.0f;
 
@@ -97,12 +102,12 @@ public:
 		if ( input.getState( KEY_D ) ) { angle -= stats.turnRate * deltaT * input.getState_soft( KEY_D ); }
 
 		// clamping angle
-		// if ( angle < 0.0f ) { angle += tau; }
-		// if ( angle > tau ) { angle -= tau; }
+		if ( angle < 0.0f ) { angle += tau; }
+		if ( angle > tau ) { angle -= tau; }
 
 		// acceleration/deceleration
-		if ( input.getState( KEY_W ) ) { velocity += stats.accelerationRate * deltaT * input.getState_soft( KEY_W ); }
-		if ( input.getState( KEY_S ) ) { velocity -= stats.decelerationRate * deltaT * input.getState_soft( KEY_S ); }
+		if ( input.getState( KEY_W ) ) { velocity += stats.accelerationRate * deltaT * input.getState_soft( KEY_W ); logHighPriority( "Ship Accelerating" ); } // todo: YAML descriptions
+		if ( input.getState( KEY_S ) ) { velocity -= stats.decelerationRate * deltaT * input.getState_soft( KEY_S ); logHighPriority( "Ship Decelerating" ); }
 
 		// clamping large magnitude velocity
 		velocity = glm::clamp( velocity, -stats.maxSpeedBackward, stats.maxSpeedForward );
