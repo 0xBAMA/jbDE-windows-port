@@ -168,7 +168,7 @@ void main () {
 	vec2 centeredUV = writeLoc / iS - vec2( 0.5f );
 	centeredUV.x *= ( iS.x / iS.y );
 	centeredUV.y *= -1.0f;
-	centeredUV *= 10.0f;
+	// centeredUV *= 10.0f;
 
     // get a couple samples of the background
     vec4 offset1 = blueNoiseRef( writeLoc );
@@ -181,14 +181,17 @@ void main () {
         nebulaBG( basePt + offset2.xy, offset ) +
         nebulaBG( basePt + offset2.zw, offset ) ) / 4.0f;
 
-	// intersect with the ship
-	vec3 normal = vec3( 0.0f );
-	if ( MAX_DIST_CP > iSphere( vec3( centeredUV + velocityVector, -3.0f ), vec3( 0.0f, 0.0f, 1.0f ), normal, 0.2f ) ) {
-		col = vec3( 1.0f );
-	}
-	if ( MAX_DIST_CP > iSphere( vec3( centeredUV, -3.0f ), vec3( 0.0f, 0.0f, 1.0f ), normal, 0.01f ) ) {
-		col = vec3( 1.0f, 0.0f, 0.0f );
-	}
+
+    vec2 centerPoint = vec2( 0.0f );
+    vec2 shipPoint = -velocityVector / 6.18f;
+    float dCenter = distance( centerPoint, centeredUV );
+    float dShip = distance( shipPoint, centeredUV );
+    if ( dShip < 0.1f ) {
+        col = mix( col, vec3( 1.0f ), smoothstep( dShip, 0.1f, 0.075f ) );
+    }
+    if ( dCenter < 0.01f ) {
+        col = mix( col, vec3( 1.0f, 0.0f, 0.0f ), smoothstep( dCenter, 0.01f, 0.005f ) );
+    }
 
 	// write the data to the image
 	imageStore( accumulatorTexture, writeLoc, vec4( col, 1.0f ) );

@@ -2,8 +2,7 @@
 
 #include "game.h"
 
-class SpaceGame final : public engineBase { // sample derived from base engine class
-
+class SpaceGame final : public engineBase {
 public:
 	SpaceGame () { config.forceResolution = ivec2( 720, 480 ); Init(); OnInit(); PostInit(); }
 	~SpaceGame () { Quit(); }

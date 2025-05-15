@@ -158,7 +158,7 @@ void main () {
 
 		// write other deferred surface results (geometry id, normal... what else?)
 
-		// primitive ID is a passthrough
+		// primitive ID is a passthrough, second channel here will contain instance ID
 		primitiveIDTarget.x = vofiIndex;
 
 		// normals
