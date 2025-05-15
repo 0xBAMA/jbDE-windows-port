@@ -96,7 +96,10 @@ public:
 		// solve for deltaT
 		const float deltaT = clamp( input.millisecondsSinceLastUpdate(), 1.0f, 100.0f );
 
-	// consider user inputs
+		// velocity slowly decays
+		velocity *= 0.99f;
+
+	// consider user inputs - softstate usage should go through a biasGain transform to give characteristic behaviors for different ships/equipment
 		// rotation
 		if ( input.getState( KEY_A ) ) { angle += stats.turnRate * deltaT * input.getState_soft( KEY_A ); }
 		if ( input.getState( KEY_D ) ) { angle -= stats.turnRate * deltaT * input.getState_soft( KEY_D ); }
