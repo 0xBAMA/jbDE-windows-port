@@ -78,10 +78,10 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // dummy draw - draw something into accumulatorTexture
-			scopedTimer Start( "Drawing" );
+		{
+			scopedTimer Start( "Background Drawing" );
 			bindSets[ "Drawing" ].apply();
-			const GLuint shader = shaders[ "Draw" ];
+			const GLuint shader = shaders[ "Background Draw" ];
 			glUseProgram( shader );
 
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
