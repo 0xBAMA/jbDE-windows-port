@@ -166,6 +166,68 @@ public:
 
 };
 
+constexpr size_t numPointsBBox = 36;
+struct bboxData {
+	vec3 points[ numPointsBBox ];
+	vec3 texcoords[ numPointsBBox ];
+
+	vec3 CubeVert( int idx ) {
+	// from shader cubeVerts.h... still want to figure that LUT out + rederive the square one
+		// big const array is yucky - ALU LUT impl notes from vassvik
+			// https://twitter.com/vassvik/status/1730961936794161579
+			// https://twitter.com/vassvik/status/1730965355663655299
+		const vec3 pointsList[ numPointsBBox ] = {
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f,-1.0f, 1.0f ),
+			vec3( -1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f, 1.0f,-1.0f ),
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f, 1.0f,-1.0f ),
+			vec3( 1.0f,-1.0f, 1.0f ),
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( 1.0f,-1.0f,-1.0f ),
+			vec3( 1.0f, 1.0f,-1.0f ),
+			vec3( 1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f, 1.0f, 1.0f ),
+			vec3( -1.0f, 1.0f,-1.0f ),
+			vec3( 1.0f,-1.0f, 1.0f ),
+			vec3( -1.0f,-1.0f, 1.0f ),
+			vec3( -1.0f,-1.0f,-1.0f ),
+			vec3( -1.0f, 1.0f, 1.0f ),
+			vec3( -1.0f,-1.0f, 1.0f ),
+			vec3( 1.0f,-1.0f, 1.0f ),
+			vec3( 1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f,-1.0f,-1.0f ),
+			vec3( 1.0f, 1.0f,-1.0f ),
+			vec3( 1.0f,-1.0f,-1.0f ),
+			vec3( 1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f,-1.0f, 1.0f ),
+			vec3( 1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f, 1.0f,-1.0f ),
+			vec3( -1.0f, 1.0f,-1.0f ),
+			vec3( 1.0f, 1.0f, 1.0f ),
+			vec3( -1.0f, 1.0f,-1.0f ),
+			vec3( -1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f, 1.0f, 1.0f ),
+			vec3( -1.0f, 1.0f, 1.0f ),
+			vec3( 1.0f,-1.0f, 1.0f )
+		};
+
+		return pointsList[ idx ];
+	}
+
+	bboxData ( int texID ) {
+		// create the initial data for points and texcoords
+		for ( int i = 0; i < numPointsBBox; i++ ) {
+			points[ i ] = CubeVert( i );
+			texcoords[ i ] = glm::clamp( CubeVert( i ), 0.0f, 1.0f );
+			texcoords[ i ].z = texID;
+		}
+	}
+};
+
 // high level ID
 #define OBJECT 0
 #define FRIEND 1
@@ -205,6 +267,26 @@ struct entity {
 	// kept in the third coordinate of the texcoord - we need to know this when we create the entity
 		// this indexes into SSBO with atlased texture info (1 index -> texture info)
 	int textureIndex;
+
+	bboxData getBBoxPoints () {
+		// initial points
+		bboxData points( textureIndex );
+
+		// scaling the bbox - somewhat specialized... smaller ships are taller, is the plan for handling occlusion
+		for ( auto& p : points.points ) {
+			// apply scaling
+			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y ) / 2.0f ), 0.0f, 100.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
+
+			// apply rotation
+			p = ( glm::angleAxis( rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
+
+			// apply translation
+			p = ( glm::translate( vec3( location.x, location.y, 0.0f ) ) * vec4( p, 1.0f ) ).xyz();
+		}
+
+		return points;
+	}
+
 	void update () {
 		switch ( type ) {
 		case OBJECT: // objects do nothing
