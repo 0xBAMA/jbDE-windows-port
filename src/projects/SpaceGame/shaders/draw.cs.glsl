@@ -126,7 +126,8 @@ vec3 cloud_layer(in vec2 where, in float subdivisions) {
     col += smooth_noise(where * 2.0, subdivisions) * 0.5 * vec3(0.6, 0.6, 1.0);
     col += smooth_noise(where * 4.0, subdivisions) * 0.25 * vec3(1.0, 0.6, 0.6);
     col += smooth_noise(where * 8.0, subdivisions) * 0.125 * vec3(1.0, 0.8, 1.0);
-    return col * col;
+    // return col * col;
+    return col;
 }
 
 // from https://www.shadertoy.com/view/lXj3zc
@@ -148,6 +149,46 @@ vec3 nebulaBG( in vec2 fragCoord, vec2 offset ) {
     return col;
 }
 
+float fdShip(vec2 p){
+    return distance( p, vec2( 0.0f ) );
+}
+
+const float SRGB_GAMMA = 1.0f / 2.2f;
+const float SRGB_INVERSE_GAMMA = 2.2f;
+const float SRGB_ALPHA = 0.055f;
+
+// Converts a single linear channel to srgb
+float linear_to_srgb ( float channel ) {
+	if ( channel <= 0.0031308f )
+		return 12.92f * channel;
+	else
+		return ( 1.0f + SRGB_ALPHA ) * pow( channel, 1.0f / 2.4f ) - SRGB_ALPHA;
+}
+
+// Converts a single srgb channel to rgb
+float srgb_to_linear ( float channel ) {
+	if ( channel <= 0.04045f )
+		return channel / 12.92f;
+	else
+		return pow( ( channel + SRGB_ALPHA ) / ( 1.0f + SRGB_ALPHA ), 2.4f );
+}
+
+// Converts a linear rgb color to a srgb color (exact, not approximated)
+vec3 rgb_to_srgb ( vec3 rgb ) {
+	return vec3(
+		linear_to_srgb( rgb.r ),
+		linear_to_srgb( rgb.g ),
+		linear_to_srgb( rgb.b ) );
+}
+
+// Converts a srgb color to a linear rgb color (exact, not approximated)
+vec3 srgb_to_rgb ( vec3 srgb ) {
+	return vec3(
+		srgb_to_linear( srgb.r ),
+		srgb_to_linear( srgb.g ),
+		srgb_to_linear( srgb.b ) );
+}
+
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
@@ -156,30 +197,36 @@ void main () {
 	vec2 centeredUV = writeLoc / iS - vec2( 0.5f );
 	centeredUV.x *= ( iS.x / iS.y );
 	centeredUV.y *= -1.0f;
-	// centeredUV *= 10.0f;
+    centeredUV *= 1.0f;
+
+    // mix factor with history... can zero it out for dynamic geo?
+    float mixFactor = 1.0f;
 
     // get a couple samples of the background
     vec4 offset1 = blueNoiseRef( writeLoc );
     vec4 offset2 = blueNoiseRef( writeLoc + ivec2( 256 ) );
     vec2 basePt = writeLoc + vec2( time );
-    vec2 offset = 0.001f * ( positionVector * vec2( 1.0f, -1.0f ) ) + 0.1f * velocityVector;
+    // vec2 offset = 0.01f * ( positionVector * vec2( 1.0f, -1.0f ) );
+    vec2 offset = 0.02f * ( positionVector * vec2( 1.0f, -1.0f ) ) - 0.1f * velocityVector;
 	vec3 col = (
         nebulaBG( basePt + offset1.xy, offset ) +
         nebulaBG( basePt + offset1.zw, offset ) +
         nebulaBG( basePt + offset2.xy, offset ) +
         nebulaBG( basePt + offset2.zw, offset ) ) / 4.0f;
 
-
+    // ship position based on velocity, based on Starfighter: Disputed Galaxy by Ben Olding
     vec2 centerPoint = vec2( 0.0f );
     vec2 shipPoint = -velocityVector / 6.18f;
     float dCenter = distance( centerPoint, centeredUV );
-    float dShip = distance( shipPoint, centeredUV );
-    if ( dShip < 0.1f ) {
-        col = mix( col, vec3( 1.0f ), smoothstep( dShip, 0.1f, 0.075f ) );
-    }
+
     if ( dCenter < 0.01f ) {
         col = mix( col, vec3( 1.0f, 0.0f, 0.0f ), smoothstep( dCenter, 0.01f, 0.005f ) );
     }
+
+    col = srgb_to_rgb( col );
+
+    // mix with history
+    // col = mix( col, imageLoad( accumulatorTexture, writeLoc ).rgb, mixFactor * dot( col, vec3( 0.3086f, 0.6094f, 0.0820f ) ) );
 
 	// write the data to the image
 	imageStore( accumulatorTexture, writeLoc, vec4( col, 1.0f ) );
