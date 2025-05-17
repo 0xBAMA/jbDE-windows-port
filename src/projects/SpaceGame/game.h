@@ -303,10 +303,77 @@ struct entity {
 		}
 	}
 };
+
 class universeController {
 public:
+	// a list of images of the ships, for use on the CPU
+	vector < Image_4U > entitySprites;
+
+	// will become more relevant later
 	ivec2 sectorID = ivec2( 10 );
 
+	// for player control
 	spaceshipController ship;
+
+	// the runtime list of entities, with attached logic
+	vector< entity > entityList;
+
+// then prepared data for rendering
+
+// Object Atlas, in 2 pieces
+	// Atlas Texture
+	GLuint atlasTexture;
+	// Atlas Texture SSBO
+	GLuint atlasTextureSSBO;
+
+	// BVH
+	tinybvh::BVH8_CWBVH entityBVH;
+
+	universeController () {
+		// create the list of ships
+			// get the Image_4U for the base entity on the CPU
+
+	}
+
+	void updateAtlasTexture () {
+	// Initial data
+		// go through the list of entities to get their dimensions...
+		// rectangle packing
+			// this will scale up and allow for per-entity atlas entries, so we can pre-composite ships with all their equipment
+		// create the atlas texture, keep the rectangle positioning information
+
+	// GPU data update:
+		// prepare SSBO for the altas with LUT, int texture ID -> basePoint and fractional size (base uv and size, since geo will have texcoords 0..1)
+		// texture data with the atlas itself
+
+	}
+
+	void updateBVH () {
+		// get the bounding box information from the entities
+		vector< vec3 > triangleDataNoTexcoords;
+		vector< vec3 > triangleDataWithTexcoords;
+
+		triangleDataNoTexcoords.reserve( 36 * entityList.size() );
+		triangleDataWithTexcoords.reserve( 2 * 36 * entityList.size() );
+
+		for ( auto& e : entityList ) {
+
+		}
+	}
+
+	void update () {
+	// primary update
+		// call everyone's update() function
+
+	// is there a new entity in play? we need to rebuild the atlas
+		// rebuild atlas + index SSBO
+
+	// because of the way we're using it... we need to update the BVH and upload it to the GPU every frame
+
+	// cleanup work
+		// has the player left the sector? we have work to do
+		// the 
+
+	}
 
 };
