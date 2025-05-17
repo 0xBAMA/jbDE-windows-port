@@ -65,6 +65,8 @@ public:
 	void ImguiPass () {
 		ZoneScoped;
 
+		TonemapControlsWindow();
+
 		if ( showProfiler ) {
 			static ImGuiUtils::ProfilersWindow profilerWindow; // add new profiling data and render
 			profilerWindow.cpuGraph.LoadFrameData( &tasks_CPU[ 0 ], tasks_CPU.size() );
@@ -150,6 +152,10 @@ public:
 			scopedTimer Start( "Text Rendering" );
 
 			DrawMenuBasics( textRenderer, textureManager );
+
+			// DrawBlockMenu( "Test", textRenderer, textureManager );
+
+			DrawInfoLog( textRenderer, textureManager );
 
 			// show terminal, if active - check happens inside
 			textRenderer.Clear();
