@@ -108,12 +108,11 @@ class spaceshipController {
 public:
 
 	spaceshipController () {
-
-		logHighPriority( "Ship Spawned" );
+		logHighPriority( "Player Ship Spawned" );
 	}
 
 	float angle = 0.0f;
-	float velocity = 0.0f;
+	float velocity = 0.0001f;
 
 	vec2 position = vec2( 0.0f );
 
@@ -136,14 +135,22 @@ public:
 		if ( angle > tau ) { angle -= tau; }
 
 		// acceleration/deceleration
-		if ( input.getState( KEY_W ) ) { velocity += stats.accelerationRate * deltaT * input.getState_soft( KEY_W ); logHighPriority( "Ship Accelerating" ); } // todo: YAML descriptions
-		if ( input.getState( KEY_S ) ) { velocity -= stats.decelerationRate * deltaT * input.getState_soft( KEY_S ); logHighPriority( "Ship Decelerating" ); }
+		if ( input.getState( KEY_W ) ) { velocity += stats.accelerationRate * deltaT * input.getState_soft( KEY_W ); logLowPriority( "Ship Accelerating" ); } // todo: YAML descriptions
+		if ( input.getState( KEY_S ) ) { velocity -= stats.decelerationRate * deltaT * input.getState_soft( KEY_S ); logLowPriority( "Ship Decelerating" ); }
 
 		// clamping large magnitude velocity
 		velocity = glm::clamp( velocity, -stats.maxSpeedBackward, stats.maxSpeedForward );
 
 		// apply velocity times deltaT to get new position
-		position += deltaT * GetVelocityVector();
+		position -= deltaT * GetVelocityVector();
+	}
+
+	void turn ( float amount ) {
+		angle += amount;
+	}
+
+	void accelerate ( float amount ) {
+		velocity += amount;
 	}
 
 	vec2 GetPositionVector() {
