@@ -99,6 +99,29 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
+		{
+			scopedTimer Start( "Sprite Drawing" );
+			bindSets[ "Drawing" ].apply();
+			const GLuint shader = shaders[ "Sprite Draw" ];
+			glUseProgram( shader );
+
+			vec2 v = controller.ship.GetVelocityVector();
+			textureManager.BindTexForShader( "Ship1", "selectedTexture", shader, 2 );
+			glUniform1f( glGetUniformLocation( shader, "angle" ), atan2( v.x, v.y ) );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), 1.0f / controller.ship.stats.size );
+			glUniform2f( glGetUniformLocation( shader, "offset" ), v.x, v.y );
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+			/*
+			textureManager.BindTexForShader( "Ship2", "selectedTexture", shader, 2 );
+			glUniform1f( glGetUniformLocation( shader, "angle" ), 0.001f * SDL_GetTicks() );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), 1.0f / 0.2f );
+			glUniform2f( glGetUniformLocation( shader, "offset" ), 2.0f, 2.0f );
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			*/
+		}
 
 		if ( 0 ) {
 			scopedTimer Start( "Line Drawing" );
@@ -113,6 +136,7 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
+
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
 			scopedTimer Start( "Postprocess" );
 			bindSets[ "Postprocessing" ].apply();
