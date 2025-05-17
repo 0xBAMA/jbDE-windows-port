@@ -166,6 +166,61 @@ public:
 
 };
 
+// high level ID
+#define OBJECT 0
+#define FRIEND 1
+#define FOE 2
+
+// FSM logic states
+#define INACTIVE -1
+#define INITIAL 0
+// ...
+
+// forward declare for entity access to sector info
+class universeController;
+
+struct entity {
+	// since this is kind of a tagged union... some extra data
+	int type = OBJECT;
+	float shipHeading = 0.0f;
+	float shipSpeed = 0.001f;
+
+	// todo
+	int FSMState = INITIAL;
+
+	// keeping an Image_4U here might be a good solution to unique entity appearances?
+		// this allows for ongoing update of the model
+	Image_4U entityImage;
+		// note that updates will require that you revert to the base model, so any time this updates, you need to fetch the base image for your ship from the universe controller
+	string baseEntityImageLabel; // and this should come in during object construction
+
+	// so that e.g. ships can query what other objects are in the sector
+	universeController *universe;
+
+	// for the display primitive
+	vec2 location;
+	vec2 scale;
+	float rotation;
+
+	// kept in the third coordinate of the texcoord - we need to know this when we create the entity
+		// this indexes into SSBO with atlased texture info (1 index -> texture info)
+	int textureIndex;
+	void update () {
+		switch ( type ) {
+		case OBJECT: // objects do nothing
+		break;
+
+		case FRIEND: // todo - ai steering logic ( seeking FOE ships )
+		break;
+
+		case FOE: // todo - ai steering logic ( seeking FRIENDLY ships )
+		break;
+
+		default: // no
+		break;
+		}
+	}
+};
 class universeController {
 public:
 	ivec2 sectorID = ivec2( 10 );
