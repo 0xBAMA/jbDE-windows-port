@@ -61,10 +61,34 @@ void DrawBlockMenu ( string label, layerManager &textRenderer, textureManager_t 
 	textRenderer.layers[ 0 ].WriteString( uvec2( 8, textRenderer.numBinsHeight - 4 ), uvec2( textRenderer.layers[ 1 ].width, textRenderer.numBinsHeight - 5 ), label, WHITE );
 	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 }
+
+void DrawInfoLog ( layerManager &textRenderer, textureManager_t &textureManager ) {
+// drawing a list of strings
+	// a low density background
+	/*
+	textRenderer.Clear();
+	textRenderer.layers[ 0 ].DrawRectConstant( uvec2( 10, 3 ), uvec2( 24, 8 ), cChar( GREY_DD, FILL_25 ) );
+	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+	*/
+
+	// the entries themselves
+	textRenderer.Clear();
+	int offset = 6;
+	for ( auto& entry : logEvents ) {
+		if ( entry.priority == HIGH ) {
+			textRenderer.layers[ 0 ].WriteString( uvec2( 1, offset ), uvec2( 1 + entry.message.length() + 1, 1 + offset ), entry.message, entry.color );
+			if ( !( offset-- - 1 ) ) {
+				break;
+			}
+		}
+	}
+	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+}
+
 struct spaceshipStats {
 public:
 	// maximum speeds ( forward and back )
-	float maxSpeedForward = 2.0f;
+	float maxSpeedForward = 2.5f;
 	float maxSpeedBackward = 0.2f;
 
 	// turn rate
@@ -75,6 +99,9 @@ public:
 
 	// deceleration rate
 	float decelerationRate = 0.0005f;
+
+	// size of the ship
+	float size = 0.1f;
 };
 
 class spaceshipController {
