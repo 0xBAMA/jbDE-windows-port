@@ -386,23 +386,65 @@ public:
 
 	void updateBVH () {
 		// get the bounding box information from the entities
-		vector< vec3 > triangleDataNoTexcoords;
+		vector< tinybvh::bvhvec4 > triangleDataNoTexcoords;
 		vector< vec3 > triangleDataWithTexcoords;
 
 		triangleDataNoTexcoords.reserve( 36 * entityList.size() );
 		triangleDataWithTexcoords.reserve( 2 * 36 * entityList.size() );
 
 		for ( auto& e : entityList ) {
+			bboxData bbox = e.getBBoxPoints();
 
+			// 12 triangles, 3 points each - triangles only for basic traversal, texcoords needed for alpha test
+			for ( int i = 0; i < 12; i++ ) {
+				int idx = i * 3;
+				for ( int j = 0; j < 3; j++ ) {
+					tinybvh::bvhvec4 p;
+					p.x = bbox.points[ idx + j ].x;
+					p.y = bbox.points[ idx + j ].y;
+					p.z = bbox.points[ idx + j ].z;
+					p.w = 1.0;
+					triangleDataNoTexcoords.push_back( p );
+					triangleDataWithTexcoords.push_back( bbox.points[ idx + j ] );
+					triangleDataWithTexcoords.push_back( bbox.texcoords[ idx + j ] );
+				}
+			}
 		}
+
+		Tick();
+		entityBVH.BuildHQ( &triangleDataNoTexcoords[ 0 ], triangleDataNoTexcoords.size() / 3 );
+		float msTakenBVH = Tock();
+		cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
+
+		Tick();
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
+		glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
+		cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
+		glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
+		cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, triangleDataWithTexcoords.size() * sizeof( vec3 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
+		glObjectLabel( GL_BUFFER, triangleDataBuffer, -1, string( "Triangle Data With Texcoords" ).c_str() );
+		cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
+
+		float msTakenBufferBVH = Tock();
+		cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
 	}
 
 	void update () {
-	// primary update
 		// call everyone's update() function
 
 	// is there a new entity in play? we need to rebuild the atlas
 		// rebuild atlas + index SSBO
+		// entities leaving, not as important to evict from the atlas
 
 	// because of the way we're using it... we need to update the BVH and upload it to the GPU every frame
 
