@@ -354,10 +354,21 @@ public:
 	// BVH
 	tinybvh::BVH8_CWBVH entityBVH;
 
+	// GPU buffers associated with the BVH
+	GLuint cwbvhNodesDataBuffer, cwbvhTrisDataBuffer, triangleDataBuffer;
+
 	universeController () {
 		// create the list of ships
 			// get the Image_4U for the base entity on the CPU
 
+	void init () {
+		// create the buffers for the BVH stuff
+		glCreateBuffers( 1, &cwbvhNodesDataBuffer );
+		glCreateBuffers( 1, &cwbvhTrisDataBuffer );
+		glCreateBuffers( 1, &triangleDataBuffer );
+
+		// and the buffer for the atlas
+		glCreateBuffers( 1, &atlasTextureSSBO );
 	}
 
 	void updateAtlasTexture () {
