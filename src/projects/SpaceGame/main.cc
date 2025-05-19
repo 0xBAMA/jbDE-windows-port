@@ -20,6 +20,9 @@ public:
 			// force nearest filtering on the display texture, regardless of config setting
 			textureManager.SetFilterMinMag( "Display Texture", GL_NEAREST, GL_NEAREST );
 
+			// some initialization tasks that have to be done after OpenGL init
+			controller.init();
+
 			// load up the existing ship textures
 			textureOptions_t opts;
 			opts.dataType = GL_RGBA8;
@@ -187,6 +190,10 @@ public:
 		ZoneScoped; scopedTimer Start( "Update" );
 		// application-specific update code
 		controller.ship.Update( inputHandler );
+
+
+		controller.update();
+		controller.updateBVH();
 	}
 
 	void OnRender () {

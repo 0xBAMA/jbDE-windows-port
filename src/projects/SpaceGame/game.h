@@ -440,6 +440,10 @@ public:
 	}
 
 	void update () {
+	// primary update work
+		// player is entityList[ 0 ]
+		entityList[ 0 ].location = ship.position;
+		entityList[ 0 ].rotation = ship.angle;
 		// call everyone's update() function
 
 	// is there a new entity in play? we need to rebuild the atlas
