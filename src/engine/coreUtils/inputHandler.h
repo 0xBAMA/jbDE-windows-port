@@ -178,7 +178,7 @@ constexpr int KEYSTATE_FALLING = 3;
 struct inputHandler_t {
 
 	// state vector (allocated ring buffer for N frames history)
-	static constexpr int numStateBuffers = 16;
+	static constexpr int numStateBuffers = 64;
 	keyboardState_t stateBuffer[ numStateBuffers ];
 
 	// ring buffer offset
