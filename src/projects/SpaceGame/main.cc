@@ -152,14 +152,12 @@ public:
 		}
 
 		if ( 0 ) {
-			scopedTimer Start( "Line And Text Drawing" );
+			scopedTimer Start( "Line Drawing" );
 			GLuint shader = shaders[ "Line Draw" ];
 			glUseProgram( shader );
 
-			// dispatch over a set of lines
-
-			shader = shaders[ "Line Draw Composite" ];
-			glUseProgram( shader );
+			// shader = shaders[ "Line Draw Composite" ];
+			// glUseProgram( shader );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
