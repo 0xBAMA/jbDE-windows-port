@@ -54,8 +54,6 @@ public:
 		shaders[ "Background Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/draw.cs.glsl" ).shaderHandle;
 		glObjectLabel( GL_PROGRAM, shaders[ "Background Draw" ], -1, string( "Background Draw" ).c_str() );
 
-		shaders[ "Sprite Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/sprite.cs.glsl" ).shaderHandle; // eventually atlas the textures etc to facilitate batching... not super important right now
-		glObjectLabel( GL_PROGRAM, shaders[ "Sprite Draw" ], -1, string( "Sprite Draw" ).c_str() );
 
 		// similar structure to text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer
 			// shaders[ "Line Draw" ] = computeShader().shaderHandle; // todo
@@ -102,27 +100,6 @@ public:
 		}
 
 		{
-			scopedTimer Start( "Sprite Drawing" );
-			bindSets[ "Drawing" ].apply();
-			const GLuint shader = shaders[ "Sprite Draw" ];
-			glUseProgram( shader );
-
-			vec2 v = controller.ship.GetVelocityVector();
-			textureManager.BindTexForShader( "Ship1", "selectedTexture", shader, 2 );
-			glUniform1f( glGetUniformLocation( shader, "angle" ), atan2( v.x, v.y ) );
-			glUniform1f( glGetUniformLocation( shader, "scale" ), 1.0f / controller.ship.stats.size );
-			glUniform2f( glGetUniformLocation( shader, "offset" ), v.x, v.y );
-			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-
-			/*
-			textureManager.BindTexForShader( "Ship2", "selectedTexture", shader, 2 );
-			glUniform1f( glGetUniformLocation( shader, "angle" ), 0.001f * SDL_GetTicks() );
-			glUniform1f( glGetUniformLocation( shader, "scale" ), 1.0f / 0.2f );
-			glUniform2f( glGetUniformLocation( shader, "offset" ), 2.0f, 2.0f );
-			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-			*/
 		}
 
 		if ( 0 ) {
