@@ -377,8 +377,13 @@ public:
 	void init () {
 		// create the buffers for the BVH stuff
 		glCreateBuffers( 1, &cwbvhNodesDataBuffer );
+		glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
+
 		glCreateBuffers( 1, &cwbvhTrisDataBuffer );
+		glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
+
 		glCreateBuffers( 1, &triangleDataBuffer );
+		glObjectLabel( GL_BUFFER, triangleDataBuffer, -1, string( "Triangle Data With Texcoords" ).c_str() );
 
 		// and the buffer for the atlas
 		glCreateBuffers( 1, &atlasTextureSSBO );
@@ -424,32 +429,29 @@ public:
 			}
 		}
 
-		Tick();
+		// Tick();
 		entityBVH.BuildHQ( &triangleDataNoTexcoords[ 0 ], triangleDataNoTexcoords.size() / 3 );
-		float msTakenBVH = Tock();
-		cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
+		// float msTakenBVH = Tock();
+		// cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
 
-		Tick();
+		// Tick();
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
-		glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
-		cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
+		// cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
-		glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
-		cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
+		// cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, triangleDataWithTexcoords.size() * sizeof( vec3 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
-		glObjectLabel( GL_BUFFER, triangleDataBuffer, -1, string( "Triangle Data With Texcoords" ).c_str() );
-		cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
+		glBufferData( GL_SHADER_STORAGE_BUFFER, triangleDataWithTexcoords.size() * sizeof( vec3 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
+		// cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
 
-		float msTakenBufferBVH = Tock();
-		cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
+		// float msTakenBufferBVH = Tock();
+		// cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
 	}
 
 	void update () {
