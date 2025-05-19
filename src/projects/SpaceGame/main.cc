@@ -17,6 +17,9 @@ public:
 
 			CompileShaders();
 
+			// force nearest filtering on the display texture, regardless of config setting
+			textureManager.SetFilterMinMag( "Display Texture", GL_NEAREST, GL_NEAREST );
+
 			// load up the existing ship textures
 			textureOptions_t opts;
 			opts.dataType = GL_RGBA8;

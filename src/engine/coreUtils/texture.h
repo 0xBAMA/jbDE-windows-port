@@ -378,6 +378,21 @@ public:
 
 	}
 
+	void SetFilterMinMag ( string label, GLuint filterTypeMin, GLuint filterTypeMag ) {
+		for ( auto& tex : textures ) {
+			if ( tex.label == label ) {
+				glActiveTexture( 0 );
+				glBindTexture( tex.creationOptions.textureType, tex.textureHandle );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterTypeMin );
+				glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterTypeMag );
+				return;
+			}
+		}
+		// if we finish the list without finding it
+		cout << "Texture \"" << label << "\" Not Found" << endl;
+		return;
+	}
+
 	void Add ( string label, textureOptions_t &texOptsIn ) {
 
 		texture_t tex;
