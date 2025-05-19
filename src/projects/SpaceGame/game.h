@@ -303,7 +303,7 @@ struct entity {
 			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y ) / 2.0f ), 0.0f, 100.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply rotation
-			p = ( glm::angleAxis( rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
+			p = ( glm::angleAxis( -rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply translation
 			p = ( glm::translate( vec3( location.x, location.y, 0.0f ) ) * vec4( p, 1.0f ) ).xyz();
@@ -366,11 +366,13 @@ public:
 		entityList[ 0 ].rotation = ship.angle;
 
 		// some dummy positions
-		rng position( -500.0f, 500.0f );
-		rng rotation( 0, tau );
-		for ( int i = 0; i < 100; i++ ) {
+		rng position( -10.0f, 10.0f );
+		rng rotation( 0.01f, tau );
+		rng speed( 0.001f, 0.1f );
+		for ( int i = 1; i < entityList.size(); i++ ) {
 			entityList[ i ].location = vec2( position(), position() );
 			entityList[ i ].rotation = rotation();
+			entityList[ i ].shipSpeed = speed();
 		}
 	}
 
@@ -421,7 +423,7 @@ public:
 					p.x = bbox.points[ idx + j ].x;
 					p.y = bbox.points[ idx + j ].y;
 					p.z = bbox.points[ idx + j ].z;
-					p.w = 1.0;
+					p.w = 0.0f;
 					triangleDataNoTexcoords.push_back( p );
 					triangleDataWithTexcoords.push_back( bbox.points[ idx + j ] );
 					triangleDataWithTexcoords.push_back( bbox.texcoords[ idx + j ] );
@@ -459,7 +461,17 @@ public:
 		// player is entityList[ 0 ]
 		entityList[ 0 ].location = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
-		// call everyone's update() function
+
+		// call everyone's update() function (dummy right now)
+		for ( int i = 1; i < entityList.size(); i++ ) {
+			float angle = entityList[ i ].rotation;
+			float velocity = entityList[ i ].shipSpeed;
+			entityList[ i ].location +=
+				glm::mat2(
+					cos( angle ), -sin( angle ),
+					sin( angle ), cos( angle )
+				) * vec2( velocity, 0.0f );
+		}
 
 	// is there a new entity in play? we need to rebuild the atlas
 		// rebuild atlas + index SSBO
