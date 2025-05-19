@@ -49,6 +49,7 @@ public:
 
 			// and the tiny font table (partial coverage: 3x3 alphas, 3x7 numerals... 3x5 punctuation, mostly, basically vertically centered - spaces between letters need to be added manually, so glyphs need to be 4 pixels wide in practice)
 			Image_4U tinyFont( "../src/utils/fonts/fontRenderer/tinyFontPartial.png" );
+			tinyFont.FlipVertical();
 			opts.width = tinyFont.Width();
 			opts.height = tinyFont.Height();
 			opts.initialData = tinyFont.GetImageDataBasePtr();
