@@ -113,17 +113,17 @@ void DrawInfoLog ( layerManager &textRenderer, textureManager_t &textureManager 
 struct spaceshipStats {
 public:
 	// maximum speeds ( forward and back )
-	float maxSpeedForward = 2.5f;
-	float maxSpeedBackward = 0.2f;
+	float maxSpeedForward = 0.5f;
+	float maxSpeedBackward = 0.05f;
 
 	// turn rate
 	float turnRate = 0.003f;
 
 	// acceleration rate
-	float accelerationRate = 0.001f;
+	float accelerationRate = 0.0001f;
 
 	// deceleration rate
-	float decelerationRate = 0.0005f;
+	float decelerationRate = 0.00007f;
 
 	// size of the ship
 	float size = 0.1f;

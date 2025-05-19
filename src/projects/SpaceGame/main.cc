@@ -114,7 +114,7 @@ public:
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
 			// "position", center of the view, is V ahead of the ship's location at P (with some scale factors)
-			vec2 v = controller.ship.GetVelocityVector() * 0.1f;
+			vec2 v = controller.ship.GetVelocityVector();
 			vec2 p = controller.ship.GetPositionVector() * vec2( 1.0f, -1.0f ) * 0.02f;
 			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x + v.x, p.y + v.y );
 
