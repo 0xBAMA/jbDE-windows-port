@@ -361,10 +361,11 @@ public:
 		// create the list of ships
 			// get the Image_4U for the base entity on the CPU
 
-		entityList.resize( 100 );
+		entityList.resize( 1 );
 		entityList[ 0 ].location = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
 
+		/*
 		// some dummy positions
 		rng position( -10.0f, 10.0f );
 		rng rotation( 0.01f, tau );
@@ -374,6 +375,7 @@ public:
 			entityList[ i ].rotation = rotation();
 			entityList[ i ].shipSpeed = speed();
 		}
+		*/
 	}
 
 	void init () {
