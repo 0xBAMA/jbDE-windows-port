@@ -114,15 +114,19 @@ public:
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
 			// "position", center of the view, is V ahead of the ship's location at P (with some scale factors)
-			vec2 v = controller.ship.GetVelocityVector();
+			vec2 v = controller.ship.GetVelocityVector() * 10.0f;
 			vec2 p = controller.ship.GetPositionVector() * vec2( 1.0f, -1.0f ) * 0.02f;
-			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x + v.x, p.y + v.y );
+			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x - v.x, p.y + v.y );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
 		{
+			scopedTimer Start( "BVH Draw" );
+			GLuint shader = shaders[ "BVH Draw" ];
+			glUseProgram( shader );
+
 		// rendering objects in the sector via the BVH, instead of sprites
 			// need atlas texture
 			// need atlas texture index SSBO (4 values per id -> [2D basePoint, 2D textureSize])
@@ -137,6 +141,13 @@ public:
 				// this is used to place larger ships and stations beneath smaller ships, very similar to a simple 2D primitive draw order
 				// symmetric scaling of the bounding boxes means that everything exists in the z=0 plane... you can do 2D logic there
 			// this pass only uses it for rendering... but gameplay can use it for any sort of AI usage, simulated sensors, weapon guidance and collision
+
+			vec2 v = controller.ship.GetVelocityVector() * 20.0f;
+			vec2 p = controller.ship.GetPositionVector();
+			glUniform2f( glGetUniformLocation( shader, "centerPoint" ), p.x - v.x, p.y - v.y );
+
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
 		if ( 0 ) {
@@ -188,11 +199,12 @@ public:
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-		// application-specific update code
+
+		// update player
 		controller.ship.Update( inputHandler );
-
-
+		// update rest of the world based on player changes
 		controller.update();
+		// prepare to render...
 		controller.updateBVH();
 	}
 
