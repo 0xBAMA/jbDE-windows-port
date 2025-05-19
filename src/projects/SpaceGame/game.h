@@ -1,5 +1,30 @@
 #include "../../engine/includes.h"
 
+//=============================================================================
+//==== std::chrono Wrapper - Simplified Tick() / Tock() Interface =============
+//=============================================================================
+
+// no nesting, but makes for a very simple interface
+	// could probably do something stack based, have Tick() push and Tock() pop
+#define NOW std::chrono::steady_clock::now()
+#define TIMECAST(x) std::chrono::duration_cast<std::chrono::microseconds>(x).count()/1000.0f
+static std::chrono::time_point<std::chrono::steady_clock> tStart_spacegame = std::chrono::steady_clock::now();
+static std::chrono::time_point<std::chrono::steady_clock> tCurrent_spacegame = std::chrono::steady_clock::now();
+void Tick() {
+	tCurrent_spacegame = NOW;
+}
+
+float Tock() {
+	return TIMECAST( NOW - tCurrent_spacegame );
+}
+
+float TotalTime() {
+	return TIMECAST( NOW - tStart_spacegame );
+}
+
+#undef NOW
+#undef TIMECAST
+
 #define HIGH 0
 #define MEDIUM 1
 #define LOW 2
