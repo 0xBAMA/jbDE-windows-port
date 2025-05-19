@@ -361,6 +361,19 @@ public:
 		// create the list of ships
 			// get the Image_4U for the base entity on the CPU
 
+		entityList.resize( 100 );
+		entityList[ 0 ].location = ship.position;
+		entityList[ 0 ].rotation = ship.angle;
+
+		// some dummy positions
+		rng position( -500.0f, 500.0f );
+		rng rotation( 0, tau );
+		for ( int i = 0; i < 100; i++ ) {
+			entityList[ i ].location = vec2( position(), position() );
+			entityList[ i ].rotation = rotation();
+		}
+	}
+
 	void init () {
 		// create the buffers for the BVH stuff
 		glCreateBuffers( 1, &cwbvhNodesDataBuffer );
