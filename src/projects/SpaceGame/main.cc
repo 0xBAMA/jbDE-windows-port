@@ -25,18 +25,31 @@ public:
 			opts.magFilter = GL_LINEAR;
 			opts.borderColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-			Image_4U ship1( "../src/projects/SpaceGame/ship1.png" );
-			opts.width = ship1.Width();
-			opts.height = ship1.Height();
-			opts.initialData = ship1.GetImageDataBasePtr();
-			textureManager.Add( "Ship1", opts );
-			// pass the handles also to some sprite management layer...
+		// this stuff will move onto the universeController as the base ship models
+			{
+				Image_4U ship1( "../src/projects/SpaceGame/ship1.png" );
+				opts.width = ship1.Width();
+				opts.height = ship1.Height();
+				opts.initialData = ship1.GetImageDataBasePtr();
+				textureManager.Add( "Ship1", opts );
+				// pass the handles also to some sprite management layer...
 
-			Image_4U ship2( "../src/projects/SpaceGame/ship2.png" );
-			opts.width = ship2.Width();
-			opts.height = ship2.Height();
-			opts.initialData = ship2.GetImageDataBasePtr();
-			textureManager.Add( "Ship2", opts );
+				Image_4U ship2( "../src/projects/SpaceGame/ship2.png" );
+				opts.width = ship2.Width();
+				opts.height = ship2.Height();
+				opts.initialData = ship2.GetImageDataBasePtr();
+				textureManager.Add( "Ship2", opts );
+			}
+
+			// and the tiny font table (partial coverage: 3x3 alphas, 3x7 numerals... 3x5 punctuation, mostly, basically vertically centered - spaces between letters need to be added manually, so glyphs need to be 4 pixels wide in practice)
+			Image_4U tinyFont( "../src/utils/fonts/fontRenderer/tinyFontPartial.png" );
+			opts.width = tinyFont.Width();
+			opts.height = tinyFont.Height();
+			opts.initialData = tinyFont.GetImageDataBasePtr();
+			opts.minFilter = GL_NEAREST;
+			opts.magFilter = GL_NEAREST;
+			opts.dataType = GL_RGBA8UI;
+			textureManager.Add( "TinyFont", opts );
 		}
 	}
 
@@ -54,10 +67,15 @@ public:
 		shaders[ "Background Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/draw.cs.glsl" ).shaderHandle;
 		glObjectLabel( GL_PROGRAM, shaders[ "Background Draw" ], -1, string( "Background Draw" ).c_str() );
 
+		shaders[ "BVH Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/bvh.cs.glsl" ).shaderHandle; // eventually atlas the textures etc to facilitate batching... not super important right now
+		glObjectLabel( GL_PROGRAM, shaders[ "BVH Draw" ], -1, string( "BVH Draw" ).c_str() );
 
-		// similar structure to text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer
-			// shaders[ "Line Draw" ] = computeShader().shaderHandle; // todo
-			// shaders[ "Line Draw Composite" ] = computeShader().shaderHandle; // todo
+		// similar structure to the existing text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer, in passes
+		/*
+		shaders[ "Text Draw" ] = computeShader().shaderHandle;
+		shaders[ "Line Draw" ] = computeShader().shaderHandle;
+		shaders[ "Line Draw Composite" ] = computeShader().shaderHandle; // todo
+		*/
 	}
 
 	void ImguiPass () {
@@ -100,10 +118,24 @@ public:
 		}
 
 		{
+		// rendering objects in the sector via the BVH, instead of sprites
+			// need atlas texture
+			// need atlas texture index SSBO (4 values per id -> [2D basePoint, 2D textureSize])
+			// need the BVH nodes
+			// need the BVH triangles
+			// need the BVH payload (points, texcoords with texture ID for atlas SSBO map in the z coord)
+			// need the accumulator texture, to write the result
+
+		// having this BVH is actually very nice, because it means that I can have this model of all objects in the sector available on CPU and GPU
+			// low geometric complexity of the ship bounding boxes means that this will scale to large object counts easily, even having to be updated every frame
+			// occlusion solution via symmetric z scaling of the bounding boxes... smaller ships are taller bboxes, so viewed from above, they are encountered first, closer
+				// this is used to place larger ships and stations beneath smaller ships, very similar to a simple 2D primitive draw order
+				// symmetric scaling of the bounding boxes means that everything exists in the z=0 plane... you can do 2D logic there
+			// this pass only uses it for rendering... but gameplay can use it for any sort of AI usage, simulated sensors, weapon guidance and collision
 		}
 
 		if ( 0 ) {
-			scopedTimer Start( "Line Drawing" );
+			scopedTimer Start( "Line And Text Drawing" );
 			GLuint shader = shaders[ "Line Draw" ];
 			glUseProgram( shader );
 
