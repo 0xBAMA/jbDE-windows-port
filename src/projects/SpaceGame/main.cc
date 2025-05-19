@@ -110,11 +110,10 @@ public:
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-			vec2 v = controller.ship.GetVelocityVector();
-			glUniform2f( glGetUniformLocation( shader, "velocityVector" ), v.x, v.y );
-
-			vec2 p = controller.ship.GetPositionVector();
-			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x, p.y );
+			// "position", center of the view, is V ahead of the ship's location at P (with some scale factors)
+			vec2 v = controller.ship.GetVelocityVector() * 0.1f;
+			vec2 p = controller.ship.GetPositionVector() * vec2( 1.0f, -1.0f ) * 0.02f;
+			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x + v.x, p.y + v.y );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
