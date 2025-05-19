@@ -285,9 +285,9 @@ struct entity {
 	universeController *universe;
 
 	// for the display primitive
-	vec2 location;
-	vec2 scale;
-	float rotation;
+	vec2 location = vec2( 0.0f );
+	vec2 scale = vec2( 1.0f, 0.618f );
+	float rotation = 0.0f;
 
 	// kept in the third coordinate of the texcoord - we need to know this when we create the entity
 		// this indexes into SSBO with atlased texture info (1 index -> texture info)
