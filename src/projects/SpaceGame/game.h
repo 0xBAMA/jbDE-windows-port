@@ -369,6 +369,16 @@ public:
 		entityList[ 0 ].location = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
 
+		spawnSector();
+	}
+
+	void clearSector () {
+		// todo
+	}
+
+	void spawnSector () {
+		logHighPriority( "Entering Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
+
 		/*
 		// some dummy positions
 		rng position( -10.0f, 10.0f );
