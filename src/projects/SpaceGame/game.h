@@ -36,10 +36,12 @@ struct logEvent {
 	ivec3 color = WHITE;
 };
 static deque< logEvent > logEvents;
-void submitEvent( logEvent lE ) {
+
+inline void submitEvent( const logEvent &lE ) {
 	logEvents.push_front( lE );
 }
-logEvent logLowPriority ( string s, ivec3 color = GREY_D ) {
+
+inline logEvent logLowPriority ( const string &s, const ivec3 &color = GREY_D ) {
 	logEvent l;
 	l.timestamp = SDL_GetTicks();
 	l.priority = LOW;
@@ -48,7 +50,8 @@ logEvent logLowPriority ( string s, ivec3 color = GREY_D ) {
 	submitEvent( l );
 	return l;
 }
-logEvent logMediumPriority ( string s, ivec3 color = WHITE ) {
+
+inline logEvent logMediumPriority ( const string &s, const ivec3 &color = WHITE ) {
 	logEvent l;
 	l.timestamp = SDL_GetTicks();
 	l.priority = MEDIUM;
@@ -57,7 +60,8 @@ logEvent logMediumPriority ( string s, ivec3 color = WHITE ) {
 	submitEvent( l );
 	return l;
 }
-logEvent logHighPriority ( string s, ivec3 color = RED ) {
+
+inline logEvent logHighPriority ( const string& s, const ivec3 &color = RED ) {
 	logEvent l;
 	l.timestamp = SDL_GetTicks();
 	l.priority = HIGH;
@@ -67,7 +71,7 @@ logEvent logHighPriority ( string s, ivec3 color = RED ) {
 	return l;
 }
 
-void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManager ) {
+inline void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManager ) {
 	textRenderer.Clear();
 	textRenderer.layers[ 0 ].DrawDoubleFrame( uvec2( 0, textRenderer.numBinsHeight - 1 ), uvec2( textRenderer.numBinsWidth - 1, 0 ), GOLD );
 	string s( "[SpaceGame]" );
@@ -75,7 +79,7 @@ void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManag
 	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 }
 
-void DrawBlockMenu ( string label, layerManager &textRenderer, textureManager_t &textureManager ) {
+inline void DrawBlockMenu ( const string &label, layerManager &textRenderer, textureManager_t &textureManager ) {
 	// solid color background
 	textRenderer.Clear();
 	textRenderer.layers[ 0 ].DrawRectConstant( uvec2( 5, 3 ), uvec2( textRenderer.numBinsWidth - 6, textRenderer.numBinsHeight - 4 ), cChar( GREY_DD, FILL_100 ) );
@@ -87,7 +91,7 @@ void DrawBlockMenu ( string label, layerManager &textRenderer, textureManager_t 
 	textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 }
 
-void DrawInfoLog ( layerManager &textRenderer, textureManager_t &textureManager ) {
+inline void DrawInfoLog ( layerManager &textRenderer, textureManager_t &textureManager ) {
 // drawing a list of strings
 	// a low density background
 	/*
@@ -170,19 +174,19 @@ public:
 		position -= deltaT * GetVelocityVector();
 	}
 
-	void turn ( float amount ) {
+	void turn ( const float &amount ) {
 		angle += amount;
 	}
 
-	void accelerate ( float amount ) {
+	void accelerate ( const float &amount ) {
 		velocity += amount;
 	}
 
-	vec2 GetPositionVector() {
+	vec2 GetPositionVector() const {
 		return position;
 	}
 
-	vec2 GetVelocityVector() {
+	vec2 GetVelocityVector() const {
 		return glm::mat2(
 			cos( angle ), -sin( angle ),
 			sin( angle ), cos( angle )
@@ -196,12 +200,12 @@ struct bboxData {
 	vec3 points[ numPointsBBox ];
 	vec3 texcoords[ numPointsBBox ];
 
-	vec3 CubeVert( int idx ) {
+	static vec3 CubeVert( const int &idx ) {
 	// from shader cubeVerts.h... still want to figure that LUT out + rederive the square one
 		// big const array is yucky - ALU LUT impl notes from vassvik
 			// https://twitter.com/vassvik/status/1730961936794161579
 			// https://twitter.com/vassvik/status/1730965355663655299
-		const vec3 pointsList[ numPointsBBox ] = {
+		constexpr vec3 pointsList[ numPointsBBox ] = {
 			vec3( -1.0f,-1.0f,-1.0f ),
 			vec3( -1.0f,-1.0f, 1.0f ),
 			vec3( -1.0f, 1.0f, 1.0f ),
@@ -243,7 +247,7 @@ struct bboxData {
 		return pointsList[ idx ];
 	}
 
-	bboxData ( int texID ) {
+	explicit bboxData ( int texID ) {
 		// create the initial data for points and texcoords
 		for ( int i = 0; i < numPointsBBox; i++ ) {
 			points[ i ] = CubeVert( i );
@@ -293,7 +297,7 @@ struct entity {
 		// this indexes into SSBO with atlased texture info (1 index -> texture info)
 	int textureIndex;
 
-	bboxData getBBoxPoints () {
+	bboxData getBBoxPoints () const {
 		// initial points
 		bboxData points( textureIndex );
 
@@ -335,7 +339,7 @@ public:
 	vector < Image_4U > entitySprites;
 
 	// will become more relevant later
-	ivec2 sectorID = ivec2( 10 );
+	ivec2 sectorID = ivec2( 0 );
 
 	// for player control
 	spaceshipController ship;
@@ -401,7 +405,7 @@ public:
 		// create the atlas texture, keep the rectangle positioning information
 
 	// GPU data update:
-		// prepare SSBO for the altas with LUT, int texture ID -> basePoint and fractional size (base uv and size, since geo will have texcoords 0..1)
+		// prepare SSBO for the atlas with LUT, int texture ID -> basePoint and fractional size (base uv and size, since geo will have texcoords 0..1)
 		// texture data with the atlas itself
 
 	}
@@ -419,13 +423,12 @@ public:
 
 			// 12 triangles, 3 points each - triangles only for basic traversal, texcoords needed for alpha test
 			for ( int i = 0; i < 12; i++ ) {
-				int idx = i * 3;
+				const int idx = i * 3;
 				for ( int j = 0; j < 3; j++ ) {
-					tinybvh::bvhvec4 p;
+					tinybvh::bvhvec4 p( 0.0f );
 					p.x = bbox.points[ idx + j ].x;
 					p.y = bbox.points[ idx + j ].y;
 					p.z = bbox.points[ idx + j ].z;
-					p.w = 0.0f;
 					triangleDataNoTexcoords.push_back( p );
 					triangleDataWithTexcoords.push_back( bbox.points[ idx + j ] );
 					triangleDataWithTexcoords.push_back( bbox.texcoords[ idx + j ] );
@@ -466,8 +469,8 @@ public:
 
 		// call everyone's update() function (dummy right now)
 		for ( int i = 1; i < entityList.size(); i++ ) {
-			float angle = entityList[ i ].rotation;
-			float velocity = entityList[ i ].shipSpeed;
+			const float angle = entityList[ i ].rotation;
+			const float velocity = entityList[ i ].shipSpeed;
 			entityList[ i ].location +=
 				glm::mat2(
 					cos( angle ), -sin( angle ),
