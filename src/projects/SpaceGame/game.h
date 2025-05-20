@@ -487,4 +487,46 @@ public:
 
 	}
 
+	GLuint drawShader;
+	textureManager_t *textureManager = nullptr;
+	void tinyTextDrawString ( string s, ivec2 basePoint ) const {
+		const int width = 720;
+		const int height = 480;
+
+		vector< uint32_t > stringBytes;
+		for ( auto& c : s ) {
+			stringBytes.push_back( uint32_t( c ) );
+		}
+
+		GLuint shader = drawShader;
+		glUseProgram( shader );
+		glUniform1uiv( glGetUniformLocation( shader, "text" ), stringBytes.size(), &stringBytes[ 0 ] );
+		glUniform1ui( glGetUniformLocation( shader, "numChars" ), stringBytes.size() );
+		glUniform2i( glGetUniformLocation( shader, "basePointOffset" ), basePoint.x, basePoint.y );
+
+		textureManager->BindImageForShader( "Display Texture", "writeTarget", shader, 1 );
+		glBindImageTexture( 1, textureManager->Get( "Display Texture" ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI );
+		textureManager->BindImageForShader( "TinyFont", "fontAtlas", shader, 2 );
+
+		// it'll make sense to do this for only the affected pixels, rather than the whole buffer, that's not super important right now
+		glDispatchCompute( ( width + 15 ) / 16, ( height + 15 ) / 16, 1 );
+		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+	}
+
+	void tinyTextDrawing ( textureManager_t &textureManager ) const {
+
+	// ship stats
+		tinyTextDrawString( "[Ship Position]", ivec2( 377, 248 ) );
+
+		stringstream s;
+		s << "X: " << fixedWidthNumberString( int( ship.position.x ), 5, ' ' ) << " Y: " << fixedWidthNumberString( int( ship.position.y ), 5, ' ' );
+		tinyTextDrawString( s.str(), ivec2( 380, 240 ) );
+
+		tinyTextDrawString( "[Ship Heading]", ivec2( 377, 230 ) );
+		tinyTextDrawString( fixedWidthNumberStringF( glm::degrees( ship.angle ), 4 ) + "\'", ivec2( 380, 222 ) );
+
+		tinyTextDrawString( "[Ship Speed]", ivec2( 377, 212 ) );
+		tinyTextDrawString( fixedWidthNumberStringF( ship.velocity, 4 ) + "m/s", ivec2( 380, 206 ) );
+	}
+
 };

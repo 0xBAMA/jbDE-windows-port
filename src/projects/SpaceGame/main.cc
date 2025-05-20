@@ -18,10 +18,11 @@ public:
 			CompileShaders();
 
 			// force nearest filtering on the display texture, regardless of config setting
-			textureManager.SetFilterMinMag( "Display Texture", GL_NEAREST, GL_NEAREST );
+			// textureManager.SetFilterMinMag( "Display Texture", GL_NEAREST, GL_NEAREST );
 
 			// some initialization tasks that have to be done after OpenGL init
 			controller.init();
+			controller.textureManager = &textureManager;
 
 			// load up the existing ship textures
 			textureOptions_t opts;
@@ -78,7 +79,7 @@ public:
 		shaders[ "BVH Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/bvh.cs.glsl" ).shaderHandle; // eventually atlas the textures etc to facilitate batching... not super important right now
 		glObjectLabel( GL_PROGRAM, shaders[ "BVH Draw" ], -1, string( "BVH Draw" ).c_str() );
 
-		shaders[ "Text Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/text.cs.glsl" ).shaderHandle;
+		controller.drawShader = shaders[ "Text Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/text.cs.glsl" ).shaderHandle;
 		glObjectLabel( GL_PROGRAM, shaders[ "Text Draw" ], -1, string( "Text Draw" ).c_str() );
 
 		// similar structure to the existing text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer, in passes
@@ -177,46 +178,7 @@ public:
 
 		{
 			scopedTimer Start( "Tiny Text Drawing" );
-			GLuint shader = shaders[ "Text Draw" ];
-			glUseProgram( shader );
-
-			{
-				string s = string( "[Ship Position]" );
-				vector< uint32_t > stringBytes;
-				for ( auto& c : s ) {
-					stringBytes.push_back( uint32_t( c ) );
-				}
-				glUniform1uiv( glGetUniformLocation( shader, "text" ), stringBytes.size(), &stringBytes[ 0 ] );
-				glUniform1ui( glGetUniformLocation( shader, "numChars" ), stringBytes.size() );
-				glUniform2i( glGetUniformLocation( shader, "basePointOffset" ), 355, 248 );
-
-				textureManager.BindImageForShader( "Display Texture", "writeTarget", shader, 1 );
-				glBindImageTexture( 1, textureManager.Get( "Display Texture" ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI );
-				textureManager.BindImageForShader( "TinyFont", "fontAtlas", shader, 2 );
-
-				// it'll make sense to do this for only the affected pixels, rather than the whole buffer, that's not super important right now
-				glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-			}
-
-			{
-				stringstream s;
-				s << "X: " << fixedWidthNumberString( int( controller.ship.position.x ), 5, ' ' ) << " Y: " << fixedWidthNumberString( int( controller.ship.position.y ), 5, ' ' );
-				vector< uint32_t > stringBytes;
-				for ( auto& c : s.str() ) {
-					stringBytes.push_back( uint32_t( c ) );
-				}
-				glUniform1uiv( glGetUniformLocation( shader, "text" ), stringBytes.size(), &stringBytes[ 0 ] );
-				glUniform1ui( glGetUniformLocation( shader, "numChars" ), stringBytes.size() );
-				glUniform2i( glGetUniformLocation( shader, "basePointOffset" ), 360, 240 );
-
-				textureManager.BindImageForShader( "Display Texture", "writeTarget", shader, 1 );
-				glBindImageTexture( 1, textureManager.Get( "Display Texture" ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI );
-				textureManager.BindImageForShader( "TinyFont", "fontAtlas", shader, 2 );
-
-				glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-			}
+			controller.tinyTextDrawing( textureManager );
 		}
 
 		{
