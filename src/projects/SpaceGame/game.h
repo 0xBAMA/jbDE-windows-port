@@ -143,7 +143,7 @@ public:
 	float angle = 0.0f;
 	float velocity = 0.0001f;
 
-	vec2 position = vec2( 0.0f );
+	vec2 position = vec2( 0.5f );
 
 	spaceshipStats stats;
 
@@ -170,8 +170,8 @@ public:
 		// clamping large magnitude velocity
 		velocity = glm::clamp( velocity, -stats.maxSpeedBackward, stats.maxSpeedForward );
 
-		// apply velocity times deltaT to get new position
-		position -= deltaT * GetVelocityVector();
+		// apply velocity times deltaT to get new position - scaled for the 0..1 extents of sector
+		position -= deltaT * GetVelocityVector() / ( 20000.0f );
 	}
 
 	void turn ( const float &amount ) {
@@ -183,7 +183,10 @@ public:
 	}
 
 	vec2 GetPositionVector() const {
-		return position;
+		return vec2(
+			RangeRemap( position.x - floor( position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
+			RangeRemap( position.y - floor( position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f )
+		);
 	}
 
 	vec2 GetVelocityVector() const {
@@ -294,8 +297,13 @@ struct entity {
 	float rotation = 0.0f;
 
 	// kept in the third coordinate of the texcoord - we need to know this when we create the entity
-		// this indexes into SSBO with atlased texture info (1 index -> texture info)
-	int textureIndex;
+		// this indexes into SSBO with atlased texture info (1D index -> texture info)
+	int textureIndex = -1;
+
+	// constructor for entity
+	entity () = default;
+	entity ( int type, vec2 location, float rotation, universeController *universe, vec2 scale = vec2 ( 1.0f ) )
+		: type ( type ), location ( location ), rotation ( rotation ), universe ( universe ), scale ( scale ) {}
 
 	bboxData getBBoxPoints () const {
 		// initial points
@@ -309,8 +317,11 @@ struct entity {
 			// apply rotation
 			p = ( glm::angleAxis( -rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
 
-			// apply translation
-			p = ( glm::translate( vec3( location.x, location.y, 0.0f ) ) * vec4( p, 1.0f ) ).xyz();
+			// apply translation - accounting for the scaling that needs to be applied to the stored location value
+			p = ( glm::translate( vec3(
+				RangeRemap( location.x - floor( location.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( location.y - floor( location.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
 		return points;
@@ -369,27 +380,59 @@ public:
 		entityList[ 0 ].location = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
 
-		spawnSector();
+		handleSectorChange( sectorID );
 	}
 
 	void clearSector () {
-		// todo
+		entityList.resize( 1 );
 	}
 
 	void spawnSector () {
-		logHighPriority( "Entering Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
+		// Spawn station at the center of the sector
+		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ) );
 
-		/*
-		// some dummy positions
-		rng position( -10.0f, 10.0f );
-		rng rotation( 0.01f, tau );
-		rng speed( 0.001f, 0.1f );
-		for ( int i = 1; i < entityList.size(); i++ ) {
-			entityList[ i ].location = vec2( position(), position() );
-			entityList[ i ].rotation = rotation();
-			entityList[ i ].shipSpeed = speed();
+		rngi countGenerator( 0, 3 );
+		int numFriends = countGenerator();
+		int numFoes = countGenerator();
+		int numAsteroids = countGenerator() * 2 + 5;
+
+		// RNG distributions
+		rng friendPosition ( 0.4f, 0.6f ), friendRotation ( 0.0f, pi );
+		rngi foeEdgeSelector ( 0, 3 );
+		rng foeEdgePosition ( 0.0f, 1.0f ), foeRotation ( 0.0f, pi );
+		rng asteroidPosition ( 0.0f, 1.0f ), asteroidRotation ( 0.0f, tau );
+
+		// Spawn friendly ships - consistent order of parameters
+		for ( int i = 0; i < numFriends; ++i ) {
+			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), friendRotation(), this, vec2 ( 0.3f ) );
 		}
-		*/
+
+		// Spawn enemy ships along the edges of the sector
+		for ( int i = 0; i < numFoes; ++i ) {
+			int edge = foeEdgeSelector();
+			float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
+			float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
+			entityList.emplace_back( FOE, vec2 ( x, y ), foeRotation(), this, vec2( 0.2f ) );
+		}
+
+		// Spawn asteroids across the entire sector
+		for ( int i = 0; i < numAsteroids; ++i ) {
+			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), asteroidRotation(), this, vec2 ( 0.3f ) );
+		}
+	}
+
+	void handleSectorChange ( ivec2 newSector ) {
+		if ( newSector == sectorID ) {
+			// no sector to clear - this is the state on program startup
+			spawnSector();
+		} else {
+			// sector change
+			clearSector();
+			logHighPriority( "Leaving Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
+			sectorID = newSector;
+			spawnSector();
+		}
+		logHighPriority( "Entering Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
 	}
 
 	void init () {
@@ -473,9 +516,21 @@ public:
 
 	void update () {
 	// primary update work
-		// player is entityList[ 0 ]
+
+		// player position restored from storage format
+		vec2 shipPosition = vec2(
+			RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
+			RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f )
+		);
+
+		// update player location
 		entityList[ 0 ].location = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
+
+		// check whether we have left the sector
+		if ( ivec2 sector = ivec2( floor( ship.position.x ), floor( ship.position.y ) ); sector != sectorID ) {
+			handleSectorChange( sector );
+		}
 
 		// call everyone's update() function (dummy right now)
 		for ( int i = 1; i < entityList.size(); i++ ) {
@@ -532,7 +587,7 @@ public:
 		tinyTextDrawString( "[Ship Position]", ivec2( 377, 248 ) );
 
 		stringstream s;
-		s << "X: " << fixedWidthNumberString( int( ship.position.x ), 5, ' ' ) << " Y: " << fixedWidthNumberString( int( ship.position.y ), 5, ' ' );
+		s << "X: " << fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ) << " Y: " << fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' );
 		tinyTextDrawString( s.str(), ivec2( 380, 240 ) );
 
 		tinyTextDrawString( "[Ship Heading]", ivec2( 377, 230 ) );
