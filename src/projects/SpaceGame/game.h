@@ -382,13 +382,12 @@ public:
 		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ) );
 
 		rngi countGenerator( 0, 3 );
-		const int numFriends = 100;
+		const int numFriends = countGenerator();
 		const int numFoes = countGenerator();
 		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
-		// rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
-		rng friendPosition ( 0.49f, 0.51f ), rotation ( 0.0f, tau );
+		rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
 		rngi foeEdgeSelector ( 0, 3 );
 		rng foeEdgePosition ( 0.0f, 1.0f );
 		rng asteroidPosition ( 0.0f, 1.0f );
