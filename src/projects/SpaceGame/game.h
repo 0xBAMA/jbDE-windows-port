@@ -397,14 +397,14 @@ public:
 		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
-		rng friendPosition ( 0.4f, 0.6f ), friendRotation ( 0.0f, pi );
+		rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
 		rngi foeEdgeSelector ( 0, 3 );
-		rng foeEdgePosition ( 0.0f, 1.0f ), foeRotation ( 0.0f, pi );
-		rng asteroidPosition ( 0.0f, 1.0f ), asteroidRotation ( 0.0f, tau );
+		rng foeEdgePosition ( 0.0f, 1.0f );
+		rng asteroidPosition ( 0.0f, 1.0f );
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), friendRotation(), this, vec2 ( 0.3f ) );
+			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 0.3f ) );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -417,7 +417,7 @@ public:
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), asteroidRotation(), this, vec2 ( 0.3f ) );
+			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 0.3f ) );
 		}
 	}
 
