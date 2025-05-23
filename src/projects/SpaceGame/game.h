@@ -392,9 +392,9 @@ public:
 		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ) );
 
 		rngi countGenerator( 0, 3 );
-		int numFriends = countGenerator();
-		int numFoes = countGenerator();
-		int numAsteroids = countGenerator() * 2 + 5;
+		const int numFriends = countGenerator();
+		const int numFoes = countGenerator();
+		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
 		rng friendPosition ( 0.4f, 0.6f ), friendRotation ( 0.0f, pi );
@@ -409,10 +409,10 @@ public:
 
 		// Spawn enemy ships along the edges of the sector
 		for ( int i = 0; i < numFoes; ++i ) {
-			int edge = foeEdgeSelector();
-			float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
-			float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, vec2 ( x, y ), foeRotation(), this, vec2( 0.2f ) );
+			const int edge = foeEdgeSelector();
+			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
+			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
+			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 0.2f ) );
 		}
 
 		// Spawn asteroids across the entire sector
