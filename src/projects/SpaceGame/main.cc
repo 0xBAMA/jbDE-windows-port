@@ -147,6 +147,9 @@ public:
 				// symmetric scaling of the bounding boxes means that everything exists in the z=0 plane... you can do 2D logic there
 			// this pass only uses it for rendering... but gameplay can use it for any sort of AI usage, simulated sensors, weapon guidance and collision
 
+			static rngi noiseOffset( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+
 			vec2 v = controller.ship.GetVelocityVector() * 20.0f;
 			vec2 p = controller.ship.GetPositionVector();
 			glUniform2f( glGetUniformLocation( shader, "centerPoint" ), p.x - v.x, p.y - v.y );

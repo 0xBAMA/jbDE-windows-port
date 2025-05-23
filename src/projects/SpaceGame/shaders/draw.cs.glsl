@@ -6,10 +6,11 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 
 uniform ivec2 noiseOffset;
 vec4 blueNoiseRef( ivec2 pos ) {
-	pos.x = ( pos.x + noiseOffset.x ) % imageSize( blueNoiseTexture ).x;
-	pos.y = ( pos.y + noiseOffset.y ) % imageSize( blueNoiseTexture ).y;
-	return imageLoad( blueNoiseTexture, pos ) / 255.0f;
+    pos.x = ( pos.x + noiseOffset.x ) % imageSize( blueNoiseTexture ).x;
+    pos.y = ( pos.y + noiseOffset.y ) % imageSize( blueNoiseTexture ).y;
+    return imageLoad( blueNoiseTexture, pos ) / 255.0f;
 }
+
 
 uniform float time;
 

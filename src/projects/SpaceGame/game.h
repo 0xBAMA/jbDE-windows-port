@@ -133,7 +133,7 @@ public:
 		velocity *= 0.99f;
 
 	// consider user inputs - softstate usage should go through a biasGain transform to give characteristic behaviors for different ships/equipment
-		// rotation
+		// rotation - I think this should be more "applying an impulse" than directly operating on the rotation itself... this way it can do first and second order effects
 		if ( input.getState( KEY_A ) ) { angle -= stats.turnRate * deltaT * input.getState_soft( KEY_A ); logLowPriority( "Ship Turning Left" ); }
 		if ( input.getState( KEY_D ) ) { angle += stats.turnRate * deltaT * input.getState_soft( KEY_D ); logLowPriority( "Ship Turning Right" ); }
 
@@ -255,7 +255,7 @@ struct entity {
 	// since this is kind of a tagged union... some extra data
 	int type = OBJECT;
 	float shipHeading = 0.0f;
-	float shipSpeed = 0.001f;
+	float shipSpeed = 0.0f;
 
 	// todo
 	int FSMState = INITIAL;
@@ -370,12 +370,13 @@ public:
 		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ) );
 
 		rngi countGenerator( 0, 3 );
-		const int numFriends = countGenerator();
+		const int numFriends = 100;
 		const int numFoes = countGenerator();
 		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
-		rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
+		// rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
+		rng friendPosition ( 0.49f, 0.51f ), rotation ( 0.0f, tau );
 		rngi foeEdgeSelector ( 0, 3 );
 		rng foeEdgePosition ( 0.0f, 1.0f );
 		rng asteroidPosition ( 0.0f, 1.0f );

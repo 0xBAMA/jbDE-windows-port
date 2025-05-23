@@ -20,6 +20,7 @@ vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tiny
 #define TRIBUFFER cwbvhTris
 #define TRAVERSALFUNC traverseFunc
 
+// this will change to do an alpha test in the leaf node, allowing quads to be alpha masked
 #include "traverse.h" // all support code for CWBVH8 traversal
 
 #undef NODEBUFFER
