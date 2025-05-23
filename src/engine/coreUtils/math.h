@@ -11,6 +11,32 @@ inline std::string fixedWidthNumberStringF ( float value, int32_t width = 5, con
 	return string( width - std::min( width, ( int ) to_string( value ).length() ), fill ) + to_string( value );
 }
 
+inline std::string fixedPointNumberStringF ( float value, int32_t beforeDot, int32_t afterDot, const char fill = ' ' ) {
+	// Format the number using a stringstream
+	std::ostringstream ss;
+
+	// Ensure a fixed number of digits after the dot
+	ss << std::fixed << std::setprecision ( afterDot ) << value;
+
+	// Split the number into integer and fractional parts
+	std::string strValue = ss.str();
+	size_t dotPosition = strValue.find ( '.' );
+
+	// Get the integer and decimal parts
+	std::string intPart = ( dotPosition == std::string::npos ) ? strValue : strValue.substr ( 0, dotPosition );
+	std::string fracPart = ( dotPosition == std::string::npos ) ? "" : strValue.substr ( dotPosition + 1 );
+
+	// Ensure the integer part meets the specified width before the dot
+	intPart = std::string ( beforeDot - intPart.length(), fill ) + intPart;
+
+	// Ensure the fractional part meets the specified width after the dot
+	fracPart = fracPart + std::string ( afterDot - fracPart.length(), fill );
+
+	// Combine both parts back together
+	return intPart + "." + fracPart;
+}
+
+
 // remap the value from [inLow..inHigh] to [outLow..outHigh]
 inline float RangeRemap ( float value, float inLow, float inHigh, float outLow, float outHigh ) {
 	return outLow + ( value - inLow ) * ( outHigh - outLow ) / ( inHigh - inLow );
