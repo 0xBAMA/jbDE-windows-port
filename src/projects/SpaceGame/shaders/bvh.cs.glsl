@@ -5,6 +5,13 @@ layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 layout( binding = 2 ) uniform sampler2D selectedTexture;
 //=============================================================================================================================
+uniform ivec2 noiseOffset;
+vec4 blueNoiseRef( ivec2 pos ) {
+	pos.x = ( pos.x + noiseOffset.x ) % imageSize( blueNoiseTexture ).x;
+	pos.y = ( pos.y + noiseOffset.y ) % imageSize( blueNoiseTexture ).y;
+	return imageLoad( blueNoiseTexture, pos ) / 255.0f;
+}
+//=============================================================================================================================
 // SSBOs for the BVH - nodes + triangle data
 layout( binding = 0, std430 ) readonly buffer cwbvhNodesBuffer { vec4 cwbvhNodes[]; };
 layout( binding = 1, std430 ) readonly buffer cwbvhTrisBuffer { vec4 cwbvhTris[]; };
@@ -39,28 +46,36 @@ uniform vec2 centerPoint;
 
 #include "srgbConvertMini.h"
 
+
 void main () {
 	// screen UV
 	vec2 iS = imageSize( accumulatorTexture ).xy;
-	vec2 centeredUV = gl_GlobalInvocationID.xy / iS - vec2( 0.5f );
-	centeredUV.x *= ( iS.x / iS.y );
-	centeredUV.y *= -1.0f;
 
-	centeredUV *= 20.0f; // what should this scale factor be?
-	centeredUV += centerPoint;
+	int countHits = 0;
+	const int AAf = 4;
+	for ( int AAx = 0; AAx < AAf; AAx++ ) {
+		for ( int AAy = 0; AAy < AAf; AAy++ ) {
+			vec2 centeredUV = ( gl_GlobalInvocationID.xy + vec2( blueNoiseRef( ivec2( AAx, AAy ) ).xy ) ) / iS - vec2( 0.5f );
+			centeredUV.x *= ( iS.x / iS.y );
+			centeredUV.y *= -1.0f;
 
-	// traverse the BVH from above, rays pointing down the z axis
-	// traversal will eventually do a custom leaf test, looking at the atlas texture for an alpha value
+			centeredUV *= 20.0f; // what should this scale factor be? we need to know it for the UI, so it'll be a uniform
+			centeredUV += centerPoint;
 
-	vec4 result = rayTrace( vec3( centeredUV, 100.0f ), vec3( 0.0f, 0.0f, -1.0f ) );
+			// traverse the BVH from above, rays pointing down the z axis
+			// traversal will eventually do a custom leaf test, looking at the atlas texture for an alpha value
+			if ( rayTrace( vec3( centeredUV, 100.0f ), vec3( 0.0f, 0.0f, -1.0f ) ).x < 1e30f ) {
+				countHits++;
+			}
+		}
+	}
 
 	vec4 color = vec4( 0.0f );
-	bool hit = ( result.x < 1e30f );
-	if ( hit ) {
+	if ( countHits != 0 ) {
 		// use the color data from the traversal...
 			// it might need to do a small amount of alpha blending with 1 > alpha > 0, so you avoid having to do it twice by doing it there
 
-		color = vec4( 1.0f, 0.0f, 0.0f, 1.0f );
+		color = vec4( 1.0f, 0.0f, 0.0f, pow( countHits / float( AAf * AAf ), 0.5f ) );
 	}
 
 	if ( color.a != 0.0f ) {
