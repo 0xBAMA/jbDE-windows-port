@@ -134,8 +134,8 @@ public:
 
 	// consider user inputs - softstate usage should go through a biasGain transform to give characteristic behaviors for different ships/equipment
 		// rotation
-		if ( input.getState( KEY_A ) ) { angle -= stats.turnRate * deltaT * input.getState_soft( KEY_A ); }
-		if ( input.getState( KEY_D ) ) { angle += stats.turnRate * deltaT * input.getState_soft( KEY_D ); }
+		if ( input.getState( KEY_A ) ) { angle -= stats.turnRate * deltaT * input.getState_soft( KEY_A ); logLowPriority( "Ship Turning Left" ); }
+		if ( input.getState( KEY_D ) ) { angle += stats.turnRate * deltaT * input.getState_soft( KEY_D ); logLowPriority( "Ship Turning Right" ); }
 
 		// clamping angle
 		if ( angle < 0.0f ) { angle += tau; }
