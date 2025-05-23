@@ -1711,9 +1711,9 @@ float deRings2( vec3 p ) {
 
 // const vec3 pivot = vec3( 0.5f, 0.4f, 0.0f );
 // const vec3 pivot = vec3( 0.1f, 0.9f, 0.8f );
-const vec3 pivot = vec3( -0.33f, 1.3f, 0.8f );
+// const vec3 pivot = vec3( -0.33f, 1.3f, 0.8f );
 // const vec3 pivot = vec3( -0.2f, 1.0f, 0.6f );
-// const vec3 pivot = vec3( 0.6f, 0.7f, 0.8f );
+const vec3 pivot = vec3( 0.6f, 0.7f, 0.8f );
 const int iterations = 22;
 
 float deJeyko ( vec3 p ) {
@@ -1726,9 +1726,9 @@ float deJeyko ( vec3 p ) {
   vec3 sz = vec3( 1.0, 0.5, 0.5 ) / 2.0;
   for( int i = 0; i < iterations; i++ ){
     // float b = sdBox( p, sz.xyx );
-	float b = deLipsoid( p, sz );
+	// float b = deLipsoid( p, sz );
 	// float b = distance( p, vec3( 0.0f ) ) - sz.x;
-	// float b = deRings( p / sz.x ) * sz.x;
+	float b = deRings( p / sz.x ) * sz.x;
 	// float b = deStar( p / sz.x ) * sz.x;
     sz *= vec3( 0.74, 0.5, 0.74 );
     d = min( b, d );
@@ -1752,8 +1752,8 @@ float deJeyko2 ( vec3 p ) {
   for( int i = 0; i < iterations; i++ ){
     // float b = sdBox( p, sz.xyx );
     // float b = sdBox2( p, sz.xyx );
-	float b = deLipsoid2( p, sz );
-	// float b = deRings2( p / sz.x ) * sz.x;
+	// float b = deLipsoid( p, sz );
+	float b = deRings2( p / sz.x ) * sz.x;
 	// float b = deRings( p / sz.x ) * sz.x;
     sz *= vec3( 0.74, 0.5, 0.74 );
     d = min( b, d );
@@ -1798,7 +1798,6 @@ float de( in vec3 p ) {
 			// hitColor = mix( tire, nvidia, 0.1f );
 			// hitColor = vec3( 0.99f );
 			// hitColor = tire * 3.0f;
-			// hitColor = mix( nickel, vec3( 0.99f ), 0.1f );
 			// hitColor = mix( sapphire, nickel, noiseValue );
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : METALLIC;
@@ -1813,15 +1812,20 @@ float de( in vec3 p ) {
 
 			// hitSurfaceType = DIFFUSE;
 			// hitColor = nvidia * 0.1f;
-			
-			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-			// hitColor = vec3( 0.99f );
-			
-			hitSurfaceType = MALACHITE;
+
+			// hitSurfaceType = MIRROR;
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			hitColor = vec3( 0.99f );
+			// hitColor = nvidia.brg * 0.6f;
+			// hitColor = mix( vec3( 0.25f, 0.0f, 0.0f ), nvidia, 0.75f );
+			// hitColor = vec3( 0.25f, 0.0f, 0.0f );
+			// hitColor = mix( nickel, vec3( 1.0f ), -0.3f );
+
+			// hitSurfaceType = MALACHITE;
 		}
 	}
 
-	if ( false ) {
+	{
 		const float d = max( max( deJeyko2( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1832,7 +1836,7 @@ float de( in vec3 p ) {
 			// hitSurfaceType = DIFFUSE;
 			// hitColor = nvidia * 0.1f;
 
-			hitColor = mix( gold, vec3( 0.99f ), -0.2f );
+			hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			// hitColor = mix( nickel, brass, 0.2f );
 			// hitColor = brass;
 			hitRoughness = 0.1f;
