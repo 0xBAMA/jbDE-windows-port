@@ -40,7 +40,7 @@ void main () {
 
 		// if nonzero alpha, write to the write target
 		if ( color.r != 0 ) {
-			imageStore( writeTarget, writeLocation, uvec4( 178, 69, 14, 255 ) );
+			imageStore( writeTarget, writeLocation, uvec4( 168, 168, 168, 255 ) );
 		}
 	}
 }
