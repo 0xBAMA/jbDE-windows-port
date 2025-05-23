@@ -559,18 +559,36 @@ public:
 
 	void tinyTextDrawing ( textureManager_t &textureManager ) const {
 
-	// ship stats
-		tinyTextDrawString( "[Ship Position]", ivec2( 377, 248 ) );
-
-		stringstream s;
-		s << "X: " << fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ) << " Y: " << fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' );
-		tinyTextDrawString( s.str(), ivec2( 380, 240 ) );
-
-		tinyTextDrawString( "[Ship Heading]", ivec2( 377, 230 ) );
-		tinyTextDrawString( fixedWidthNumberStringF( glm::degrees( ship.angle ), 4 ) + "\'", ivec2( 380, 222 ) );
-
-		tinyTextDrawString( "[Ship Speed]", ivec2( 377, 212 ) );
-		tinyTextDrawString( fixedWidthNumberStringF( ship.velocity, 4 ) + "m/s", ivec2( 380, 206 ) );
+	// sector and ship stats
+		ivec2 p = ivec2( 16, 458 );
+		// count up number of friends, foes, asteroids
+		int numFriends = 0, numFoes = 0, numAsteroids = 0;
+		for ( auto &entity : entityList ) {
+			if ( entity.type == FRIEND ) numFriends++;
+			else if ( entity.type == FOE ) numFoes++;
+			else if ( entity.type == OBJECT ) numAsteroids++;
+		}
+		tinyTextDrawString( " Sector " + to_string( sectorID.x ) + " , " + to_string( sectorID.y ), p );
+		p.y -= 8;
+		tinyTextDrawString( "---------------", p );
+		p.y -= 8;
+		tinyTextDrawString( " Friends:   " + fixedWidthNumberString( numFriends, 2, ' ' ), p );
+		p.y -= 8;
+		tinyTextDrawString( " Foes:      " + fixedWidthNumberString( numFoes, 2, ' ' ), p );
+		p.y -= 8;
+		tinyTextDrawString( " Asteroids: " + fixedWidthNumberString( numAsteroids, 2, ' ' ), p );
+		p.y -= 8;
+		tinyTextDrawString( "---------------", p );
+		p.y -= 8;
+		tinyTextDrawString( "[HDG] " + fixedPointNumberStringF( glm::degrees( ship.angle ), 3, 4 ) + "\'", p );
+		p.y -= 8;
+		tinyTextDrawString( "[SPD] " + fixedPointNumberStringF( ship.velocity, 3, 4 ) + "m/s", p );
+		p.y -= 8;
+		tinyTextDrawString( "---------------", p );
+		p.y -= 8;
+		tinyTextDrawString( "[POS] X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
+		p.y -= 8;
+		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
 	}
 
 };
