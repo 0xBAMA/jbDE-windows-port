@@ -11,9 +11,7 @@ vec4 blueNoiseRef( ivec2 pos ) {
     return imageLoad( blueNoiseTexture, pos ) / 255.0f;
 }
 
-
 uniform float time;
-
 uniform vec2 positionVector;
 
 #include "consistentPrimitives.glsl.h";
@@ -22,14 +20,8 @@ uniform vec2 positionVector;
 #define TAU (PI * 2.0)
 #define BASE_COLOR ( vec3( 1.0f ) )
 
-float random_at ( vec2 uv, float offset ) {
-    return fract( sin( uv.x * 113.0f + uv.y * 412.0f + offset ) * 6339.0f - offset );
-}
-
-vec2 mod_space ( in vec2 id, in float subdivisions ) {
-    return mod( id, subdivisions );
-}
-
+float random_at ( vec2 uv, float offset ) { return fract( sin( uv.x * 113.0f + uv.y * 412.0f + offset ) * 6339.0f - offset ); }
+vec2 mod_space ( in vec2 id, in float subdivisions ) { return mod( id, subdivisions ); }
 float draw_star ( in vec2 where, in float size, in float flare ) {
     float d = length( where );
     float m = ( 0.01f * size ) / d;
