@@ -329,6 +329,12 @@ public:
 
 	// a list of images of the ships, for use on the CPU
 	vector < Image_4U > entitySprites;
+	void LoadSprites () {
+		entitySprites.emplace_back( "../src/projects/SpaceGame/ship1.png" );		// medium ship
+		entitySprites.emplace_back( "../src/projects/SpaceGame/ship2.png" );		// larger ship
+		entitySprites.emplace_back( "../src/projects/SpaceGame/station1.png" );	// space station
+		entitySprites.emplace_back( "../src/projects/SpaceGame/asteroid1.png" );	// asteroid
+	}
 
 	// will become more relevant later
 	ivec2 sectorID = ivec2( 0 );
@@ -357,15 +363,18 @@ public:
 		// create the list of ships
 			// get the Image_4U for the base entity on the CPU
 
-		entityList.resize( 1 );
-		entityList[ 0 ].location = ship.position;
-		entityList[ 0 ].rotation = ship.angle;
 
+		// load the sprites from disk
+		LoadSprites();
+
+		// create the sector contents
 		handleSectorChange( sectorID );
 	}
 
 	void clearSector () {
 		entityList.resize( 1 );
+		entityList[ 0 ].position = ship.position;
+		entityList[ 0 ].rotation = ship.angle;
 	}
 
 	void spawnSector () {
