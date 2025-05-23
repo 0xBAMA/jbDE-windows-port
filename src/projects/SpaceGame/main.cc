@@ -32,22 +32,6 @@ public:
 			opts.magFilter = GL_LINEAR;
 			opts.borderColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-		// this stuff will move onto the universeController as the base ship models
-			{
-				Image_4U ship1( "../src/projects/SpaceGame/ship1.png" );
-				opts.width = ship1.Width();
-				opts.height = ship1.Height();
-				opts.initialData = ship1.GetImageDataBasePtr();
-				textureManager.Add( "Ship1", opts );
-				// pass the handles also to some sprite management layer...
-
-				Image_4U ship2( "../src/projects/SpaceGame/ship2.png" );
-				opts.width = ship2.Width();
-				opts.height = ship2.Height();
-				opts.initialData = ship2.GetImageDataBasePtr();
-				textureManager.Add( "Ship2", opts );
-			}
-
 			// and the tiny font table (partial coverage: 3x3 alphas, 3x7 numerals... 3x5 punctuation, mostly, basically vertically centered - spaces between letters need to be added manually, so glyphs need to be 4 pixels wide in practice)
 			Image_4U tinyFont( "../src/utils/fonts/fontRenderer/tinyFontPartial.png" );
 			tinyFont.FlipVertical();
