@@ -319,8 +319,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( location.x - floor( location.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
-				RangeRemap( location.y - floor( location.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( location.x, 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( location.y, 0.0f, 1.0f, -10000.0f, 10000.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
@@ -422,17 +422,15 @@ public:
 	}
 
 	void handleSectorChange ( ivec2 newSector ) {
-		if ( newSector == sectorID ) {
-			// no sector to clear - this is the state on program startup
-			spawnSector();
-		} else {
+		if ( newSector != sectorID ) {
 			// sector change
 			clearSector();
 			logHighPriority( "Leaving Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
 			sectorID = newSector;
-			spawnSector();
+			// no sector to clear - this is the state on program startup
 		}
 		logHighPriority( "Entering Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
+		spawnSector();
 	}
 
 	void init () {
@@ -523,8 +521,8 @@ public:
 			RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f )
 		);
 
-		// update player location
-		entityList[ 0 ].location = ship.position;
+		// update player location - rounding applied for sector
+		entityList[ 0 ].location = ship.position - glm::floor( ship.position );
 		entityList[ 0 ].rotation = ship.angle;
 
 		// check whether we have left the sector
