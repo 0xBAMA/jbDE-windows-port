@@ -270,7 +270,7 @@ struct entity {
 	universeController *universe = nullptr;
 
 	// for the display primitive
-	vec2 location = vec2( 0.0f );
+	vec2 position = vec2( 0.0f );
 	vec2 scale = vec2( 1.0f, 0.618f );
 	float rotation = 0.0f;
 
@@ -281,7 +281,7 @@ struct entity {
 	// constructor for entity
 	entity () = default;
 	entity ( int type, vec2 location, float rotation, universeController *universe, vec2 scale = vec2 ( 1.0f ) )
-		: type ( type ), location ( location ), rotation ( rotation ), universe ( universe ), scale ( scale ) {}
+		: type ( type ), position ( location ), rotation ( rotation ), universe ( universe ), scale ( scale ) {}
 
 	bboxData getBBoxPoints () const {
 		// initial points
@@ -297,8 +297,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( location.x, 0.0f, 1.0f, -10000.0f, 10000.0f ),
-				RangeRemap( location.y, 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( position.x, 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( position.y, 0.0f, 1.0f, -10000.0f, 10000.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
@@ -324,6 +324,9 @@ struct entity {
 
 class universeController {
 public:
+	// scaling the uv of the display
+	float globalZoom = 20.0f;
+
 	// a list of images of the ships, for use on the CPU
 	vector < Image_4U > entitySprites;
 
@@ -501,7 +504,7 @@ public:
 		);
 
 		// update player location - rounding applied for sector
-		entityList[ 0 ].location = ship.position - glm::floor( ship.position );
+		entityList[ 0 ].position = ship.position - glm::floor( ship.position );
 		entityList[ 0 ].rotation = ship.angle;
 
 		// check whether we have left the sector
@@ -513,7 +516,7 @@ public:
 		for ( int i = 1; i < entityList.size(); i++ ) {
 			const float angle = entityList[ i ].rotation;
 			const float velocity = entityList[ i ].shipSpeed;
-			entityList[ i ].location +=
+			entityList[ i ].position +=
 				glm::mat2(
 					cos( angle ), -sin( angle ),
 					sin( angle ), cos( angle )

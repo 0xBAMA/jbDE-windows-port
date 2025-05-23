@@ -113,6 +113,7 @@ public:
 			const GLuint shader = shaders[ "Background Draw" ];
 			glUseProgram( shader );
 
+			glUniform1f( glGetUniformLocation( shader, "globalZoom" ), controller.globalZoom );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
 
 			static rngi noiseOffset( 0, 512 );
@@ -146,6 +147,8 @@ public:
 				// this is used to place larger ships and stations beneath smaller ships, very similar to a simple 2D primitive draw order
 				// symmetric scaling of the bounding boxes means that everything exists in the z=0 plane... you can do 2D logic there
 			// this pass only uses it for rendering... but gameplay can use it for any sort of AI usage, simulated sensors, weapon guidance and collision
+
+			glUniform1f( glGetUniformLocation( shader, "globalZoom" ), controller.globalZoom );
 
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );

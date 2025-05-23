@@ -43,6 +43,7 @@ vec4 rayTrace ( vec3 origin, vec3 direction ) {
 // the atlas texture itself
 
 uniform vec2 centerPoint;
+uniform float globalZoom;
 
 #include "srgbConvertMini.h"
 
@@ -59,7 +60,7 @@ void main () {
 			centeredUV.x *= ( iS.x / iS.y );
 			centeredUV.y *= -1.0f;
 
-			centeredUV *= 20.0f; // what should this scale factor be? we need to know it for the UI, so it'll be a uniform
+			centeredUV *= globalZoom; // we need to know this for the UI, so it has to be a uniform
 			centeredUV += centerPoint;
 
 			// traverse the BVH from above, rays pointing down the z axis
