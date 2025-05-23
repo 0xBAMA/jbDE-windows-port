@@ -252,19 +252,19 @@ struct bboxData {
 		for ( int i = 0; i < numPointsBBox; i++ ) {
 			points[ i ] = CubeVert( i );
 			texcoords[ i ] = glm::clamp( CubeVert( i ), 0.0f, 1.0f );
-			texcoords[ i ].z = texID;
+			texcoords[ i ].z = float( texID );
 		}
 	}
 };
 
-// high level ID
-#define OBJECT 0
-#define FRIEND 1
-#define FOE 2
+// high-level ID
+#define OBJECT	(0)
+#define FRIEND	(1)
+#define FOE		(2)
 
 // FSM logic states
-#define INACTIVE -1
-#define INITIAL 0
+#define INACTIVE	(-1)
+#define INITIAL		(0)
 // ...
 
 // forward declare for entity access to sector info
@@ -286,7 +286,7 @@ struct entity {
 	string baseEntityImageLabel; // and this should come in during object construction
 
 	// so that e.g. ships can query what other objects are in the sector
-	universeController *universe;
+	universeController *universe = nullptr;
 
 	// for the display primitive
 	vec2 location = vec2( 0.0f );
