@@ -7,20 +7,12 @@
 // no nesting, but makes for a very simple interface
 	// could probably do something stack based, have Tick() push and Tock() pop
 #define NOW std::chrono::steady_clock::now()
-#define TIMECAST(x) std::chrono::duration_cast<std::chrono::microseconds>(x).count()/1000.0f
+#define TIMECAST(x) (std::chrono::duration_cast<std::chrono::microseconds>(x).count()/1000.0f)
 static std::chrono::time_point<std::chrono::steady_clock> tStart_spacegame = std::chrono::steady_clock::now();
 static std::chrono::time_point<std::chrono::steady_clock> tCurrent_spacegame = std::chrono::steady_clock::now();
-void Tick() {
-	tCurrent_spacegame = NOW;
-}
-
-float Tock() {
-	return TIMECAST( NOW - tCurrent_spacegame );
-}
-
-float TotalTime() {
-	return TIMECAST( NOW - tStart_spacegame );
-}
+inline void Tick()			{ tCurrent_spacegame = NOW; }
+inline float Tock()			{ return TIMECAST( NOW - tCurrent_spacegame ); }
+inline float TotalTime()	{ return TIMECAST( NOW - tStart_spacegame ); }
 
 #undef NOW
 #undef TIMECAST
@@ -29,11 +21,15 @@ float TotalTime() {
 #define MEDIUM 1
 #define LOW 2
 struct logEvent {
-	uint64_t timestamp; // millisecond-level accuracy from SDL_GetTicks()
-	int priority = LOW; // currently only showing HIGH priority on the readout
+	uint64_t timestamp = { SDL_GetTicks() }; // millisecond-level accuracy from SDL_GetTicks()
 	string message = string( "Error: No message" ); // keep this short... should not overflow one line
+	int priority = LOW; // currently only showing HIGH priority on the readout
 	string additionalData = string( "N/A" ); // e.g. more extensive YAML description of an event, etc
 	ivec3 color = WHITE;
+
+	logEvent () = default;
+	logEvent ( const string &s, const ivec3 &color = WHITE ) : message( s ), color( color ) {}
+	logEvent ( const string &s, const int &priority, const ivec3 &color = WHITE ) : message( s ), priority( priority ), color( color) {}
 };
 static deque< logEvent > logEvents;
 
@@ -41,34 +37,16 @@ inline void submitEvent( const logEvent &lE ) {
 	logEvents.push_front( lE );
 }
 
-inline logEvent logLowPriority ( const string &s, const ivec3 &color = GREY_D ) {
-	logEvent l;
-	l.timestamp = SDL_GetTicks();
-	l.priority = LOW;
-	l.message = s;
-	l.color = color;
-	submitEvent( l );
-	return l;
+inline void logLowPriority ( const string &s, const ivec3 &color = GREY_D ) {
+	submitEvent( { s, LOW, color } );
 }
 
-inline logEvent logMediumPriority ( const string &s, const ivec3 &color = WHITE ) {
-	logEvent l;
-	l.timestamp = SDL_GetTicks();
-	l.priority = MEDIUM;
-	l.message = s;
-	l.color = color;
-	submitEvent( l );
-	return l;
+inline void logMediumPriority ( const string &s, const ivec3 &color = WHITE ) {
+	submitEvent( { s, MEDIUM, color } );
 }
 
-inline logEvent logHighPriority ( const string& s, const ivec3 &color = RED ) {
-	logEvent l;
-	l.timestamp = SDL_GetTicks();
-	l.priority = HIGH;
-	l.message = fixedWidthTimeString() + ": " + s; // add current time
-	l.color = color;
-	submitEvent( l );
-	return l;
+inline void logHighPriority ( const string& s, const ivec3 &color = GREY_D ) {
+	submitEvent( { fixedWidthTimeString() + ": " + s, HIGH, color } );
 }
 
 inline void DrawMenuBasics ( layerManager &textRenderer, textureManager_t &textureManager ) {
