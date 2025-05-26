@@ -43,6 +43,13 @@ public:
 			opts.dataType = GL_RGBA8UI;
 			opts.pixelDataType = GL_UNSIGNED_BYTE;
 			textureManager.Add( "TinyFont", opts );
+
+			// add the intermediate value buffer for the line renderer
+			opts.width = config.width;
+			opts.height = config.height;
+			opts.dataType = GL_R32UI;
+			opts.initialData = nullptr;
+			textureManager.Add( "Line Draw Buffer", opts );
 		}
 	}
 
@@ -67,10 +74,11 @@ public:
 		glObjectLabel( GL_PROGRAM, shaders[ "Text Draw" ], -1, string( "Text Draw" ).c_str() );
 
 		// similar structure to the existing text renderer... drawing to an intermediate buffer... then blending with the contents of the buffer, in passes
-		/*
-		shaders[ "Line Draw" ] = computeShader().shaderHandle;
-		shaders[ "Line Draw Composite" ] = computeShader().shaderHandle; // todo
-		*/
+		shaders[ "Line Draw" ] = computeShader( "../src/projects/SpaceGame/shaders/lineDraw.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Line Draw" ], -1, string( "Line Draw" ).c_str() );
+
+		shaders[ "Line Draw Composite" ] = computeShader( "../src/projects/SpaceGame/shaders/lineComposite.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Line Draw Composite" ], -1, string( "Line Draw Composite" ).c_str() );
 	}
 
 	void ImguiPass () {
@@ -145,13 +153,23 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		if ( 0 ) {
+		{
 			scopedTimer Start( "Line Drawing" );
 			GLuint shader = shaders[ "Line Draw" ];
 			glUseProgram( shader );
 
-			// shader = shaders[ "Line Draw Composite" ];
-			// glUseProgram( shader );
+			textureManager.BindImageForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
+			textureManager.BindTexForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
+			glDispatchCompute( 16, 1, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+			shader = shaders[ "Line Draw Composite" ];
+			glUseProgram( shader );
+
+			glUniform3f( glGetUniformLocation( shader, "color" ), 1.0f, 1.0f, 1.0f );
+			textureManager.BindImageForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
+			textureManager.BindTexForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
+			textureManager.BindTexForShader( "Accumulator", "accumulatorTexture", shader, 1 );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
