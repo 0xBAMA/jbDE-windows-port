@@ -313,6 +313,7 @@ uniform float skyBrightnessScalar;
 uniform float skyClamp;
 //=============================================================================================================================
 vec3 SkyColor( ray_t ray ) {
+	ray.direction = -ray.direction.xzy;
 	// sample the texture
 	if ( skyInvert ) {
 		ray.direction.y *= -1.0f;
@@ -467,11 +468,16 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 		}
 
 		case MALACHITE: {
-			if ( NormalizedRandomFloat() < 0.1f ) {
+			vec3 tex = matWood( ray.origin );
+			const float lumaValue = GetLuma( tex ).r;
+			if ( NormalizedRandomFloat() < 0.1f * lumaValue ) {
 				ray.direction = reflectedVector;
 			} else {
-				throughput *= matWood( ray.origin ).brg; // this swizzle makes a nice light green / dark green mix
-				ray.direction = randomVectorDiffuse;
+				throughput *= tex.brg;
+				ray.direction = normalize( ( 1.0f + epsilon ) * intersection.normal + mix( reflectedVector, RandomUnitVector(), 1.0f - lumaValue ) );
+
+				// throughput *= matWood( ray.origin ).brg; // this swizzle makes a nice light green / dark green mix
+				// ray.direction = randomVectorDiffuse;
 			}
 			break;
 		}
@@ -1766,6 +1772,73 @@ float deJeyko2 ( vec3 p ) {
   return d;
 }
 
+float deGateep(vec3 p, int iters){
+	p=fract(p)-.5;
+	vec3 O=vec3( 2.0f, 0.0f, 3.0f );
+	// vec3 O=vec3( 2.5f, 0.0f, 3.0f );
+	// vec3 O=vec3( 2.8f, 0.3f, 4.0f );
+	for(int j=0;j++<iters;){
+		p=abs(p);
+		p=(p.x < p.y?p.zxy:p.zyx)*3.-O;
+		if(p.z < -.5*O.z)
+		p.z+=O.z;
+	}
+	return length(p.xy)/3e3;
+}
+float deGatee( vec3 p ) {
+	float scale = 1.0f;
+	return deGateep( p / scale, 7 ) * scale - 0.0003;
+}
+float deGatee2( vec3 p ) {
+	float scale = 1.0f;
+	return deGateep( p / scale, 6 ) * scale - 0.0003;
+}
+float deGatee3( vec3 p ) {
+	float scale = 1.0f;
+	return deGateep( p / scale, 5 ) * scale - 0.0003;
+}
+
+
+
+float deRoughStairs ( vec3 P ) {
+	vec3 Q;
+	float a, d = min( ( P.y - abs( fract( P.z ) - 0.5f ) ) * 0.7f, 1.5f - abs( P.x ) );
+	for( a = 2.0f; a < 6e2f; a += a )
+	Q = P * a,
+	Q.xz *= rotate2D( a ),
+	d += abs( dot( sin( Q ), Q - Q + 1.0f ) ) / a / 7.0f;
+	return d;
+}
+
+
+
+
+vec4 formula(vec4 p) {
+	p.xz = abs(p.xz+1.)-abs(p.xz-1.)-p.xz;
+	p=p*2./clamp(dot(p.xyz,p.xyz),.15,1.)-vec4(0.5,0.5,0.8,0.);
+	p.xy*=rot(.5);
+	return p;
+}
+float screen(vec3 p) {
+	float d1=length(p.yz-vec2(.25,0.))-.5;
+	float d2=length(p.yz-vec2(.25,2.))-.5;
+	return min(max(d1,abs(p.x-.3)-.01),max(d2,abs(p.x+2.3)-.01));
+}
+float deKaliChannel(vec3 pos) {
+	vec3 tpos=pos;
+	tpos.z=abs(2.-mod(tpos.z,4.));
+	vec4 p=vec4(tpos,1.5);
+	float y=max(0.,.35-abs(pos.y-3.35))/.35;
+
+	for (int i=0; i<8; i++) {p=formula(p);}
+	float fr=max(-tpos.x-4.,(length(max(vec2(0.),p.yz-3.)))/p.w);
+
+	float sc=screen(tpos);
+	return min(sc,fr);
+}
+
+
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -1786,10 +1859,10 @@ float de( in vec3 p ) {
 		// }
 	// }
 	
-	const vec3 bboxDim = vec3( 10.0f );
+	const vec3 bboxDim = vec3( 4.0f, 4.0f, 8.0f );
 
 	{
-		const float d = max( max( deJeyko( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee3( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1802,7 +1875,7 @@ float de( in vec3 p ) {
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : METALLIC;
 			// hitRoughness = noiseValue;
-			// hitSurfaceType = LUMARBLE2;
+			hitSurfaceType = LUMARBLECHECKER;
 			
 			/*
 			hitColor = mix( gold, vec3( 0.99f ), -0.5f );
@@ -1814,9 +1887,15 @@ float de( in vec3 p ) {
 			// hitColor = nvidia * 0.1f;
 
 			// hitSurfaceType = MIRROR;
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-			hitColor = vec3( 0.99f );
-			// hitColor = nvidia.brg * 0.6f;
+
+
+
+			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitColor = vec3( 0.99f );
+
+
+
+			// hitColor = 0.3f * nvidia;
 			// hitColor = mix( vec3( 0.25f, 0.0f, 0.0f ), nvidia, 0.75f );
 			// hitColor = vec3( 0.25f, 0.0f, 0.0f );
 			// hitColor = mix( nickel, vec3( 1.0f ), -0.3f );
@@ -1826,7 +1905,7 @@ float de( in vec3 p ) {
 	}
 
 	{
-		const float d = max( max( deJeyko2( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee2( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
@@ -1836,9 +1915,11 @@ float de( in vec3 p ) {
 			// hitSurfaceType = DIFFUSE;
 			// hitColor = nvidia * 0.1f;
 
-			hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			// hitColor = mix( nickel, brass, 0.2f );
 			// hitColor = brass;
+			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
+			hitColor = iron;
+			// hitColor = vec3( 0.99f );
 			hitRoughness = 0.1f;
 			hitSurfaceType = METALLIC;
 		}
@@ -1846,11 +1927,40 @@ float de( in vec3 p ) {
 
 
 	if ( true ) {
-		const float d = sdBox( p - vec3( 0.0f, 0.0f, 1.0f ), vec3( 0.1f, 5.0f, 0.1f ) );
+		const float d = max( max( deGatee( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
+			// hitColor = vec3( 0.2f, 0.2f, 0.75f );
+			// hitColor = vec3( 0.99f );
+			// hitColor = honey;
+			// hitSurfaceType = EMISSIVE;
+
+			// hitSurfaceType = METALLIC;
+			// hitRoughness = 0.8f;
+			// hitColor = mix( nvidia, vec3( GetLuma( nvidia ) ), -0.2f );
+
+			bool behaviorSwitch = ( NormalizedRandomFloat() < 0.1f );
+			if ( behaviorSwitch ) {
+				hitSurfaceType = MIRROR;
+				hitColor = vec3( 0.99f );
+			} else {
+				hitSurfaceType = METALLIC;
+				hitRoughness = 0.1f;
+				hitColor = copper;
+			}
+		}
+	}
+
+	if ( true ) {
+		const float scale = 0.5f;
+		// const float d = max( max( deKaliChannel( p * scale - vec3( -0.5f, -0.5f, 0.0f ) ) / scale, distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = length( p ) - 0.2f;
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			// hitSurfaceType = DIFFUSE;
+			// hitColor = nvidia * 0.1f;
 			hitSurfaceType = EMISSIVE;
-			hitColor = vec3( 20.618f );
+			hitColor = vec3( 20.0f );
 		}
 	}
 
@@ -2071,7 +2181,7 @@ intersection_t convexPolyhedraIntersect ( in vec3 rayOrigin, in vec3 rayDirectio
 	uint rngSeedCache = seed;
 	seed = polyhedraSeed;
 
-	float tNear = -1000.0f;
+	float tNear = -1e30f;
 	float tFar = tMax;
 
 	vec3 frontNormalCantidate;
@@ -2080,7 +2190,7 @@ intersection_t convexPolyhedraIntersect ( in vec3 rayOrigin, in vec3 rayDirectio
 	for ( int i = 0; i < 6; i++ ) {
 		// deterministic rng for generating normals
 		vec3 planeNormal = RandomUnitVector();
-		float planeOffset = -1.0f + NormalizedRandomFloat();
+		float planeOffset = -1.5f + NormalizedRandomFloat();
 
 		// precompute terms
 		float vd = rayDirection.x * planeNormal.x + rayDirection.y * planeNormal.y + rayDirection.z * planeNormal.z;
@@ -2595,8 +2705,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 
 		// this will need to be handled in a way that can do multiple types of parameters - distance and normal are the outputs
 		const float currentNearestPositive =
-			iSphereOffset( ray.origin, ray.direction, tempNormal, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.xyz );
-			// iBoxOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w ), spheres[ i ].positionRadius.xyz );
+			// iSphereOffset( ray.origin, ray.direction, tempNormal, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.xyz );
+			iBoxOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w ), spheres[ i ].positionRadius.xyz );
 			// iTorusOffset( ray.origin, ray.direction, tempNormal, vec2( spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w / 5.0f ), spheres[ i ].positionRadius.xyz );
 			// iEllipsoidOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w * 3.0f ), spheres[ i ].positionRadius.xyz );
 			// iGoursat( ray.origin - spheres[ i ].positionRadius.xyz, ray.direction, tempNormal, 5.0f * 0.16f * spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w );
@@ -2621,6 +2731,7 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		result.albedo = spheres[ indexOfHit ].colorMaterial.xyz;
 		result.IoR = spheres[ indexOfHit ].materialProps.r;
 		result.roughness = spheres[ indexOfHit ].materialProps.g;
+		// result.roughness = 0.1f;
 	}
 	return result;
 }
