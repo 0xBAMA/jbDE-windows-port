@@ -227,9 +227,13 @@ void Daedalus::SendPresentUniforms() {
 	glUniform3fv( glGetUniformLocation( shader, "goldenLinesColor" ), 1, glm::value_ptr( daedalusConfig.view.goldenLinesColor ) );
 	glUniform1i( glGetUniformLocation( shader, "vignette" ), daedalusConfig.view.vignette );
 
+	glUniform1i( glGetUniformLocation( shader, "focusPeaking" ), 1 );
+	glUniform1f( glGetUniformLocation( shader, "focusDepth" ), daedalusConfig.render.thinLensFocusDistance );
+
 	textureManager.BindImageForShader( "Blue Noise", "blueNoise", shader, 0 );
 	textureManager.BindTexForShader( "Tonemapped", "preppedImage", shader, 1 );
 	textureManager.BindImageForShader( "Display Texture", "outputImage", shader, 2 );
+	textureManager.BindTexForShader( "Depth/Normals Accumulator", "depthImage", shader, 3 );
 }
 
 void Daedalus::PrepSphereBufferRandom() {

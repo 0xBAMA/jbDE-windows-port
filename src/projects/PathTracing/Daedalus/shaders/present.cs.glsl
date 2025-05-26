@@ -3,7 +3,11 @@ layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
 layout( location = 0, rgba8ui ) readonly uniform uimage2D blueNoise;
 layout( location = 1 ) uniform sampler2D preppedImage;
+layout( location = 3 ) uniform sampler2D depthImage;
 layout( location = 2, rgba8 ) writeonly uniform image2D outputImage;
+
+uniform int focusPeaking;
+uniform float focusDepth;
 
 uniform float scale;
 uniform vec2 offset;
@@ -82,6 +86,13 @@ void main () {
 			result = myPixelColor; // this may need to change to a fullscreen triangle so that mipmapped filtering Just Works tm
 				// ( or else do the texture calls with explicit gradients, figure that out )
 		}
+
+		// highlight the focus plane of the DoF
+		float myPixelDepth = texture( depthImage, ( myPixelLocation + vec2( 0.5f ) ) / vec2( preppedSize ) ).a;
+		if ( abs( myPixelDepth - focusDepth ) < 0.005f && focusPeaking != 0 ) {
+			result.r += 1.0f;
+		}
+
 	} else {
 		vec2 values;
 
