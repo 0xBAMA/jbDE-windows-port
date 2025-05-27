@@ -1,14 +1,9 @@
 #version 430
-layout( local_size_x = 16, local_size_y = 1, local_size_z = 1 ) in;
-
+//=============================================================================================================================
+layout( local_size_x = 64, local_size_y = 1, local_size_z = 1 ) in;
+//=============================================================================================================================
 layout( binding = 0, r32ui ) uniform uimage2D lineIntermediateBuffer;
-
-void swap ( inout int x, inout int y ) {
-    int temp = x;
-    x = y;
-    y = x;
-}
-
+//=============================================================================================================================
 void drawPixel ( int x, int y, float brightness ) {
     uint c = uint( 255.0f * brightness );
     // write the pixel value (max with intermediate buffer)
@@ -53,9 +48,27 @@ void drawAALine ( int x0, int y0, int x1, int y1 ) {
         }
     }
 }
-
+//=============================================================================================================================
+uniform int offset; // the offset into the buffer, for batched lines
+struct parameters_t {
+    ivec2 points[ 2 ];
+};
+layout( binding = 0, std430 ) buffer parametersBuffer {
+    parameters_t lineParameters[];
+};
+//=============================================================================================================================
 void main () {
-    ivec2 p1 = ivec2( 64 + gl_GlobalInvocationID.x * 10, 100 );
-    ivec2 p2 = ivec2( 128 + gl_GlobalInvocationID.x * 6, 300 );
-    drawAALine( p1.x, p1.y, p2.x, p2.y );
+    // SSBO indexing
+    uint myIndex = gl_GlobalInvocationID.x + 4096 * gl_GlobalInvocationID.y + offset;
+
+    parameters_t myParameters = lineParameters[ myIndex ];
+    ivec2 p1 = abs( myParameters.points[ 0 ] );
+    ivec2 p2 = abs( myParameters.points[ 1 ] );
+
+    // using sign bit to signal intent, does p=abs(p)?
+    if ( p1 == myParameters.points[ 0 ] && p2 == myParameters.points[ 1 ] ) {
+        drawAALine( p1.x, p1.y, p2.x, p2.y );
+    } else {
+        bresenhamLine( p1.x, p1.y, p2.x, p2.y );
+    }
 }

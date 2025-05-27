@@ -1,4 +1,5 @@
 #include "../../engine/includes.h"
+#include "lineDraw.h"
 
 //=============================================================================
 //==== std::chrono Wrapper - Simplified Tick() / Tock() Interface =============
@@ -335,6 +336,9 @@ public:
 		entitySprites.emplace_back( "../src/projects/SpaceGame/station1.png" );	// space station
 		entitySprites.emplace_back( "../src/projects/SpaceGame/asteroid1.png" );	// asteroid
 	}
+
+	// for drawing lines
+	LineDrawer lines;
 
 	// will become more relevant later
 	ivec2 sectorID = ivec2( 0 );

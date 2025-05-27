@@ -24,6 +24,13 @@ public:
 			controller.init();
 			controller.textureManager = &textureManager;
 
+			// pass in required handles for the line drawing
+			controller.lines.Init( shaders[ "Line Draw" ], shaders[ "Line Draw Composite" ], shaders[ "Line Clear" ], textureManager, config.width, config.height );
+			palette::PickRandomPalette( true );
+			for ( int i = 0; i < 8; i++ ) {
+				controller.lines.SetPassColor( i, palette::paletteRef( ( float( i ) + 0.5f ) / 8.0f ) );
+			}
+
 			// load up the existing ship textures
 			textureOptions_t opts;
 			opts.dataType = GL_RGBA8;
@@ -79,6 +86,9 @@ public:
 
 		shaders[ "Line Draw Composite" ] = computeShader( "../src/projects/SpaceGame/shaders/lineComposite.cs.glsl" ).shaderHandle;
 		glObjectLabel( GL_PROGRAM, shaders[ "Line Draw Composite" ], -1, string( "Line Draw Composite" ).c_str() );
+
+		shaders[ "Line Clear" ] = computeShader( "../src/projects/SpaceGame/shaders/lineClear.cs.glsl" ).shaderHandle;
+		glObjectLabel( GL_PROGRAM, shaders[ "Line Clear" ], -1, string( "Line Clear" ).c_str() );
 	}
 
 	void ImguiPass () {
@@ -155,6 +165,15 @@ public:
 
 		{
 			scopedTimer Start( "Line Drawing" );
+			// testing the line drawing
+			rngi pixelLocationGenerationX = rngi( 0, config.width / 8 );
+			rngi pixelLocationGenerationY = rngi( 0, config.height );
+			rngi passIndexGen = rngi( 0, 7 );
+			for ( int i = 0; i < 100; i++ ) {
+				// add some test lines to controller.lines
+				int pickedPass = passIndexGen();
+				controller.lines.AddLine( pickedPass, ivec2( pixelLocationGenerationX() + pickedPass * ( config.width / 8 ), pixelLocationGenerationY() ), ivec2( pixelLocationGenerationX() + pickedPass * ( config.width / 8 ), pixelLocationGenerationY() ) );
+			}
 			controller.lines.Update();
 		}
 
