@@ -155,24 +155,7 @@ public:
 
 		{
 			scopedTimer Start( "Line Drawing" );
-			GLuint shader = shaders[ "Line Draw" ];
-			glUseProgram( shader );
-
-			textureManager.BindImageForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
-			textureManager.BindTexForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
-			glDispatchCompute( 16, 1, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-
-			shader = shaders[ "Line Draw Composite" ];
-			glUseProgram( shader );
-
-			glUniform3f( glGetUniformLocation( shader, "color" ), 1.0f, 1.0f, 1.0f );
-			textureManager.BindImageForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
-			textureManager.BindTexForShader( "Line Draw Buffer", "lineIntermediateBuffer", shader, 0 );
-			textureManager.BindTexForShader( "Accumulator", "accumulatorTexture", shader, 1 );
-
-			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			controller.lines.Update();
 		}
 
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
