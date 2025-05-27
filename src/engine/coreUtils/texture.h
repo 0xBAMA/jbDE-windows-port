@@ -393,7 +393,7 @@ public:
 		return;
 	}
 
-	void Add ( string label, textureOptions_t &texOptsIn ) {
+	GLuint Add ( string label, textureOptions_t &texOptsIn ) {
 
 		texture_t tex;
 		tex.label = label;
@@ -467,6 +467,9 @@ public:
 
 		// store for later
 		textures.push_back( tex );
+
+		// return the texture handle
+		return tex.textureHandle;
 	}
 
 	GLuint Get ( const string label ) { // if the array contains the key, return it, else some nonsense value
