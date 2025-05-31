@@ -313,7 +313,7 @@ uniform float skyBrightnessScalar;
 uniform float skyClamp;
 //=============================================================================================================================
 vec3 SkyColor( ray_t ray ) {
-	ray.direction = -ray.direction.xzy;
+	ray.direction = -ray.direction.yzx;
 	// sample the texture
 	if ( skyInvert ) {
 		ray.direction.y *= -1.0f;
@@ -1786,31 +1786,17 @@ float deGateep(vec3 p, int iters){
 	return length(p.xy)/3e3;
 }
 float deGatee( vec3 p ) {
-	float scale = 1.0f;
-	return deGateep( p / scale, 7 ) * scale - 0.0003;
+	float scale = 2.0f;
+	return deGateep( p / scale, 7 ) * scale - 0.0006;
 }
 float deGatee2( vec3 p ) {
-	float scale = 1.0f;
-	return deGateep( p / scale, 6 ) * scale - 0.0003;
+	float scale = 2.0f;
+	return deGateep( p / scale, 6 ) * scale - 0.0006;
 }
 float deGatee3( vec3 p ) {
-	float scale = 1.0f;
-	return deGateep( p / scale, 5 ) * scale - 0.0003;
+	float scale = 2.0f;
+	return deGateep( p / scale, 5 ) * scale - 0.0006;
 }
-
-
-
-float deRoughStairs ( vec3 P ) {
-	vec3 Q;
-	float a, d = min( ( P.y - abs( fract( P.z ) - 0.5f ) ) * 0.7f, 1.5f - abs( P.x ) );
-	for( a = 2.0f; a < 6e2f; a += a )
-	Q = P * a,
-	Q.xz *= rotate2D( a ),
-	d += abs( dot( sin( Q ), Q - Q + 1.0f ) ) / a / 7.0f;
-	return d;
-}
-
-
 
 
 vec4 formula(vec4 p) {
@@ -1858,11 +1844,14 @@ float de( in vec3 p ) {
 			// set material specifics - hitColor, hitSurfaceType, hitRoughness
 		// }
 	// }
-	
-	const vec3 bboxDim = vec3( 4.0f, 4.0f, 8.0f );
+
+	const vec3 bboxDim = vec3( 3.0f, 3.0f, 6.0f );
+	// const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
+	// const float dBounds = sdBox( p, bboxDim );
+	const float dBounds = sdBox( p, vec3( marbleRadius ) );
 
 	{
-		const float d = max( max( deGatee3( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee3( p ), dBounds ), sdBox( p, bboxDim ) );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1875,7 +1864,7 @@ float de( in vec3 p ) {
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : METALLIC;
 			// hitRoughness = noiseValue;
-			hitSurfaceType = LUMARBLECHECKER;
+			// hitSurfaceType = LUMARBLECHECKER;
 			
 			/*
 			hitColor = mix( gold, vec3( 0.99f ), -0.5f );
@@ -1890,8 +1879,11 @@ float de( in vec3 p ) {
 
 
 
-			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 			// hitColor = vec3( 0.99f );
+			// hitColor = vec3( ( hitSurfaceType == DIFFUSE ) ? 0.00618f : 0.9f );
+			hitColor = vec3( ( hitSurfaceType != MIRROR ) ? ( vec3( blood.grb / 3.0f ) ) : vec3( 0.9f ) );
+			hitRoughness = 0.1f;
 
 
 
@@ -1905,7 +1897,7 @@ float de( in vec3 p ) {
 	}
 
 	{
-		const float d = max( max( deGatee2( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee2( p ), dBounds ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
@@ -1919,15 +1911,22 @@ float de( in vec3 p ) {
 			// hitColor = brass;
 			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			hitColor = iron;
-			// hitColor = vec3( 0.99f );
 			hitRoughness = 0.1f;
 			hitSurfaceType = METALLIC;
+
+			const float noiseValue = saturate( pow( perlinfbm( p, 30.0f, 4 ), 4 ) * 2.0f );
+			if ( noiseValue > 0.05f ) {
+				const float remappedN = RangeRemapValue( noiseValue, 0.05f, 0.1f, 0.0f, 1.0f );
+				hitColor = mix( brick, vec3( iron ), saturate( 1.0f - remappedN ) );
+				hitSurfaceType = ( NormalizedRandomFloat() < remappedN ) ? DIFFUSE : METALLIC;
+				hitRoughness = remappedN;
+			}
 		}
 	}
 
 
 	if ( true ) {
-		const float d = max( max( deGatee( p ), distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee( p ), dBounds ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			// hitColor = vec3( 0.2f, 0.2f, 0.75f );
@@ -1935,10 +1934,12 @@ float de( in vec3 p ) {
 			// hitColor = honey;
 			// hitSurfaceType = EMISSIVE;
 
-			// hitSurfaceType = METALLIC;
-			// hitRoughness = 0.8f;
-			// hitColor = mix( nvidia, vec3( GetLuma( nvidia ) ), -0.2f );
+			hitSurfaceType = METALLIC;
+			hitRoughness = 0.1f;
+			// hitColor = mix( mix( gold, vec3( GetLuma( gold ) ), -0.2f ), blood, 0.5f );
+			hitColor = titanium;
 
+			/*
 			bool behaviorSwitch = ( NormalizedRandomFloat() < 0.1f );
 			if ( behaviorSwitch ) {
 				hitSurfaceType = MIRROR;
@@ -1948,12 +1949,13 @@ float de( in vec3 p ) {
 				hitRoughness = 0.1f;
 				hitColor = copper;
 			}
+			*/
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		const float scale = 0.5f;
-		// const float d = max( max( deKaliChannel( p * scale - vec3( -0.5f, -0.5f, 0.0f ) ) / scale, distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f ), sdBox( p, bboxDim ) );
+		// const float d = max( max( deKaliChannel( p * scale - vec3( -0.5f, -0.5f, 0.0f ) ) / scale, dBounds ), sdBox( p, bboxDim ) );
 		const float d = length( p ) - 0.2f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1961,6 +1963,17 @@ float de( in vec3 p ) {
 			// hitColor = nvidia * 0.1f;
 			hitSurfaceType = EMISSIVE;
 			hitColor = vec3( 20.0f );
+		}
+	}
+
+	if ( false ) {
+		const float scale = 0.5f;
+		const vec3 offset = vec3( -1.5f, -2.0f, 0.5f );
+		const float d = max( deWater( offset + p * scale ) / scale, sdBox( p, vec3( 3.0f ) ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = NormalizedRandomFloat() < 0.1f ? MIRROR : DIFFUSE;
+			hitColor = vec3( ( hitSurfaceType == DIFFUSE ) ? 0.00618f : 0.9f );
 		}
 	}
 
@@ -2718,6 +2731,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		}
 	}
 
+	// perlinfbm( vec3 p, float freq, int octaves)
+
 	intersection_t result = DefaultIntersection();
 	if ( indexOfHit != -1 ) { // at least one primitive got a valid hit
 		result.dTravel = nearestOverallHit;
@@ -2730,8 +2745,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		}
 		result.albedo = spheres[ indexOfHit ].colorMaterial.xyz;
 		result.IoR = spheres[ indexOfHit ].materialProps.r;
-		result.roughness = spheres[ indexOfHit ].materialProps.g;
-		// result.roughness = 0.1f;
+		// result.roughness = spheres[ indexOfHit ].materialProps.g;
+		result.roughness = saturate( pow( perlinfbm( ray.origin + ray.direction * result.dTravel, 20.0f, 4 ), 3.0f ) * 0.2f );
 	}
 	return result;
 }
@@ -2756,8 +2771,8 @@ intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	} else if ( minDistance == ExplicitList.dTravel ) {
 		result = ExplicitList;
 		// result.IoR = 1.0f / 1.7f; // hack to make marble IoR constant
-	// } else if ( minDistance == convexPolyhedra.dTravel ) {
-		// result = convexPolyhedra;
+	} else if ( minDistance == convexPolyhedra.dTravel ) {
+		result = convexPolyhedra;
 	}
 	return result;
 }
