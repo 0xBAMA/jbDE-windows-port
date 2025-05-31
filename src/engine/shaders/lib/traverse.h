@@ -207,15 +207,29 @@ vec4 TRAVERSALFUNC( const vec3 O, const vec3 D, const vec3 rD, const float t )
 				hitAddr = floatBitsToUint( v0.w );
 			#else
 
-				float tmaxLocal = tmax;
-				vec2 uvLocal = uv;
-				const uint index = floatBitsToUint( v0.w );
+				# ifndef LEAFTEST2
+					float tmaxLocal = tmax;
+					vec2 uvLocal = uv;
+					const uint index = floatBitsToUint( v0.w );
 
-				if ( CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal ) ) {
-					tmax = tmaxLocal;
-					uv = uvLocal;
-					hitAddr = index;
-				}
+					if ( CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal ) ) {
+						tmax = tmaxLocal;
+						uv = uvLocal;
+						hitAddr = index;
+					}
+				#else
+
+				// we need to know the triangle info from the BVH, it doesn't exist in the attached data buffer
+					float tmaxLocal = tmax;
+					vec2 uvLocal = uv;
+					uint index = floatBitsToUint( v0.w );
+					if ( CUSTOMLEAFTEST( O, D, index, tmaxLocal, uvLocal, e1, e2, v0 ) ) {
+						tmax = tmaxLocal;
+						uv = uvLocal;
+						hitAddr = index;
+					} // if false, the loop continues...
+
+				#endif
 
 				// need triangle UV ( optional )
 				// need triangle index, within the blade ( pending, currently single triangle )
