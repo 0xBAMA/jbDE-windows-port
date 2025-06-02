@@ -53,7 +53,7 @@ private:
 	}
 
 	void ClearIntermediateBuffer () {
-		// Add code here to clear intermediate buffer if necessary
+		// Add code here to clear the intermediate buffer if necessary
 		glUseProgram( clearShader );
 		glDispatchCompute( ( width + 15 ) / 16, ( height + 15 ) / 16, 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
@@ -71,7 +71,8 @@ private:
 		glUseProgram( lineShader );
 		textureManager->BindImageForShader( "Line Draw Buffer", "lineIntermediateBuffer", lineShader, 0 );
 		glUniform1i( glGetUniformLocation( lineShader, "offset" ), pass.offset );
-		glDispatchCompute( 64, std::max( uint32_t( pass.lines.size() + 4095 ) / 4096, 1U ), 1 );
+		// two rounding operations... could do as a single, 4096, whatever
+		glDispatchCompute( 64, std::max( ( uint32_t( pass.lines.size() + 63 ) / 64 + 63 ) / 64, 1U ), 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 		// Composite pass
