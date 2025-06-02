@@ -25,6 +25,10 @@ public:
 			controller.init();
 			controller.textureManager = &textureManager;
 
+			// make sure that the atlasManager gets created and setup
+			controller.atlas = new( AtlasManager );
+			controller.atlas->textureManager = &textureManager;
+
 			// pass in required handles for the line drawing
 			controller.lines.Init( shaders[ "Line Draw" ], shaders[ "Line Draw Composite" ], shaders[ "Line Clear" ], textureManager, config.width, config.height );
 			palette::PickRandomPalette( true );
@@ -136,6 +140,15 @@ public:
 			GLuint shader = shaders[ "BVH Draw" ];
 			glUseProgram( shader );
 
+			/*
+			// need to make sure that the atlas texture is up to date, because it will be used by the BVH pass
+			for ( auto& entity : controller.entityList ) {
+				controller.atlas.AddSprite( &entity.entityImage );
+			}
+			controller.atlas.UpdateAtlas();
+			// pQuit = true;
+			*/
+
 		// rendering objects in the sector via the BVH, instead of sprites
 			// need atlas texture
 			// need atlas texture index SSBO (4 values per id -> [2D basePoint, 2D textureSize])
@@ -164,7 +177,7 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		{
+		if ( 0 ) {
 			scopedTimer Start( "Line Drawing" );
 			// testing the line drawing
 			rngi pixelLocationGenerationX = rngi( 0, config.width / 8 );
@@ -216,24 +229,48 @@ public:
 		}
 	}
 
+	void RebuildAtlasIfNeeded () {
+		ZoneScoped;
+		if ( controller.entityListDirty ) {
+			controller.atlas->UpdateAtlas( controller.entityList );
+			controller.entityListDirty = false;
+		}
+	}
+
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-	// todo: consolidate this
 		// update player
+		// Tick();
 		controller.ship.Update( inputHandler );
+		// cout << "Ship update finished in " << Tock() / 1000.0f << " seconds" << endl;
+
 		// update rest of the world based on player changes
+		// Tick();
 		controller.update();
+		// cout << "Controller update finished in " << Tock() / 1000.0f << " seconds" << endl;
+
 		// prepare to render...
+		// Tick();
 		controller.updateBVH();
+		// cout << "BVH update finished in " << Tock() / 1000.0f << " seconds" << endl;
+
+		// needs to have a pointer to the parent controller, to access list of entities
+		// Tick();
+		RebuildAtlasIfNeeded();
+		// cout << "Atlas conditional update finished in " << Tock() / 1000.0f << " seconds" << endl << endl;
 	}
+
+	void ReportFinishedWithUpdate() { ZoneScoped; cout << "Finished with Update()" << endl; }
+	void ReportStartingRender() { ZoneScoped; cout << "Starting Render()" << endl; }
 
 	void OnRender () {
 		ZoneScoped;
+		// ReportStartingRender();
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
-		{
+		if ( 0 ) {
 			scopedTimer Start( "ImGUI Pass" );
 			ImguiFrameStart();		// start the imgui frame
 			ImguiPass();			// do all the gui stuff
@@ -267,6 +304,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
+	ZoneScoped;
 	SpaceGame engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
