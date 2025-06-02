@@ -436,31 +436,51 @@ public:
 
 	void init () {
 		// create the buffers for the BVH stuff
+		// create the buffers for the CWBVH8 nodes data
 		glCreateBuffers( 1, &cwbvhNodesDataBuffer );
 		glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
 
+		// allocate some initial footprint
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 2 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
+
+		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_DYNAMIC_COPY );
+		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_STATIC_DRAW );
+		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_STATIC_COPY );
+
+		// for the CWBVH8 triangle data
 		glCreateBuffers( 1, &cwbvhTrisDataBuffer );
 		glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
 
+		// allocate the initial buffer
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 4 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
+
+		// and for the texcoord data
 		glCreateBuffers( 1, &triangleDataBuffer );
 		glObjectLabel( GL_BUFFER, triangleDataBuffer, -1, string( "Triangle Data With Texcoords" ).c_str() );
 
+		// initial buffer allocation
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, triangleDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 4 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
+
 		// and the buffer for the atlas
 		glCreateBuffers( 1, &atlasTextureSSBO );
+		glObjectLabel( GL_BUFFER, atlasTextureSSBO, -1, string( "Atlas Texture Helper SSBO" ).c_str() );
+
+		// buffer allocation
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, atlasTextureSSBO );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, atlasTextureSSBO );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * sizeof( float ), nullptr, GL_DYNAMIC_DRAW );
 	}
 
-	void updateAtlasTexture () {
-	// Initial data
-		// go through the list of entities to get their dimensions...
-		// rectangle packing
-			// this will scale up and allow for per-entity atlas entries, so we can pre-composite ships with all their equipment
-		// create the atlas texture, keep the rectangle positioning information
-
-	// GPU data update:
-		// prepare SSBO for the atlas with LUT, int texture ID -> basePoint and fractional size (base uv and size, since geo will have texcoords 0..1)
-		// texture data with the atlas itself
-
-	}
+	// moving to a static allocation instead of using vectors... maybe?
+	const uint32_t maxTris = 8196u;
+	array< tinybvh::bvhvec4, 8196 > triangleDataNoTexcoords;
+	array< vec4, 8196 > triangleDataWithTexcoords;
 
 	void updateBVH () {
 		ZoneScoped;
@@ -543,6 +563,12 @@ public:
 		ZoneScoped;
 		bvh.BuildHQ( data, triangleCount );
 	}
+
+	void BufferUpdate ( GLuint bufferName, uint32_t bufferNumber, uint32_t bufferSize, const GLvoid *data ) {
+		ZoneScoped;
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, bufferName );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, bufferNumber, bufferName );
+		glBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, static_cast< GLsizeiptr >( bufferSize ), data );
 	}
 
 	void update () {
