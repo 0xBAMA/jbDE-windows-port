@@ -1,10 +1,16 @@
+#pragma once
+#ifndef GAME_H
+#define GAME_H
+
 #include "../../engine/includes.h"
 #include "lineDraw.h"
+
+#include <mutex>
+#include "stb_rect_pack.h"
 
 //=============================================================================
 //==== std::chrono Wrapper - Simplified Tick() / Tock() Interface =============
 //=============================================================================
-
 // no nesting, but makes for a very simple interface
 	// could probably do something stack based, have Tick() push and Tock() pop
 #define NOW std::chrono::steady_clock::now()
@@ -14,7 +20,6 @@ static std::chrono::time_point<std::chrono::steady_clock> tCurrent_spacegame = s
 inline void Tick()			{ tCurrent_spacegame = NOW; }
 inline float Tock()			{ return TIMECAST( NOW - tCurrent_spacegame ); }
 inline float TotalTime()	{ return TIMECAST( NOW - tStart_spacegame ); }
-
 #undef NOW
 #undef TIMECAST
 
@@ -127,6 +132,7 @@ public:
 	spaceshipStats stats;
 
 	void Update ( inputHandler_t &input ) {
+		ZoneScoped;
 		// solve for deltaT
 		const float deltaT = clamp( input.millisecondsSinceLastUpdate(), 1.0f, 100.0f );
 
@@ -230,6 +236,7 @@ struct bboxData {
 	}
 
 	explicit bboxData ( int texID ) {
+		ZoneScoped;
 		// create the initial data for points and texcoords
 		for ( int i = 0; i < numPointsBBox; i++ ) {
 			points[ i ] = CubeVert( i );
@@ -306,6 +313,7 @@ struct entity {
 	}
 
 	void update () {
+		ZoneScoped;
 		switch ( type ) {
 		case OBJECT: // objects do nothing
 		break;
@@ -368,9 +376,9 @@ public:
 	GLuint cwbvhNodesDataBuffer, cwbvhTrisDataBuffer, triangleDataBuffer;
 
 	universeController () {
+		ZoneScoped;
 		// create the list of ships
 			// get the Image_4U for the base entity on the CPU
-
 
 		// load the sprites from disk
 		LoadSprites();
@@ -380,12 +388,17 @@ public:
 	}
 
 	void clearSector () {
+		ZoneScoped;
 		entityList.resize( 1 );
 		entityList[ 0 ].position = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
 	}
 
 	void spawnSector () {
+		ZoneScoped;
+		// requires atlas rebuild
+		entityListDirty = true;
+
 		// Spawn station at the center of the sector
 		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ), 0 );
 
@@ -435,7 +448,7 @@ public:
 	}
 
 	void init () {
-		// create the buffers for the BVH stuff
+		ZoneScoped;
 		// create the buffers for the CWBVH8 nodes data
 		glCreateBuffers( 1, &cwbvhNodesDataBuffer );
 		glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "CWBVH Node Data" ).c_str() );
@@ -573,6 +586,7 @@ public:
 
 	void update () {
 	// primary update work
+		ZoneScoped;
 
 		// player position restored from storage format
 		vec2 shipPosition = vec2(
@@ -615,6 +629,7 @@ public:
 	GLuint drawShader;
 	textureManager_t *textureManager = nullptr;
 	void tinyTextDrawString ( string s, ivec2 basePoint ) const {
+		ZoneScoped;
 		const int width = 720;
 		const int height = 480;
 
@@ -639,6 +654,7 @@ public:
 	}
 
 	void tinyTextDrawing ( textureManager_t &textureManager ) const {
+		ZoneScoped;
 
 	// sector and ship stats
 		ivec2 p = ivec2( 16, 458 );
