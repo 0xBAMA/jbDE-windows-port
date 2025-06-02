@@ -16,7 +16,7 @@ uniform uint text[ 128 ];
 ivec2 getCurrentGlyphBase( int index ) {
 	// 16x16 array of glyphs, each of which is 3x7 pixels
 	ivec2 location;
-	location.x = 3 * ( index % 16 );
+	location.x = 3 * int( mod( index, 16 ) );
 	location.y = 105 - 7 * ( index / 16 );
 	return location;
 }
@@ -29,9 +29,9 @@ void main () {
 	// which glyph ID/character color to pull dataTexture
 	ivec2 bin = ivec2( adjusted.x / 4, adjusted.y / 7 );
 	// where to reference the fontAtlas' glyph ( uv ), for the given character ID
-	ivec2 loc = ivec2( adjusted.x % 4, adjusted.y % 7 + 1 ); // +1 to fix off-by-one error
+	ivec2 loc = ivec2( mod( adjusted.x - 1, 4 ), mod( adjusted.y - 1, 7 ) );
 
-	if ( bin.x >= 0 && bin.x < numChars && bin.y == 0 && loc.x < 3 && loc.x >= 0 && loc.y < 7 && loc.y >=0 ) {
+	if ( bin.x >= 0 && bin.x < numChars && bin.y == 0 && loc.x < 3 && loc.x >= 0 && loc.y < 7 && loc.y >= 0 ) {
 		// where to read from on the font atlas, based on the specified char
 		ivec2 atlasReadLocation = getCurrentGlyphBase( int( text[ bin.x ] ) ) + loc;
 
@@ -42,5 +42,7 @@ void main () {
 		if ( color.r != 0 ) {
 			imageStore( writeTarget, writeLocation, uvec4( 168, 168, 168, 255 ) );
 		}
+
+		// imageStore( writeTarget, writeLocation, uvec4( 255 * ( loc.x / 3.0f ), 255 * ( loc.y / 7.0f ), color.r, 1.0f ) );
 	}
 }
