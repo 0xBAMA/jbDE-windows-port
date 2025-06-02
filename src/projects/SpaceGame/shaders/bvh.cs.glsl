@@ -22,20 +22,91 @@ layout( binding = 2, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x < -1e-12f ? ( 1.0f / x ) : 1e30f ); }
 vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
 //=============================================================================================================================
+struct atlasEntry {
+	uvec2 basePoint;
+	uvec2 size;
+};
+layout( binding = 3, std430 ) readonly buffer atlasOffsets{ atlasEntry atlasEntries[]; };
+layout( binding = 3 ) uniform sampler2D atlasTexture;
+
+// this needs to go into the custom leaf test, for alpha testing
+vec4 sampleSelectedTexture ( int texIndex, vec2 uv ) {
+	// load the parameters to sample the atlas texture...
+	atlasEntry myAtlasEntry = atlasEntries[ texIndex ];
+
+	// get a sample from the atlas texture, based on the specified UV
+	vec2 atlasSize = vec2( textureSize( atlasTexture, 0 ).xy );
+	vec2 samplePoint = mix( vec2( myAtlasEntry.basePoint ) / atlasSize, vec2( myAtlasEntry.basePoint + myAtlasEntry.size ) / atlasSize, uv );
+	return texture( atlasTexture, samplePoint );
+}
+
+#include "srgbConvertMini.h"
 
 #define NODEBUFFER cwbvhNodes
 #define TRIBUFFER cwbvhTris
 #define TRAVERSALFUNC traverseFunc
 
-// this will change to do an alpha test in the leaf node, allowing quads to be alpha masked
+vec4 blendedResult = vec4( 0.0f );
+bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float tmax, inout vec2 uv, vec3 e1, vec3 e2, vec4 v0 ) {
+
+	// test against the triangle...
+	const vec3 r = cross( direction.xyz, e1 );
+	const float a = dot( e2, r );
+	if ( abs( a ) < 0.0000001f ) return false;
+	const float f = 1 / a;
+	const vec3 s = origin.xyz - v0.xyz;
+	const float u = f * dot( s, r );
+	if ( u < 0 || u > 1 ) return false;
+	const vec3 q = cross( s, e2 );
+	const float v = f * dot( direction.xyz, q );
+	if ( v < 0 || u + v > 1 ) return false;
+	const float d = f * dot( e1, q );
+	if ( d <= 0.0f || d >= tmax ) return false;
+	uv = vec2( u, v ), tmax = d;
+	index = floatBitsToUint( v0.w );
+
+	// we need to interpolate the texcoord from the vertex data...
+	const uint baseIndex = 3 * index;
+	vec4 t0 = triangleData[ baseIndex + 0 ];
+	vec4 t1 = triangleData[ baseIndex + 1 ];
+	vec4 t2 = triangleData[ baseIndex + 2 ];
+	// using the barycentrics
+	vec2 sampleLocation = t0.xy * uv.x + t1.xy * uv.y + t2.xy * ( 1.0f - uv.x - uv.y );
+
+	// and then perform the sample
+	vec4 textureSample = sampleSelectedTexture( int( t0.z ), sampleLocation );
+	if ( textureSample.a != 0.0f ) {
+		// blending the blended result over the texture sample, it's a little weird but it's how the traversal will encounter them
+		vec4 previousColor = textureSample;
+		previousColor.rgb = rgb_to_srgb( previousColor.rgb );
+
+		// alpha blending, new sample over running color
+		float alphaSquared = pow( blendedResult.a, 2.0f );
+		previousColor.a = max( alphaSquared + previousColor.a * ( 1.0f - alphaSquared ), 0.001f );
+		previousColor.rgb = blendedResult.rgb * alphaSquared + previousColor.rgb * previousColor.a * ( 1.0f - alphaSquared );
+		previousColor.rgb /= previousColor.a;
+
+		blendedResult.rgb = srgb_to_rgb( previousColor.rgb );
+		return true;
+	} else {
+		return false;
+	}
+}
+
+#define CUSTOMLEAFTEST leafTestFunc
+#define LEAFTEST2
+
 #include "traverse.h" // all support code for CWBVH8 traversal
 
 #undef NODEBUFFER
 #undef TRIBUFFER
 #undef TRAVERSALFUNC
+#undef CUSTOMLEAFTEST
+#undef LEAFTEST2
 
 // ray trace helper
 vec4 rayTrace ( vec3 origin, vec3 direction ) {
+	blendedResult = vec4( 0.0f ); // reset state for the blended ray
 	return traverseFunc( origin, direction, tinybvh_safercp( direction ), 1e30f );
 }
 
@@ -45,13 +116,11 @@ vec4 rayTrace ( vec3 origin, vec3 direction ) {
 uniform vec2 centerPoint;
 uniform float globalZoom;
 
-#include "srgbConvertMini.h"
-
-
 void main () {
 	// screen UV
 	vec2 iS = imageSize( accumulatorTexture ).xy;
 
+	vec4 blendedResultSum = vec4( 0.0f );
 	int countHits = 0;
 	const int AAf = 4;
 	for ( int AAx = 0; AAx < AAf; AAx++ ) {
@@ -66,6 +135,9 @@ void main () {
 			// traverse the BVH from above, rays pointing down the z axis
 			// traversal will eventually do a custom leaf test, looking at the atlas texture for an alpha value
 			if ( rayTrace( vec3( centeredUV, 100.0f ), vec3( 0.0f, 0.0f, -1.0f ) ).x < 1e30f ) {
+				// get a sample of the blended color...
+				blendedResultSum.a += blendedResult.a;
+				blendedResultSum.rgb += srgb_to_rgb( blendedResult.rgb );
 				countHits++;
 			}
 		}
@@ -76,7 +148,7 @@ void main () {
 		// use the color data from the traversal...
 			// it might need to do a small amount of alpha blending with 1 > alpha > 0, so you avoid having to do it twice by doing it there
 
-		color = vec4( 1.0f, 0.0f, 0.0f, pow( countHits / float( AAf * AAf ), 0.5f ) );
+		color = blendedResultSum / float( countHits );
 	}
 
 	if ( color.a != 0.0f ) {
