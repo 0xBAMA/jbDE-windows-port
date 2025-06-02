@@ -266,7 +266,7 @@ public:
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
-		if ( 0 ) {
+		{
 			scopedTimer Start( "ImGUI Pass" );
 			ImguiFrameStart();		// start the imgui frame
 			ImguiPass();			// do all the gui stuff
