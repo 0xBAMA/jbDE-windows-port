@@ -322,6 +322,8 @@ struct entity {
 	}
 };
 
+class AtlasManager;
+
 class universeController {
 public:
 	// scaling the uv of the display
@@ -336,6 +338,8 @@ public:
 		entitySprites.emplace_back( "../src/projects/SpaceGame/ship2.png" );		// larger ship
 		entitySprites.emplace_back( "../src/projects/SpaceGame/asteroid1.png" );	// asteroid
 	}
+	// managing the atlas
+	AtlasManager * atlas;
 
 	// for drawing lines
 	LineDrawer lines;
@@ -611,3 +615,126 @@ public:
 	}
 
 };
+
+class AtlasManager {
+public:
+
+    uint32_t currentAtlasDim;               // Current width/height of the atlas (power of two)
+    Image_4U atlasImage;                    // The atlas image being managed
+
+    stbrp_context ctx;                      // Rectangle packing context
+    std::vector< stbrp_node > nodes;        // Nodes for rectangle packing
+
+    std::vector< std::array< uint32_t, 4 > > entityRegions; // Packed regions for entities, SSBO prepped
+
+    void ResizeAtlas () { // crop can be used to increase size, maybe somewhat paradoxically
+        atlasImage.Crop(  // can't go bigger than the max texture size, which is usually 16384
+            std::clamp( currentAtlasDim, 0u, 1u << 14 ),
+            std::clamp( currentAtlasDim, 0u, 1u << 14 )
+        );
+    }
+
+    textureManager_t * textureManager = nullptr;
+    GLuint atlasTexture = 0;
+
+    void UploadToGPU () {
+		ZoneScoped;
+        textureOptions_t opts;
+        opts.dataType = GL_RGBA8;
+        opts.textureType = GL_TEXTURE_2D;
+        opts.minFilter = GL_NEAREST;
+        opts.magFilter = GL_NEAREST;
+        opts.width = currentAtlasDim;
+        opts.height = currentAtlasDim;
+        opts.initialData = atlasImage.GetImageDataBasePtr();
+
+        if ( atlasTexture == 0 ) {
+            atlasTexture = textureManager->Add( "AtlasTexture", opts );
+        } else {
+            // also need to update if the atlas texture is already in the texture manager
+            glActiveTexture( GL_TEXTURE0 );
+            glBindTexture( GL_TEXTURE_2D, atlasTexture );
+            glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, currentAtlasDim, currentAtlasDim, 0, GL_RGBA, GL_UNSIGNED_BYTE, atlasImage.GetImageDataBasePtr() );
+        }
+    }
+
+    void CreateOrUpdateSSBO () {
+		ZoneScoped;
+        static GLuint ssbo = 0;
+
+        cout << "We have some regions:" << endl;
+        for ( const auto& r : entityRegions ) {
+            cout << "  x:" << r[ 0 ] << " y:" << r[ 1 ] << " w:" << r[ 2 ] << " h:" << r[ 3 ] << endl;
+        }
+        cout << endl;
+
+        // Create SSBO if it does not exist
+        if ( !ssbo ) {
+            glGenBuffers( 1, &ssbo );
+            glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
+            glBufferData( GL_SHADER_STORAGE_BUFFER, entityRegions.size() * sizeof( uint32_t ) * 4, nullptr, GL_DYNAMIC_DRAW );
+            glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
+        }
+
+        // Update SSBO data used to reference the atlas
+        glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
+        glBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, entityRegions.size() * sizeof( uint32_t ) * 4, entityRegions.data() );
+        glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, ssbo );
+        glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
+    }
+
+public:
+    AtlasManager () :  currentAtlasDim( 512 ), atlasImage( currentAtlasDim, currentAtlasDim ) {}
+
+    void UpdateAtlas ( vector< entity > &entityList ) {
+		ZoneScoped;
+        auto tStart = std::chrono::steady_clock::now();
+        while ( true ) {
+        	cout << "preparing the atlas" <<  endl;
+            nodes.resize( currentAtlasDim );
+            stbrp_init_target( &ctx, currentAtlasDim, currentAtlasDim, nodes.data(), currentAtlasDim );
+        	cout << "finished preparing the atlas" << endl;
+
+            // treating all sprites uniformly, including the user's model sprite
+            std::vector< stbrp_rect > rects( entityList.size() );
+            for ( size_t i = 0; i < entityList.size(); ++i ) {
+                rects[ i ].id = static_cast< int >( i );
+                rects[ i ].w = entityList[ i ].entityImage.Width() + 3; // add a bit of padding, for filtering purposes
+                rects[ i ].h = entityList[ i ].entityImage.Height() + 3;
+                cout << "Adding sprite " << i << " with size " << entityList[ i ].entityImage.Width() << " by " << entityList[ i ].entityImage.Height() << endl;
+            }
+
+            if ( stbrp_pack_rects( &ctx, rects.data(), rects.size() ) ) {
+            	cout << "finished stbrp_pack_rects" << endl;
+                atlasImage.ClearTo( color_4U( { 0, 0, 0, 0 } ) );
+                entityRegions.clear();
+				cout << "copying data to atlas...";
+                for ( const auto &rect : rects ) {
+                    if ( rect.was_packed ) {
+                        entityRegions.push_back( { uint32_t( rect.x ), uint32_t( rect.y ), uint32_t( rect.w ), uint32_t( rect.h ) } );
+                        for ( uint32_t y = 0; y < rect.h; ++y ) {
+                            for ( uint32_t x = 0; x < rect.w; ++x ) {
+                                entityList[ rect.id ].atlasIndex = rect.id;
+                                auto color = entityList[ rect.id ].entityImage.GetAtXY( x, y );
+                                atlasImage.SetAtXY( rect.x + x, rect.y + y, color );
+                            }
+                        }
+                    }
+                }
+            	cout << " uploading to GPU...";
+                UploadToGPU();
+            	cout << " done." << endl;
+                break;
+            }
+
+            currentAtlasDim *= 2;
+            ResizeAtlas();
+        }
+
+        // create the SSBO which allows the shader to use the atlas
+        CreateOrUpdateSSBO();
+
+        cout << "Atlas Creation took " << float( std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::steady_clock::now() - tStart ).count() / 1000.0f ) << " ms" << endl;
+    }
+};
+#endif
