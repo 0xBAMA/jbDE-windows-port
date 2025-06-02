@@ -261,12 +261,8 @@ public:
 		// cout << "Atlas conditional update finished in " << Tock() / 1000.0f << " seconds" << endl << endl;
 	}
 
-	void ReportFinishedWithUpdate() { ZoneScoped; cout << "Finished with Update()" << endl; }
-	void ReportStartingRender() { ZoneScoped; cout << "Starting Render()" << endl; }
-
 	void OnRender () {
 		ZoneScoped;
-		// ReportStartingRender();
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
