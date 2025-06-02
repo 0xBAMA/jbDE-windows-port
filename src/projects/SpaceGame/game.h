@@ -265,7 +265,10 @@ struct entity {
 		// this allows for ongoing update of the model
 	Image_4U entityImage;
 		// note that updates will require that you revert to the base model, so any time this updates, you need to fetch the base image for your ship from the universe controller
-	string baseEntityImageLabel; // and this should come in during object construction
+	int baseEntityImage; // and this should come in during object construction
+
+	// I have an atlas index... I got it during atlas creation
+	int atlasIndex = -1;
 
 	// so that e.g. ships can query what other objects are in the sector
 	universeController *universe = nullptr;
@@ -275,18 +278,14 @@ struct entity {
 	vec2 scale = vec2( 1.0f, 0.618f );
 	float rotation = 0.0f;
 
-	// kept in the third coordinate of the texcoord - we need to know this when we create the entity
-		// this indexes into SSBO with atlased texture info (1D index -> texture info)
-	int textureIndex = -1;
-
 	// constructor for entity
 	entity () = default;
-	entity ( int type, vec2 location, float rotation, universeController *universe, vec2 scale = vec2 ( 1.0f ) )
-		: type ( type ), position ( location ), rotation ( rotation ), universe ( universe ), scale ( scale ) {}
+	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 0 );
 
 	bboxData getBBoxPoints () const {
+		ZoneScoped;
 		// initial points
-		bboxData points( textureIndex );
+		bboxData points( atlasIndex );
 
 		// scaling the bbox - somewhat specialized... smaller ships are taller, is the plan for handling occlusion
 		for ( auto& p : points.points ) {
@@ -331,9 +330,10 @@ public:
 	// a list of images of the ships, for use on the CPU
 	vector < Image_4U > entitySprites;
 	void LoadSprites () {
+		ZoneScoped;
+		entitySprites.emplace_back( "../src/projects/SpaceGame/station1.png" );	// space station
 		entitySprites.emplace_back( "../src/projects/SpaceGame/ship1.png" );		// medium ship
 		entitySprites.emplace_back( "../src/projects/SpaceGame/ship2.png" );		// larger ship
-		entitySprites.emplace_back( "../src/projects/SpaceGame/station1.png" );	// space station
 		entitySprites.emplace_back( "../src/projects/SpaceGame/asteroid1.png" );	// asteroid
 	}
 
@@ -383,9 +383,9 @@ public:
 
 	void spawnSector () {
 		// Spawn station at the center of the sector
-		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ) );
+		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ), 0 );
 
-		rngi countGenerator( 0, 3 );
+		rngi countGenerator( 1, 5 );
 		const int numFriends = countGenerator();
 		const int numFoes = countGenerator();
 		const int numAsteroids = countGenerator() * 2 + 5;
@@ -398,7 +398,7 @@ public:
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 0.3f ) );
+			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 0.3f ), 1 );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -406,16 +406,19 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 0.2f ) );
+			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 0.2f ), 2 );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 0.3f ) );
+			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 0.3f ), 3 );
 		}
 	}
 
+	bool entityListDirty = true;
+
 	void handleSectorChange ( ivec2 newSector ) {
+		ZoneScoped;
 		if ( newSector != sectorID ) {
 			// sector change
 			clearSector();
