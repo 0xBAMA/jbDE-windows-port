@@ -198,6 +198,7 @@ struct inputHandler_t {
 
 	// update function
 	void update () {
+		ZoneScoped;
 		// increment the ring buffer index, current becomes previous
 		incrementBufferIdx();
 

@@ -810,6 +810,7 @@ struct terminal_t {
 
 	// handle input, etc
 	void update ( inputHandler_t &currentInputState ) {
+		ZoneScoped;
 
 		// only want to handle this stuff if the terminal is active...
 		if ( active ) {

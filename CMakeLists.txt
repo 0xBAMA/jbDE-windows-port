@@ -64,11 +64,13 @@ target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/SDL3.
 target_link_libraries( imgui PRIVATE sdl3 gl )
 
 # Tracy Profiler
-# option( TRACY_ENABLE "" ON )
-# option( TRACY_ON_DEMAND "" ON )
-# add_subdirectory( src/utils/tracy )
+option( TRACY_ENABLE "" ON )
+option( TRACY_GUI "" ON )
+option( TRACY_ON_DEMAND "" ON )
+add_subdirectory( src/utils/tracy )
+add_subdirectory( src/utils/tracy/profiler )
 # todo: adding profiler
-# add_library( Tracy src/utils/tracy/public/TracyClient.cpp )
+add_library( Tracy src/utils/tracy/public/TracyClient.cpp )
 
 # FFTW3 FFT library
 add_subdirectory( ${PROJECT_SOURCE_DIR}/src/utils/fftw-3.3.10 )
@@ -133,7 +135,7 @@ target_link_libraries(
 	FastNoise
 	fftw3
 	Perlin
-	# Tracy::TracyClient
+	Tracy::TracyClient
 	TinyOBJLoader
 	LodePNG
 )
@@ -177,6 +179,7 @@ target_link_libraries( Demo
 # =================================================================================================
 add_executable( SpaceGame
 	src/projects/SpaceGame/main.cc
+	src/projects/SpaceGame/game.cc
 )
 
 target_link_libraries( SpaceGame
