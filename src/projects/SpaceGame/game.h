@@ -463,13 +463,56 @@ public:
 	}
 
 	void updateBVH () {
+		ZoneScoped;
 		// get the bounding box information from the entities
-		vector< tinybvh::bvhvec4 > triangleDataNoTexcoords;
-		vector< vec3 > triangleDataWithTexcoords;
+		// triangleDataNoTexcoords.reserve( 36 * entityList.size() );
+		// triangleDataWithTexcoords.reserve( 2 * 36 * entityList.size() );
 
-		triangleDataNoTexcoords.reserve( 36 * entityList.size() );
-		triangleDataWithTexcoords.reserve( 2 * 36 * entityList.size() );
+		uint32_t numTriangles = BuildTriangleList();
 
+		/*
+		// Tick();
+		const int numTriangles = triangleDataNoTexcoords.size() / 3;
+		entityBVH.BuildHQ( &triangleDataNoTexcoords[ 0 ], triangleDataNoTexcoords.size() / 3 );
+		// float msTakenBVH = Tock();
+		// cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
+
+		// Tick();
+		uint32_t totalBytes = 0;
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
+		totalBytes += entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 );
+		// cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
+		totalBytes += entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 );
+		// cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, numTriangles * sizeof( vec4 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
+		totalBytes += numTriangles * sizeof( vec4 );
+		// cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
+
+		// float msTakenBufferBVH = Tock();
+		// cout << endl << GetWithThousandsSeparator( totalBytes ) << " bytes of data for the BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
+		 */
+
+		BuildBVH( entityBVH, &triangleDataNoTexcoords[ 0 ], numTriangles );
+
+		BufferUpdate( cwbvhNodesDataBuffer, 0, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data );
+		BufferUpdate( cwbvhTrisDataBuffer, 1, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris );
+		BufferUpdate( triangleDataBuffer, 2, numTriangles * sizeof( vec4 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ] );
+	}
+
+	uint32_t BuildTriangleList () {
+		ZoneScoped;
+
+		uint32_t pushIndex = 0;
+		uint32_t numTriangles = 0;
 		for ( auto& e : entityList ) {
 			bboxData bbox = e.getBBoxPoints();
 
@@ -481,36 +524,25 @@ public:
 					p.x = bbox.points[ idx + j ].x;
 					p.y = bbox.points[ idx + j ].y;
 					p.z = bbox.points[ idx + j ].z;
-					triangleDataNoTexcoords.push_back( p );
-					triangleDataWithTexcoords.push_back( bbox.points[ idx + j ] );
-					triangleDataWithTexcoords.push_back( bbox.texcoords[ idx + j ] );
+
+					// put it into the arrays...
+					triangleDataNoTexcoords[ pushIndex ] = p;
+					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xy, e.atlasIndex, 0.0f );
+					pushIndex++;
+
+					// triangleDataNoTexcoords.push_back( p );
+					// triangleDataWithTexcoords.push_back( vec4( bbox.texcoords[ idx + j ].xy, e.atlasIndex, 0.0f ) );
 				}
+				numTriangles++;
 			}
 		}
+		return numTriangles;
+	}
 
-		// Tick();
-		entityBVH.BuildHQ( &triangleDataNoTexcoords[ 0 ], triangleDataNoTexcoords.size() / 3 );
-		// float msTakenBVH = Tock();
-		// cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
-
-		// Tick();
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
-		// cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
-
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
-		// cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
-
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, triangleDataWithTexcoords.size() * sizeof( vec3 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
-		// cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
-
-		// float msTakenBufferBVH = Tock();
-		// cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
+	void BuildBVH ( tinybvh::BVH8_CWBVH &bvh, tinybvh::bvhvec4 *data, uint32_t triangleCount ) {
+		ZoneScoped;
+		bvh.BuildHQ( data, triangleCount );
+	}
 	}
 
 	void update () {
