@@ -1,5 +1,6 @@
 #include "../../engine/engine.h"
 
+#define STB_RECT_PACK_IMPLEMENTATION
 #include "game.h"
 
 class SpaceGame final : public engineBase {
