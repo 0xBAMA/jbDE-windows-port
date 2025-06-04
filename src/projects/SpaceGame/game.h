@@ -296,8 +296,8 @@ struct entity {
 
 		// scaling the bbox - somewhat specialized... smaller ships are taller, is the plan for handling occlusion
 		for ( auto& p : points.points ) {
-			// apply scaling
-			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
+			// apply scaling, small offset to avoid z fighting
+			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y + 0.001f * atlasIndex ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply rotation
 			p = ( glm::angleAxis( -rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
