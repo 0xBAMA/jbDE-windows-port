@@ -48,6 +48,8 @@ public:
 		config->windowFlags |= SDL_WINDOW_OPENGL;
 		config->windowFlags |= SDL_WINDOW_HIDDEN;
 
+		SDL_ShowCursor();
+
 		// SDL3 does not do window placement during window creation, just sizing
 		// window = SDL_CreateWindow( config->windowTitle.c_str(), config->windowOffset.x + config->startOnScreen * displayMode.w,
 			// config->windowOffset.y, config->width, config->height, config->windowFlags );
