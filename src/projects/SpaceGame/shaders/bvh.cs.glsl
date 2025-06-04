@@ -26,7 +26,7 @@ struct atlasEntry {
 	uvec2 basePoint;
 	uvec2 size;
 };
-layout( binding = 3, std430 ) readonly buffer atlasOffsets{ atlasEntry atlasEntries[]; };
+layout( binding = 4, std430 ) readonly buffer atlasOffsets{ atlasEntry atlasEntries[]; };
 layout( binding = 3 ) uniform sampler2D atlasTexture;
 
 // this needs to go into the custom leaf test, for alpha testing
@@ -67,15 +67,17 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 
 	// we need to interpolate the texcoord from the vertex data...
 	const uint baseIndex = 3 * index;
-	vec4 t0 = triangleData[ baseIndex + 0 ];
-	vec4 t1 = triangleData[ baseIndex + 1 ];
-	vec4 t2 = triangleData[ baseIndex + 2 ];
+	vec4 t0 = triangleData[ baseIndex + 1 ];
+	vec4 t1 = triangleData[ baseIndex + 2 ];
+	vec4 t2 = triangleData[ baseIndex + 0 ];
 	// using the barycentrics
 	vec2 sampleLocation = t0.xy * uv.x + t1.xy * uv.y + t2.xy * ( 1.0f - uv.x - uv.y );
 
 	// and then perform the sample
-	vec4 textureSample = sampleSelectedTexture( int( t0.z ), sampleLocation );
+	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.z ), sampleLocation ) );
+	// vec4 textureSample = vec4( 1.0f, sampleLocation, 1.0f );
 	if ( textureSample.a != 0.0f ) {
+		/*
 		// blending the blended result over the texture sample, it's a little weird but it's how the traversal will encounter them
 		vec4 previousColor = textureSample;
 		previousColor.rgb = rgb_to_srgb( previousColor.rgb );
@@ -87,6 +89,9 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 		previousColor.rgb /= previousColor.a;
 
 		blendedResult.rgb = srgb_to_rgb( previousColor.rgb );
+		blendedResult.a = textureSample.a;
+		*/
+		blendedResult = textureSample;
 		return true;
 	} else {
 		return false;
@@ -119,13 +124,15 @@ uniform float globalZoom;
 void main () {
 	// screen UV
 	vec2 iS = imageSize( accumulatorTexture ).xy;
+	vec4 color = vec4( 0.0f );
 
 	vec4 blendedResultSum = vec4( 0.0f );
-	int countHits = 0;
-	const int AAf = 4;
+	float countHits = 0;
+	const int AAf = 3;
 	for ( int AAx = 0; AAx < AAf; AAx++ ) {
 		for ( int AAy = 0; AAy < AAf; AAy++ ) {
 			vec2 centeredUV = ( gl_GlobalInvocationID.xy + vec2( blueNoiseRef( ivec2( AAx, AAy ) ).xy ) ) / iS - vec2( 0.5f );
+			// vec2 centeredUV = ( gl_GlobalInvocationID.xy + vec2( blueNoiseRef( ivec2( gl_GlobalInvocationID.xy ) ).xy ) ) / iS - vec2( 0.5f );
 			centeredUV.x *= ( iS.x / iS.y );
 			centeredUV.y *= -1.0f;
 
@@ -134,21 +141,33 @@ void main () {
 
 			// traverse the BVH from above, rays pointing down the z axis
 			// traversal will eventually do a custom leaf test, looking at the atlas texture for an alpha value
-			if ( rayTrace( vec3( centeredUV, 100.0f ), vec3( 0.0f, 0.0f, -1.0f ) ).x < 1e30f ) {
+			vec4 result = rayTrace( vec3( centeredUV, 1001.0f ), vec3( 0.0f, 0.0f, -1.0f ) );
+			if ( result.x < 1e30f ) {
 				// get a sample of the blended color...
-				blendedResultSum.a += blendedResult.a;
-				blendedResultSum.rgb += srgb_to_rgb( blendedResult.rgb );
-				countHits++;
+				// blendedResultSum.a += blendedResult.a;
+				// blendedResultSum.rgb += srgb_to_rgb( blendedResult.rgb );
+
+				// blendedResultSum.a += 1.0f;
+				// blendedResultSum.rgb += vec3( 1.0f, 0.0f, 0.0f );
+				// blendedResultSum.rgb += rgb_to_srgb( vec3( result.yz, 1.0f - result.y - result.z ) );
+				// countHits++;
+
+				// if ( blendedResult.a > 0.0f ) {
+					// blendedResultSum += blendedResult;
+					// countHits += blendedResult.a;
+				// }
+
+				color += blendedResult;
+				countHits += 1.0f;
 			}
 		}
 	}
 
-	vec4 color = vec4( 0.0f );
-	if ( countHits != 0 ) {
+	if ( countHits > 0.2f ) {
 		// use the color data from the traversal...
 			// it might need to do a small amount of alpha blending with 1 > alpha > 0, so you avoid having to do it twice by doing it there
 
-		color = blendedResultSum / float( countHits );
+		color = color / countHits;
 	}
 
 	if ( color.a != 0.0f ) {

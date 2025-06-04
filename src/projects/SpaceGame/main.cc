@@ -62,6 +62,11 @@ public:
 			opts.dataType = GL_R32UI;
 			opts.initialData = nullptr;
 			textureManager.Add( "Line Draw Buffer", opts );
+
+			SDL_ShowCursor();
+
+			// todo: console commands for setting position, etc on player controller
+
 		}
 	}
 
@@ -172,6 +177,8 @@ public:
 			vec2 v = controller.ship.GetVelocityVector() * 20.0f;
 			vec2 p = controller.ship.GetPositionVector();
 			glUniform2f( glGetUniformLocation( shader, "centerPoint" ), p.x - v.x, p.y - v.y );
+
+			textureManager.BindTexForShader( "AtlasTexture", "atlasTexture" , shader, 3 );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );

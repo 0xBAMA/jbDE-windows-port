@@ -240,7 +240,7 @@ struct bboxData {
 		// create the initial data for points and texcoords
 		for ( int i = 0; i < numPointsBBox; i++ ) {
 			points[ i ] = CubeVert( i );
-			texcoords[ i ] = glm::clamp( CubeVert( i ), 0.0f, 1.0f );
+			texcoords[ i ] = glm::clamp( CubeVert( i ), 0.0f, 1.0f ).yxz();
 			texcoords[ i ].z = float( texID );
 		}
 	}
@@ -282,12 +282,12 @@ struct entity {
 
 	// for the display primitive
 	vec2 position = vec2( 0.0f );
-	vec2 scale = vec2( 1.0f, 0.618f );
+	vec2 scale = vec2( 1.0f );
 	float rotation = 0.0f;
 
 	// constructor for entity
 	entity () = default;
-	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 0 );
+	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 1 );
 
 	bboxData getBBoxPoints () const {
 		ZoneScoped;
@@ -297,7 +297,7 @@ struct entity {
 		// scaling the bbox - somewhat specialized... smaller ships are taller, is the plan for handling occlusion
 		for ( auto& p : points.points ) {
 			// apply scaling
-			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y ) / 2.0f ), 0.0f, 100.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
+			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply rotation
 			p = ( glm::angleAxis( -rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
@@ -389,9 +389,14 @@ public:
 
 	void clearSector () {
 		ZoneScoped;
+		// put the player in the first element, before populating the sector
 		entityList.resize( 1 );
 		entityList[ 0 ].position = ship.position;
 		entityList[ 0 ].rotation = ship.angle;
+		entityList[ 0 ].entityImage = entitySprites[ 1 ];
+		// entityList[ 0 ].scale = vec2( entitySprites[ 0 ].Width(), entitySprites[ 0 ].Height() );
+		entityList[ 0 ].scale = vec2( 1.0f );
+		entityList[ 0 ].type = OBJECT;
 	}
 
 	void spawnSector () {
@@ -400,22 +405,22 @@ public:
 		entityListDirty = true;
 
 		// Spawn station at the center of the sector
-		entityList.emplace_back( OBJECT, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 2.0f ), 0 );
+		entityList.emplace_back( OBJECT, vec2 ( 0.5001f, 0.5001f ), 0.0f, this, vec2 ( 3.0f ), 0 );
 
-		rngi countGenerator( 1, 5 );
+		rngi countGenerator( 1, 10 );
 		const int numFriends = countGenerator();
 		const int numFoes = countGenerator();
 		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
-		rng friendPosition ( 0.4f, 0.6f ), rotation ( 0.0f, tau );
+		rng friendPosition ( 0.45f, 0.55f ), rotation ( 0.0f, tau );
 		rngi foeEdgeSelector ( 0, 3 );
 		rng foeEdgePosition ( 0.0f, 1.0f );
 		rng asteroidPosition ( 0.0f, 1.0f );
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 0.3f ), 1 );
+			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1 );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -423,12 +428,12 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 0.2f ), 2 );
+			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2 );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 0.3f ), 3 );
+			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3 );
 		}
 	}
 
@@ -438,13 +443,13 @@ public:
 		ZoneScoped;
 		if ( newSector != sectorID ) {
 			// sector change
-			clearSector();
 			logHighPriority( "Leaving Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
 			sectorID = newSector;
 			// no sector to clear - this is the state on program startup
 		}
 		logHighPriority( "Entering Sector " + to_string( sectorID.x ) + ", " + to_string( sectorID.y ) );
-		spawnSector();
+		clearSector(); // zero out list, create entry for player
+		spawnSector(); // create entries for the rest of the entities in the sector
 	}
 
 	void init () {
@@ -477,7 +482,7 @@ public:
 
 		// initial buffer allocation
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, triangleDataBuffer );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 4 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
 
 		// and the buffer for the atlas
@@ -486,7 +491,7 @@ public:
 
 		// buffer allocation
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, atlasTextureSSBO );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, atlasTextureSSBO );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, atlasTextureSSBO );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * sizeof( float ), nullptr, GL_DYNAMIC_DRAW );
 	}
 
@@ -560,7 +565,7 @@ public:
 
 					// put it into the arrays...
 					triangleDataNoTexcoords[ pushIndex ] = p;
-					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xy, e.atlasIndex, 0.0f );
+					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xyz, 0.0f );
 					pushIndex++;
 
 					// triangleDataNoTexcoords.push_back( p );
@@ -677,13 +682,13 @@ public:
 		p.y -= 8;
 		tinyTextDrawString( "---------------", p );
 		p.y -= 8;
-		tinyTextDrawString( "[HDG] " + fixedPointNumberStringF( glm::degrees( ship.angle ), 3, 4 ) + "\'", p );
+		tinyTextDrawString( " HDG  " + fixedPointNumberStringF( glm::degrees( ship.angle ), 3, 4 ) + "\'", p );
 		p.y -= 8;
-		tinyTextDrawString( "[SPD] " + fixedPointNumberStringF( ship.velocity, 3, 4 ) + "m/s", p );
+		tinyTextDrawString( " SPD  " + fixedPointNumberStringF( ship.velocity, 3, 4 ) + "m/s", p );
 		p.y -= 8;
 		tinyTextDrawString( "---------------", p );
 		p.y -= 8;
-		tinyTextDrawString( "[POS] X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
+		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
 		p.y -= 8;
 		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
 	}
@@ -753,7 +758,7 @@ public:
         // Update SSBO data used to reference the atlas
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
         glBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, entityRegions.size() * sizeof( uint32_t ) * 4, entityRegions.data() );
-        glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, ssbo );
+        glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, ssbo );
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
     }
 
