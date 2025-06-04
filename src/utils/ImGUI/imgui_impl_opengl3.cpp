@@ -498,7 +498,6 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
         return;
 
     ImGui_ImplOpenGL3_Data* bd = ImGui_ImplOpenGL3_GetBackendData();
-    bd->UseBufferSubData = true;
 
     // Backup GL state
     GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
