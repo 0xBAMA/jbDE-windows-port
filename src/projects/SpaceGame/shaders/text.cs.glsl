@@ -29,7 +29,7 @@ void main () {
 	// which glyph ID/character color to pull dataTexture
 	ivec2 bin = ivec2( adjusted.x / 4, adjusted.y / 7 );
 	// where to reference the fontAtlas' glyph ( uv ), for the given character ID
-	ivec2 loc = ivec2( mod( adjusted.x - 1, 4 ), mod( adjusted.y - 1, 7 ) );
+	ivec2 loc = ivec2( mod( adjusted.x, 4 ), adjusted.y );
 
 	if ( bin.x >= 0 && bin.x < numChars && bin.y == 0 && loc.x < 3 && loc.x >= 0 && loc.y < 7 && loc.y >= 0 ) {
 		// where to read from on the font atlas, based on the specified char
