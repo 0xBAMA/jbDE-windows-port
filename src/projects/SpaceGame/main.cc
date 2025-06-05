@@ -184,18 +184,15 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		if ( 0 ) {
+		{
 			scopedTimer Start( "Line Drawing" );
-			// testing the line drawing
-			rngi pixelLocationGenerationX = rngi( 0, config.width / 8 );
-			rngi pixelLocationGenerationY = rngi( 0, config.height );
-			rngi passIndexGen = rngi( 0, 7 );
-			for ( int i = 0; i < 100; i++ ) {
-				// add some test lines to controller.lines
-				int pickedPass = passIndexGen();
-				controller.lines.AddLine( pickedPass, ivec2( pixelLocationGenerationX() + pickedPass * ( config.width / 8 ), pixelLocationGenerationY() ), ivec2( pixelLocationGenerationX() + pickedPass * ( config.width / 8 ), pixelLocationGenerationY() ) );
-			}
-			controller.lines.Update();
+
+			// we want to use this to draw some elements of the UI...
+				// this happens in 8 layers... each is drawn in a distinct color
+
+			// controller.lines.AddLine();
+
+			cotroller.lines.Update();
 		}
 
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping

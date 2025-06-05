@@ -502,45 +502,8 @@ public:
 
 	void updateBVH () {
 		ZoneScoped;
-		// get the bounding box information from the entities
-		// triangleDataNoTexcoords.reserve( 36 * entityList.size() );
-		// triangleDataWithTexcoords.reserve( 2 * 36 * entityList.size() );
-
 		uint32_t numTriangles = BuildTriangleList();
-
-		/*
-		// Tick();
-		const int numTriangles = triangleDataNoTexcoords.size() / 3;
-		entityBVH.BuildHQ( &triangleDataNoTexcoords[ 0 ], triangleDataNoTexcoords.size() / 3 );
-		// float msTakenBVH = Tock();
-		// cout << endl << "BVH built in " << msTakenBVH / 1000.0f << "s\n";
-
-		// Tick();
-		uint32_t totalBytes = 0;
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data, GL_DYNAMIC_COPY );
-		totalBytes += entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 );
-		// cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
-
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris, GL_DYNAMIC_COPY );
-		totalBytes += entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 );
-		// cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
-
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, numTriangles * sizeof( vec4 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ], GL_DYNAMIC_COPY );
-		totalBytes += numTriangles * sizeof( vec4 );
-		// cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleDataWithTexcoords.size() * sizeof( vec3 ) ) << " bytes" << endl;
-
-		// float msTakenBufferBVH = Tock();
-		// cout << endl << GetWithThousandsSeparator( totalBytes ) << " bytes of data for the BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
-		 */
-
 		BuildBVH( entityBVH, &triangleDataNoTexcoords[ 0 ], numTriangles );
-
 		BufferUpdate( cwbvhNodesDataBuffer, 0, entityBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Data );
 		BufferUpdate( cwbvhTrisDataBuffer, 1, entityBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) entityBVH.bvh8Tris );
 		BufferUpdate( triangleDataBuffer, 2, numTriangles * sizeof( vec4 ), ( GLvoid* ) &triangleDataWithTexcoords[ 0 ] );
@@ -548,7 +511,6 @@ public:
 
 	uint32_t BuildTriangleList () {
 		ZoneScoped;
-
 		uint32_t pushIndex = 0;
 		uint32_t numTriangles = 0;
 		for ( auto& e : entityList ) {
@@ -567,9 +529,6 @@ public:
 					triangleDataNoTexcoords[ pushIndex ] = p;
 					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xyz, 0.0f );
 					pushIndex++;
-
-					// triangleDataNoTexcoords.push_back( p );
-					// triangleDataWithTexcoords.push_back( vec4( bbox.texcoords[ idx + j ].xy, e.atlasIndex, 0.0f ) );
 				}
 				numTriangles++;
 			}
@@ -618,17 +577,6 @@ public:
 					sin( angle ), cos( angle )
 				) * vec2( velocity, 0.0f );
 		}
-
-	// is there a new entity in play? we need to rebuild the atlas
-		// rebuild atlas + index SSBO
-		// entities leaving, not as important to evict from the atlas
-
-	// because of the way we're using it... we need to update the BVH and upload it to the GPU every frame
-
-	// cleanup work
-		// has the player left the sector? we have work to do
-		// the 
-
 	}
 
 	GLuint drawShader;
@@ -676,7 +624,7 @@ public:
 		p.y -= 8;
 		tinyTextDrawString( " Friends:   " + fixedWidthNumberString( numFriends, 2, ' ' ), p );
 		p.y -= 8;
-		tinyTextDrawString( " Foes:      " + fixedWidthNumberString( numFoes, 2, ' ' ), p );
+		tinyTextDrawString( " Enemies:   " + fixedWidthNumberString( numFoes, 2, ' ' ), p );
 		p.y -= 8;
 		tinyTextDrawString( " Asteroids: " + fixedWidthNumberString( numAsteroids, 2, ' ' ), p );
 		p.y -= 8;
