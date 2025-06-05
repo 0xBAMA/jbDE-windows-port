@@ -414,12 +414,13 @@ public:
 		ZoneScoped;
 		// requires atlas rebuild
 		entityListDirty = true;
+		vec2 sector = vec2( sectorID );
 
 		// chance to spawn station at the center of the sector
 		static rng stationChance( 0.0f, 1.0f );
 		// if ( stationChance() < 0.45f ) {
 		if ( stationChance() < 0.99f ) {
-			entityList.emplace_back( STATION, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0, sectorSize );
+			entityList.emplace_back( STATION, sector + vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0, sectorSize );
 		}
 
 		rngi countGenerator( 1, 10 );
@@ -435,7 +436,7 @@ public:
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1, sectorSize );
+			entityList.emplace_back( FRIEND, sector + vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1, sectorSize );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -443,12 +444,12 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2, sectorSize );
+			entityList.emplace_back( FOE, sector + vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2, sectorSize );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( ASTEROID, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3, sectorSize );
+			entityList.emplace_back( ASTEROID, sector + vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3, sectorSize );
 		}
 	}
 
