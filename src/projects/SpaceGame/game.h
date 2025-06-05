@@ -654,7 +654,7 @@ public:
 	}
 
 	void lineUIDraw () {
-		const vec2 shipPosition = ship.GetVelocityVector() * ship.stats.maxThrustDisplacement * ( 1.0f / globalZoom ) * ( 720.0f  / 480.0f );
+		const vec2 shipPosition = ship.GetVelocityVector() * ( ship.velocity / ship.stats.maxSpeedForward ) * ship.stats.maxThrustDisplacement * ( 0.0618f );
 
 		vector< vec2 > stations;
 		vector< vec2 > enemies;
@@ -687,7 +687,8 @@ public:
 		if ( stations.size() > 0 ) {
 			// max one station per sector, draw the line
 			vec2 dirStation = normalize( stations[ 0 ] - ship.position );
-			lines.AddLine( 0, screenPos( shipPosition + 0.1f * dirStation ), screenPos( shipPosition + 0.2f * dirStation ) );
+			lines.AddLine( 0, screenPos( shipPosition + 0.15f * dirStation ), screenPos( shipPosition + 0.2f * dirStation ) );
+			tinyTextDrawString( " STATION", screenPos( shipPosition + 0.25f * dirStation ) );
 		}
 
 		// if there are enemies in the sector, point to the nearest one
@@ -695,7 +696,10 @@ public:
 			// sort by distance, take the closest
 			std::sort( enemies.begin(), enemies.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
 			vec2 dirEnemy = normalize( enemies[ 0 ] - ship.position );
-			lines.AddLine( 1, screenPos( shipPosition + 0.1f * dirEnemy ), screenPos( shipPosition + 0.2f * dirEnemy ) );
+
+			// can solve for direction with atan, then draw a little caret shape rotated to match - I think I prefer that to the straight lines
+			lines.AddLine( 1, screenPos( shipPosition + 0.15f * dirEnemy ), screenPos( shipPosition + 0.2f * dirEnemy ) );
+			tinyTextDrawString( " ENEMY", screenPos( shipPosition + 0.25f * dirEnemy ) );
 		}
 
 		// if the player has a target locked, point to it
@@ -709,7 +713,8 @@ public:
 			// sort by distance, take the closest
 			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
 			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] );
-			lines.AddLine( 4, screenPos( shipPosition + 0.1f * dirSectorBoundary ), screenPos( shipPosition + 0.2f * dirSectorBoundary ) );
+			lines.AddLine( 4, screenPos( shipPosition + 0.15f * dirSectorBoundary ), screenPos( shipPosition + 0.2f * dirSectorBoundary ) );
+			tinyTextDrawString( " SECTOR BOUNDARY", screenPos( shipPosition + 0.25f * dirSectorBoundary ) );
 		}
 
 		// if the player has a mining laser equipped, point to the nearest asteroid
@@ -719,7 +724,7 @@ public:
 			// bounding boxes... involves a bit of plumbing
 			// thrust vectors from ship's engine locations
 			// displacement from center...
-		lines.AddLine( 7, screenPos( vec2( 0.0f ) ), screenPos( shipPosition ) );
+		// lines.AddLine( 7, screenPos( vec2( 0.0f ) ), screenPos( shipPosition ) );
 
 		// to add a line:
 		// controller.lines.AddLine( layer, p1, p2 );
@@ -774,11 +779,13 @@ public:
 		ZoneScoped;
         static GLuint ssbo = 0;
 
+    	/*
         cout << "We have some regions:" << endl;
         for ( const auto& r : entityRegions ) {
             cout << "  x:" << r[ 0 ] << " y:" << r[ 1 ] << " w:" << r[ 2 ] << " h:" << r[ 3 ] << endl;
         }
         cout << endl;
+    	*/
 
         // Create SSBO if it does not exist
         if ( !ssbo ) {
