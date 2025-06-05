@@ -194,6 +194,11 @@ public:
 			controller.lineUIDraw();
 		}
 
+		{
+			scopedTimer Start( "Tiny Text Drawing" );
+			controller.tinyTextDrawing( textureManager );
+		}
+
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
 			scopedTimer Start( "Postprocess" );
 			bindSets[ "Postprocessing" ].apply();
@@ -201,11 +206,6 @@ public:
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-		}
-
-		{
-			scopedTimer Start( "Tiny Text Drawing" );
-			controller.tinyTextDrawing( textureManager );
 		}
 
 		{

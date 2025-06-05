@@ -3,7 +3,7 @@ layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 // layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
-layout( binding = 1, rgba8ui ) uniform uimage2D writeTarget;
+layout( binding = 1, rgba16f ) uniform image2D writeTarget;
 layout( binding = 2, rgba8ui ) readonly uniform uimage2D fontAtlas;
 
 // where to start drawing from (pixel location of bottom left corner of first glyph)
@@ -32,15 +32,18 @@ void main () {
 	ivec2 loc = ivec2( mod( adjusted.x, 4 ), adjusted.y );
 
 	if ( bin.x >= 0 && bin.x < numChars && bin.y == 0 && loc.x < 3 && loc.x >= 0 && loc.y < 7 && loc.y >= 0 ) {
+		// flip glyphs
+		loc.y = 6 - loc.y;
+
 		// where to read from on the font atlas, based on the specified char
 		ivec2 atlasReadLocation = getCurrentGlyphBase( int( text[ bin.x ] ) ) + loc;
 
 		// sample the atlas texture to get the sample on the glyph for this pixel
-		uvec4 color = imageLoad( fontAtlas, ivec2( mod( atlasReadLocation, ivec2( imageSize( fontAtlas ).xy ) ) ) );
+		uvec4 color = imageLoad( fontAtlas, atlasReadLocation );
 
 		// if nonzero alpha, write to the write target
 		if ( color.r != 0 ) {
-			imageStore( writeTarget, writeLocation, uvec4( 168, 168, 168, 255 ) );
+			imageStore( writeTarget, writeLocation, vec4( 168, 168, 168, 255 ) / 255.0f );
 		}
 
 		// imageStore( writeTarget, writeLocation, uvec4( 255 * ( loc.x / 3.0f ), 255 * ( loc.y / 7.0f ), color.r, 1.0f ) );
