@@ -602,8 +602,8 @@ public:
 		glUniform1ui( glGetUniformLocation( shader, "numChars" ), stringBytes.size() );
 		glUniform2i( glGetUniformLocation( shader, "basePointOffset" ), basePoint.x, basePoint.y );
 
-		textureManager->BindImageForShader( "Display Texture", "writeTarget", shader, 1 );
-		glBindImageTexture( 1, textureManager->Get( "Display Texture" ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8UI );
+		textureManager->BindImageForShader( "Accumulator", "writeTarget", shader, 1 );
+		glBindImageTexture( 1, textureManager->Get( "Accumulator" ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F );
 		textureManager->BindImageForShader( "TinyFont", "fontAtlas", shader, 2 );
 
 		// it'll make sense to do this for only the affected pixels, rather than the whole buffer, that's not super important right now
