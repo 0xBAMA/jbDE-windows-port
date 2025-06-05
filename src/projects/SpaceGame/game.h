@@ -101,20 +101,20 @@ inline void DrawInfoLog ( layerManager &textRenderer, textureManager_t &textureM
 struct spaceshipStats {
 public:
 	// maximum speeds ( forward and back )
-	float maxSpeedForward = 0.5f;
-	float maxSpeedBackward = 0.05f;
+	float maxSpeedForward = 1.0f;
+	float maxSpeedBackward = 0.1f;
 
 	// turn rate
 	float turnRate = 0.003f;
 
 	// acceleration rate
-	float accelerationRate = 0.0001f;
+	float accelerationRate = 0.0002f;
 
 	// deceleration rate
 	float decelerationRate = 0.00007f;
 
 	// how far from the center can the ship go, at max speed
-	float maxThrustDisplacement = 35.0f;
+	float maxThrustDisplacement = 50.0f;
 
 	// vector of positions of the engines...
 		// this would be pixel locations, that we can translate into worldspace positions...
