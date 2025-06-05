@@ -11,6 +11,8 @@ vec4 blueNoiseRef( ivec2 pos ) {
     return imageLoad( blueNoiseTexture, pos ) / 255.0f;
 }
 
+uniform float globalZoom;
+uniform float sectorSize;
 uniform float time;
 uniform vec2 positionVector;
 
@@ -145,9 +147,12 @@ void main () {
         col = mix( col, vec3( 1.0f, 0.0f, 0.0f ), smoothstep( dCenter, 0.01f, 0.005f ) );
     }
 
-    // debug cross
-    if ( ( abs( gl_GlobalInvocationID.x - iS.x / 2 ) < 3 ) || ( abs( gl_GlobalInvocationID.y - iS.y / 2 ) < 3 ) ) {
-        col.rgb += vec3( 0.1f );
+    // fudged sector borders
+    offset.y = -offset.y;
+    vec2 pTest = 1.0f * ( globalZoom * centeredUV ) + 50.0f * offset;
+    if ( ( pTest.x < ( -sectorSize / 2.0f ) ) || ( pTest.x > ( sectorSize / 2.0f ) )
+        || ( pTest.y < ( -sectorSize / 2.0f ) ) || ( pTest.y > ( sectorSize / 2.0f ) ) ) {
+        col.bg *= 0.25f;
     }
 
     col = srgb_to_rgb( col );

@@ -126,8 +126,9 @@ public:
 			const GLuint shader = shaders[ "Background Draw" ];
 			glUseProgram( shader );
 
-			glUniform1f( glGetUniformLocation( shader, "globalZoom" ), controller.globalZoom );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shader, "globalZoom" ), controller.globalZoom );
+			glUniform1f( glGetUniformLocation( shader, "sectorSize" ), controller.sectorSize );
 
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
