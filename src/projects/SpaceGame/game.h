@@ -792,14 +792,11 @@ public:
         // Create SSBO if it does not exist
         if ( !ssbo ) {
             glGenBuffers( 1, &ssbo );
-            glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
-            glBufferData( GL_SHADER_STORAGE_BUFFER, entityRegions.size() * sizeof( uint32_t ) * 4, nullptr, GL_DYNAMIC_DRAW );
-            glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
         }
 
         // Update SSBO data used to reference the atlas
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
-        glBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, entityRegions.size() * sizeof( uint32_t ) * 4, entityRegions.data() );
+        glBufferData( GL_SHADER_STORAGE_BUFFER, entityRegions.size() * sizeof( uint32_t ) * 4, entityRegions.data(), GL_DYNAMIC_DRAW );
         glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, ssbo );
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
     }
