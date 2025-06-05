@@ -615,7 +615,7 @@ public:
 		ZoneScoped;
 
 	// sector and ship stats
-		ivec2 p = ivec2( 16, 458 );
+		ivec2 p = ivec2( 16, 16 );
 		// count up number of friends, foes, asteroids
 		int numFriends = 0, numFoes = 0, numAsteroids = 0;
 		for ( auto &entity : entityList ) {
@@ -624,25 +624,25 @@ public:
 			else if ( entity.type == ASTEROID ) numAsteroids++;
 		}
 		tinyTextDrawString( " Sector " + to_string( sectorID.x ) + " , " + to_string( sectorID.y ), p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( "---------------", p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " Friends:   " + fixedWidthNumberString( numFriends, 2, ' ' ), p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " Enemies:   " + fixedWidthNumberString( numFoes, 2, ' ' ), p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " Asteroids: " + fixedWidthNumberString( numAsteroids, 2, ' ' ), p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( "---------------", p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " HDG  " + fixedPointNumberStringF( glm::degrees( ship.angle ), 3, 4 ) + "\'", p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " SPD  " + fixedPointNumberStringF( ship.velocity, 3, 4 ) + "m/s", p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( "---------------", p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ) ), 5, ' ' ), p );
-		p.y -= 8;
+		p.y += 8;
 		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ) ), 5, ' ' ), p );
 	}
 
