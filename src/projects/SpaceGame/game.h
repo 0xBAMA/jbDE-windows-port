@@ -806,12 +806,11 @@ public:
 
     void UpdateAtlas ( vector< entity > &entityList ) {
 		ZoneScoped;
+    	logHighPriority( "Atlas Rebuilt" );
         auto tStart = std::chrono::steady_clock::now();
         while ( true ) {
-        	cout << "preparing the atlas" <<  endl;
             nodes.resize( currentAtlasDim );
             stbrp_init_target( &ctx, currentAtlasDim, currentAtlasDim, nodes.data(), currentAtlasDim );
-        	cout << "finished preparing the atlas" << endl;
 
             // treating all sprites uniformly, including the user's model sprite
             std::vector< stbrp_rect > rects( entityList.size() );
@@ -819,14 +818,11 @@ public:
                 rects[ i ].id = static_cast< int >( i );
                 rects[ i ].w = entityList[ i ].entityImage.Width() + 3; // add a bit of padding, for filtering purposes
                 rects[ i ].h = entityList[ i ].entityImage.Height() + 3;
-                cout << "Adding sprite " << i << " with size " << entityList[ i ].entityImage.Width() << " by " << entityList[ i ].entityImage.Height() << endl;
             }
 
             if ( stbrp_pack_rects( &ctx, rects.data(), rects.size() ) ) {
-            	cout << "finished stbrp_pack_rects" << endl;
                 atlasImage.ClearTo( color_4U( { 0, 0, 0, 0 } ) );
                 entityRegions.clear();
-				cout << "copying data to atlas...";
                 for ( const auto &rect : rects ) {
                     if ( rect.was_packed ) {
                         entityRegions.push_back( { uint32_t( rect.x ), uint32_t( rect.y ), uint32_t( rect.w ), uint32_t( rect.h ) } );
@@ -839,9 +835,7 @@ public:
                         }
                     }
                 }
-            	cout << " uploading to GPU...";
                 UploadToGPU();
-            	cout << " done." << endl;
                 break;
             }
 
@@ -852,7 +846,7 @@ public:
         // create the SSBO which allows the shader to use the atlas
         CreateOrUpdateSSBO();
 
-        cout << "Atlas Creation took " << float( std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::steady_clock::now() - tStart ).count() / 1000.0f ) << " ms" << endl;
+        // cout << "Atlas Creation took " << float( std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::steady_clock::now() - tStart ).count() / 1000.0f ) << " ms" << endl;
     }
 };
 #endif
