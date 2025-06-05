@@ -24,6 +24,7 @@ public:
 			// some initialization tasks that have to be done after OpenGL init
 			controller.init();
 			controller.textureManager = &textureManager;
+			controller.ship.sectorSize = controller.sectorSize;
 
 			// make sure that the atlasManager gets created and setup
 			controller.atlas = new( AtlasManager );

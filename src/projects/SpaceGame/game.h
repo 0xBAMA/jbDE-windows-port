@@ -130,6 +130,7 @@ public:
 
 	float angle = 0.0f;
 	float velocity = 0.0001f;
+	float sectorSize = 2000.0f;
 
 	vec2 position = vec2( 0.5f );
 
@@ -160,7 +161,7 @@ public:
 		velocity = glm::clamp( velocity, -stats.maxSpeedBackward, stats.maxSpeedForward );
 
 		// apply velocity times deltaT to get new position - scaled for the 0..1 extents of sector
-		position -= deltaT * GetVelocityVector() / ( 2000.0f );
+		position -= deltaT * GetVelocityVector() / ( sectorSize );
 	}
 
 	void turn ( const float &amount ) {
@@ -173,8 +174,8 @@ public:
 
 	vec2 GetPositionVector() const {
 		return vec2(
-			RangeRemap( position.x - floor( position.x ), 0.0f, 1.0f, -1000.0f, 1000.0f ),
-			RangeRemap( position.y - floor( position.y ), 0.0f, 1.0f, -1000.0f, 1000.0f )
+			RangeRemap( position.x - floor( position.x ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+			RangeRemap( position.y - floor( position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f )
 		);
 	}
 
@@ -290,10 +291,11 @@ struct entity {
 	vec2 position = vec2( 0.0f );
 	vec2 scale = vec2( 1.0f );
 	float rotation = 0.0f;
+	float sectorSize;
 
 	// constructor for entity
 	entity () = default;
-	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 1 );
+	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 1, float sectorSize = 1.0f );
 
 	bboxData getBBoxPoints () const {
 		ZoneScoped;
@@ -310,8 +312,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( position.x, 0.0f, 1.0f, -1000.0f, 1000.0f ),
-				RangeRemap( position.y, 0.0f, 1.0f, -1000.0f, 1000.0f ),
+				RangeRemap( position.x, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+				RangeRemap( position.y, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
@@ -342,6 +344,8 @@ class universeController {
 public:
 	// scaling the uv of the display
 	float globalZoom = 30.0f;
+
+	float sectorSize = 20000.0f;
 
 	// a list of images of the ships, for use on the CPU
 	vector < Image_4U > entitySprites;
@@ -403,6 +407,7 @@ public:
 		// entityList[ 0 ].scale = vec2( entitySprites[ 0 ].Width(), entitySprites[ 0 ].Height() );
 		entityList[ 0 ].scale = vec2( 1.0f );
 		entityList[ 0 ].type = PLAYER;
+		entityList[ 0 ].sectorSize = sectorSize;
 	}
 
 	void spawnSector () {
@@ -414,7 +419,7 @@ public:
 		static rng stationChance( 0.0f, 1.0f );
 		// if ( stationChance() < 0.45f ) {
 		if ( stationChance() < 0.99f ) {
-			entityList.emplace_back( STATION, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0 );
+			entityList.emplace_back( STATION, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0, sectorSize );
 		}
 
 		rngi countGenerator( 1, 10 );
@@ -430,7 +435,7 @@ public:
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1 );
+			entityList.emplace_back( FRIEND, vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1, sectorSize );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -438,12 +443,12 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2 );
+			entityList.emplace_back( FOE, vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2, sectorSize );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( ASTEROID, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3 );
+			entityList.emplace_back( ASTEROID, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3, sectorSize );
 		}
 	}
 
@@ -558,12 +563,6 @@ public:
 	// primary update work
 		ZoneScoped;
 
-		// player position restored from storage format
-		vec2 shipPosition = vec2(
-			RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
-			RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f )
-		);
-
 		// update player location - rounding applied for sector
 		entityList[ 0 ].position = ship.position - glm::floor( ship.position );
 		entityList[ 0 ].rotation = ship.angle;
@@ -642,9 +641,9 @@ public:
 		p.y -= 8;
 		tinyTextDrawString( "---------------", p );
 		p.y -= 8;
-		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -1000.0f, 1000.0f ) ), 5, ' ' ), p );
+		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ) ), 5, ' ' ), p );
 		p.y -= 8;
-		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -1000.0f, 1000.0f ) ), 5, ' ' ), p );
+		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ) ), 5, ' ' ), p );
 	}
 
 	ivec2 worldPosToScreenPos ( vec2 worldXY ) {
