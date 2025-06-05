@@ -123,7 +123,7 @@ void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 	vec2 iS = imageSize( accumulatorTexture ).xy;
-	vec2 centeredUV = writeLoc / iS - vec2( 0.5f );
+	vec2 centeredUV = ( writeLoc + vec2( 0.5f ) ) / iS - vec2( 0.5f );
 	centeredUV.x *= ( iS.x / iS.y );
 	centeredUV.y *= -1.0f;
     // centeredUV *= 1.0f;
@@ -143,6 +143,11 @@ void main () {
     float dCenter = distance( vec2( 0.0f ), centeredUV );
     if ( dCenter < 0.01f ) {
         col = mix( col, vec3( 1.0f, 0.0f, 0.0f ), smoothstep( dCenter, 0.01f, 0.005f ) );
+    }
+
+    // debug cross
+    if ( ( abs( gl_GlobalInvocationID.x - iS.x / 2 ) < 3 ) || ( abs( gl_GlobalInvocationID.y - iS.y / 2 ) < 3 ) ) {
+        col.rgb += vec3( 0.1f );
     }
 
     col = srgb_to_rgb( col );

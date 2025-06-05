@@ -133,7 +133,9 @@ void main () {
 		for ( int AAy = 0; AAy < AAf; AAy++ ) {
 			vec2 centeredUV = ( gl_GlobalInvocationID.xy + vec2( blueNoiseRef( ivec2( AAx, AAy ) ).xy ) ) / iS - vec2( 0.5f );
 			// vec2 centeredUV = ( gl_GlobalInvocationID.xy + vec2( blueNoiseRef( ivec2( gl_GlobalInvocationID.xy ) ).xy ) ) / iS - vec2( 0.5f );
-			centeredUV.x *= ( iS.x / iS.y );
+			// centeredUV.x *= ( iS.x / iS.y );
+			// centeredUV.x *= ( 720.0f / 480.0f );
+			centeredUV.x *= ( 1920.0f / 1080.0f );
 			centeredUV.y *= -1.0f;
 
 			centeredUV *= globalZoom; // we need to know this for the UI, so it has to be a uniform

@@ -113,8 +113,12 @@ public:
 	// deceleration rate
 	float decelerationRate = 0.00007f;
 
-	// size of the ship
-	float size = 0.1f;
+	// how far from the center can the ship go, at max speed
+	float maxThrustDisplacement = 35.0f;
+
+	// vector of positions of the engines...
+		// this would be pixel locations, that we can translate into worldspace positions...
+	// I basically want to use this to draw something (vectors/particles) indicating engine thrust
 };
 
 class spaceshipController {
@@ -156,7 +160,7 @@ public:
 		velocity = glm::clamp( velocity, -stats.maxSpeedBackward, stats.maxSpeedForward );
 
 		// apply velocity times deltaT to get new position - scaled for the 0..1 extents of sector
-		position -= deltaT * GetVelocityVector() / ( 20000.0f );
+		position -= deltaT * GetVelocityVector() / ( 2000.0f );
 	}
 
 	void turn ( const float &amount ) {
@@ -169,8 +173,8 @@ public:
 
 	vec2 GetPositionVector() const {
 		return vec2(
-			RangeRemap( position.x - floor( position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ),
-			RangeRemap( position.y - floor( position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f )
+			RangeRemap( position.x - floor( position.x ), 0.0f, 1.0f, -1000.0f, 1000.0f ),
+			RangeRemap( position.y - floor( position.y ), 0.0f, 1.0f, -1000.0f, 1000.0f )
 		);
 	}
 
@@ -247,9 +251,11 @@ struct bboxData {
 };
 
 // high-level ID
-#define OBJECT	(0)
-#define FRIEND	(1)
-#define FOE		(2)
+#define PLAYER		(0)
+#define ASTEROID	(1)
+#define STATION		(2)
+#define FRIEND		(3)
+#define FOE			(4)
 
 // FSM logic states
 #define INACTIVE	(-1)
@@ -261,7 +267,7 @@ class universeController;
 
 struct entity {
 	// since this is kind of a tagged union... some extra data
-	int type = OBJECT;
+	int type = PLAYER;
 	float shipHeading = 0.0f;
 	float shipSpeed = 0.0f;
 
@@ -304,8 +310,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( position.x, 0.0f, 1.0f, -10000.0f, 10000.0f ),
-				RangeRemap( position.y, 0.0f, 1.0f, -10000.0f, 10000.0f ),
+				RangeRemap( position.x, 0.0f, 1.0f, -1000.0f, 1000.0f ),
+				RangeRemap( position.y, 0.0f, 1.0f, -1000.0f, 1000.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
@@ -315,8 +321,8 @@ struct entity {
 	void update () {
 		ZoneScoped;
 		switch ( type ) {
-		case OBJECT: // objects do nothing
-		break;
+
+			// quite a bit of shit to do here
 
 		case FRIEND: // todo - ai steering logic ( seeking FOE ships )
 		break;
@@ -335,7 +341,7 @@ class AtlasManager;
 class universeController {
 public:
 	// scaling the uv of the display
-	float globalZoom = 20.0f;
+	float globalZoom = 30.0f;
 
 	// a list of images of the ships, for use on the CPU
 	vector < Image_4U > entitySprites;
@@ -396,7 +402,7 @@ public:
 		entityList[ 0 ].entityImage = entitySprites[ 1 ];
 		// entityList[ 0 ].scale = vec2( entitySprites[ 0 ].Width(), entitySprites[ 0 ].Height() );
 		entityList[ 0 ].scale = vec2( 1.0f );
-		entityList[ 0 ].type = OBJECT;
+		entityList[ 0 ].type = PLAYER;
 	}
 
 	void spawnSector () {
@@ -404,8 +410,12 @@ public:
 		// requires atlas rebuild
 		entityListDirty = true;
 
-		// Spawn station at the center of the sector
-		entityList.emplace_back( OBJECT, vec2 ( 0.5001f, 0.5001f ), 0.0f, this, vec2 ( 3.0f ), 0 );
+		// chance to spawn station at the center of the sector
+		static rng stationChance( 0.0f, 1.0f );
+		// if ( stationChance() < 0.45f ) {
+		if ( stationChance() < 0.99f ) {
+			entityList.emplace_back( STATION, vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0 );
+		}
 
 		rngi countGenerator( 1, 10 );
 		const int numFriends = countGenerator();
@@ -433,7 +443,7 @@ public:
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( OBJECT, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3 );
+			entityList.emplace_back( ASTEROID, vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3 );
 		}
 	}
 
@@ -462,10 +472,6 @@ public:
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 2 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
-
-		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_DYNAMIC_COPY );
-		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_STATIC_DRAW );
-		// glBufferData( GL_SHADER_STORAGE_BUFFER, bufferSize, data, GL_STATIC_COPY );
 
 		// for the CWBVH8 triangle data
 		glCreateBuffers( 1, &cwbvhTrisDataBuffer );
@@ -616,7 +622,7 @@ public:
 		for ( auto &entity : entityList ) {
 			if ( entity.type == FRIEND ) numFriends++;
 			else if ( entity.type == FOE ) numFoes++;
-			else if ( entity.type == OBJECT ) numAsteroids++;
+			else if ( entity.type == ASTEROID ) numAsteroids++;
 		}
 		tinyTextDrawString( " Sector " + to_string( sectorID.x ) + " , " + to_string( sectorID.y ), p );
 		p.y -= 8;
@@ -636,11 +642,100 @@ public:
 		p.y -= 8;
 		tinyTextDrawString( "---------------", p );
 		p.y -= 8;
-		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
+		tinyTextDrawString( " POS  X: " + fixedWidthNumberString( int( RangeRemap( ship.position.x - floor( ship.position.x ), 0.0f, 1.0f, -1000.0f, 1000.0f ) ), 5, ' ' ), p );
 		p.y -= 8;
-		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -10000.0f, 10000.0f ) ), 5, ' ' ), p );
+		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -1000.0f, 1000.0f ) ), 5, ' ' ), p );
 	}
 
+	ivec2 worldPosToScreenPos ( vec2 worldXY ) {
+		// helper function for the line UI elements, inverse transform from the shader
+		vec2 v = ship.GetVelocityVector() * ship.stats.maxThrustDisplacement;
+		vec2 p = ship.GetPositionVector();
+		vec2 centerPoint = p - v;
+		// worldXY -= centerPoint;
+		worldXY += v; // tbd... not sure if this is going to work
+		worldXY /= globalZoom;
+		worldXY.y /= -1.0f;
+		worldXY.x /= ( 1920.0f / 1080.0f );
+		worldXY += vec2( 0.5f );
+		return ivec2( worldXY * vec2( 720, 480 ) );
+	}
+
+	void lineUIDraw () {
+		// todo: simplify mapping, direction is all that matters
+		const vec2 shipPosition = ship.position;
+
+		vector< vec2 > stations;
+		vector< vec2 > enemies;
+		vector< vec2 > sectorBoundaries;
+
+		// populate lists...
+		for ( auto& entity : entityList ) {
+			if ( entity.type == STATION ) {
+				stations.push_back( entity.position );
+			} else if ( entity.type == FOE ) {
+				enemies.push_back( entity.position );
+			}
+		}
+
+		if ( glm::fract( ship.position.x ) < 0.01f || glm::fract( ship.position.y ) < 0.01f
+			|| glm::fract( ship.position.x ) > 0.99f || glm::fract( ship.position.y ) > 0.99f ) {
+			// this is dumb, but works
+			if ( glm::fract( ship.position.x ) < 0.01f ) {
+				sectorBoundaries.push_back( vec2( 0.0f, glm::fract( ship.position.y ) ) );
+			} else if ( glm::fract( ship.position.y ) < 0.01f ) {
+				sectorBoundaries.push_back( vec2( glm::fract( ship.position.x ), 0.0f ) );
+			} else if ( glm::fract( ship.position.x ) > 0.99f ) {
+				sectorBoundaries.push_back( vec2( 1.0f, glm::fract( ship.position.y ) ) );
+			} else if ( glm::fract( ship.position.y ) > 0.99f ) {
+				sectorBoundaries.push_back( vec2( glm::fract( ship.position.x ), 1.0f ) );
+			}
+		}
+
+		// we want to express a couple pieces of information on the UI here...
+			// if station is in sector, point to it
+		if ( stations.size() > 0 ) {
+			// max one station per sector, draw the line
+			vec2 dirStation = normalize( stations[ 0 ] - shipPosition );
+			lines.AddLine( 0, worldPosToScreenPos( shipPosition + dirStation ), worldPosToScreenPos( shipPosition + 2.0f * dirStation ) );
+		}
+
+		// if there are enemies in the sector, point to the nearest one
+		if ( enemies.size() > 0 ) {
+			// sort by distance, take the closest
+			std::sort( enemies.begin(), enemies.end(), [ shipPosition ] ( vec2 a, vec2 b ) { return distance( a, shipPosition ) < distance( b, shipPosition ); } );
+			vec2 dirEnemy = normalize( enemies[ 0 ] - shipPosition );
+			lines.AddLine( 1, worldPosToScreenPos( shipPosition + dirEnemy ), worldPosToScreenPos( shipPosition + 2.0f * dirEnemy ) );
+		}
+
+		// if the player has a target locked, point to it
+			// todo
+
+		// if the player has a quest, point towards the quest target
+			// todo
+
+		// if the player is near a sector boundary, point towards it... sector is 0.0f to 1.0f
+		if ( sectorBoundaries.size() > 0 ) {
+			// sort by distance, take the closest
+			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [ shipPosition ] ( vec2 a, vec2 b ) { return distance( a, shipPosition ) < distance( b, shipPosition ); } );
+			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] - shipPosition );
+			lines.AddLine( 4, worldPosToScreenPos( shipPosition + dirSectorBoundary ), worldPosToScreenPos( shipPosition + 2.0f * dirSectorBoundary ) );
+		}
+
+		// if the player has a mining laser equipped, point to the nearest asteroid
+			// todo
+
+		// debug
+			// bounding boxes... involves a bit of plumbing
+			// thrust vectors from ship's engine locations
+			// displacement from center...
+		lines.AddLine( 7, worldPosToScreenPos( shipPosition ), worldPosToScreenPos( shipPosition - ship.GetVelocityVector() * ship.stats.maxThrustDisplacement ) );
+
+		// to add a line:
+		// controller.lines.AddLine( layer, p1, p2 );
+
+		lines.Update();
+	}
 };
 
 class AtlasManager {
