@@ -96,6 +96,13 @@ public:
 		}
 	}
 
+	void RandomizeColors () {
+		palette::PickRandomPalette( true );
+		for ( int i = 0; i < 8; i++ ) {
+			SetPassColor( i, palette::paletteRef( ( float( i ) + 0.5f ) / 8.0f ) );
+		}
+	}
+
 	void Init ( GLuint lineShaderProgram, GLuint compositeShaderProgram, GLuint clearShaderProgram, textureManager_t& manager, int w, int h ) {
 		this->lineShader = lineShaderProgram;
 		this->compositeShader = compositeShaderProgram;
@@ -109,6 +116,8 @@ public:
 			glCreateBuffers( 1, &ssbo );
 			glObjectLabel( GL_BUFFER, ssbo, -1, "Line Drawer SSBO" );
 		}
+
+		RandomizeColors();
 	}
 
 	void AddLine ( int passIndex, ivec2 start, ivec2 end ) {

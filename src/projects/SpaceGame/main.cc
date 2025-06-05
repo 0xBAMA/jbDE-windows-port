@@ -31,10 +31,6 @@ public:
 
 			// pass in required handles for the line drawing
 			controller.lines.Init( shaders[ "Line Draw" ], shaders[ "Line Draw Composite" ], shaders[ "Line Clear" ], textureManager, config.width, config.height );
-			palette::PickRandomPalette( true );
-			for ( int i = 0; i < 8; i++ ) {
-				controller.lines.SetPassColor( i, palette::paletteRef( ( float( i ) + 0.5f ) / 8.0f ) );
-			}
 
 			// load up the existing ship textures
 			textureOptions_t opts;
@@ -77,6 +73,10 @@ public:
 		if ( inputHandler.getState4( KEY_Y ) == KEYSTATE_RISING ) {
 			CompileShaders();
 			logHighPriority( "Shaders Recompiled" );
+		}
+
+		if ( inputHandler.getState4( KEY_P ) == KEYSTATE_RISING ) {
+			controller.lines.RandomizeColors();
 		}
 	}
 
