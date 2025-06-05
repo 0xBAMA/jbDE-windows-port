@@ -646,23 +646,15 @@ public:
 		tinyTextDrawString( "      Y: " + fixedWidthNumberString( int( RangeRemap( ship.position.y - floor( ship.position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ) ), 5, ' ' ), p );
 	}
 
-	ivec2 worldPosToScreenPos ( vec2 worldXY ) {
-		// helper function for the line UI elements, inverse transform from the shader
-		vec2 v = ship.GetVelocityVector() * ship.stats.maxThrustDisplacement;
-		vec2 p = ship.GetPositionVector();
-		vec2 centerPoint = p - v;
-		// worldXY -= centerPoint;
-		worldXY += v; // tbd... not sure if this is going to work
-		worldXY /= globalZoom;
-		worldXY.y /= -1.0f;
-		worldXY.x /= ( 1920.0f / 1080.0f );
-		worldXY += vec2( 0.5f );
-		return ivec2( worldXY * vec2( 720, 480 ) );
+	ivec2 screenPos ( vec2 worldXY ) {
+		return ivec2( // mapping to pixel coords
+			RangeRemap( worldXY.x, -( 720.0f / 480.0f ), ( 720.0f / 480.0f ), 0.0f, 720.0f ),
+			RangeRemap( worldXY.y, 1.0f, -1.0f, 0.0f, 480.0f )
+		);
 	}
 
 	void lineUIDraw () {
-		// todo: simplify mapping, direction is all that matters
-		const vec2 shipPosition = ship.position;
+		const vec2 shipPosition = ship.GetVelocityVector() * ship.stats.maxThrustDisplacement * ( 1.0f / globalZoom ) * ( 720.0f  / 480.0f );
 
 		vector< vec2 > stations;
 		vector< vec2 > enemies;
@@ -679,15 +671,14 @@ public:
 
 		if ( glm::fract( ship.position.x ) < 0.01f || glm::fract( ship.position.y ) < 0.01f
 			|| glm::fract( ship.position.x ) > 0.99f || glm::fract( ship.position.y ) > 0.99f ) {
-			// this is dumb, but works
 			if ( glm::fract( ship.position.x ) < 0.01f ) {
-				sectorBoundaries.push_back( vec2( 0.0f, glm::fract( ship.position.y ) ) );
+				sectorBoundaries.push_back( vec2( -glm::fract( ship.position.x ), 0.0f ) );
 			} else if ( glm::fract( ship.position.y ) < 0.01f ) {
-				sectorBoundaries.push_back( vec2( glm::fract( ship.position.x ), 0.0f ) );
+				sectorBoundaries.push_back( vec2( 0.0f, -glm::fract( ship.position.y ) ) );
 			} else if ( glm::fract( ship.position.x ) > 0.99f ) {
-				sectorBoundaries.push_back( vec2( 1.0f, glm::fract( ship.position.y ) ) );
+				sectorBoundaries.push_back( vec2( 1.0f - glm::fract( ship.position.x ), 0.0f ) );
 			} else if ( glm::fract( ship.position.y ) > 0.99f ) {
-				sectorBoundaries.push_back( vec2( glm::fract( ship.position.x ), 1.0f ) );
+				sectorBoundaries.push_back( vec2( 0.0f, 1.0f - glm::fract( ship.position.y ) ) );
 			}
 		}
 
@@ -695,16 +686,16 @@ public:
 			// if station is in sector, point to it
 		if ( stations.size() > 0 ) {
 			// max one station per sector, draw the line
-			vec2 dirStation = normalize( stations[ 0 ] - shipPosition );
-			lines.AddLine( 0, worldPosToScreenPos( shipPosition + dirStation ), worldPosToScreenPos( shipPosition + 2.0f * dirStation ) );
+			vec2 dirStation = normalize( stations[ 0 ] - ship.position );
+			lines.AddLine( 0, screenPos( shipPosition + 0.1f * dirStation ), screenPos( shipPosition + 0.2f * dirStation ) );
 		}
 
 		// if there are enemies in the sector, point to the nearest one
 		if ( enemies.size() > 0 ) {
 			// sort by distance, take the closest
-			std::sort( enemies.begin(), enemies.end(), [ shipPosition ] ( vec2 a, vec2 b ) { return distance( a, shipPosition ) < distance( b, shipPosition ); } );
-			vec2 dirEnemy = normalize( enemies[ 0 ] - shipPosition );
-			lines.AddLine( 1, worldPosToScreenPos( shipPosition + dirEnemy ), worldPosToScreenPos( shipPosition + 2.0f * dirEnemy ) );
+			std::sort( enemies.begin(), enemies.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
+			vec2 dirEnemy = normalize( enemies[ 0 ] - ship.position );
+			lines.AddLine( 1, screenPos( shipPosition + 0.1f * dirEnemy ), screenPos( shipPosition + 0.2f * dirEnemy ) );
 		}
 
 		// if the player has a target locked, point to it
@@ -716,9 +707,9 @@ public:
 		// if the player is near a sector boundary, point towards it... sector is 0.0f to 1.0f
 		if ( sectorBoundaries.size() > 0 ) {
 			// sort by distance, take the closest
-			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [ shipPosition ] ( vec2 a, vec2 b ) { return distance( a, shipPosition ) < distance( b, shipPosition ); } );
-			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] - shipPosition );
-			lines.AddLine( 4, worldPosToScreenPos( shipPosition + dirSectorBoundary ), worldPosToScreenPos( shipPosition + 2.0f * dirSectorBoundary ) );
+			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
+			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] );
+			lines.AddLine( 4, screenPos( shipPosition + 0.1f * dirSectorBoundary ), screenPos( shipPosition + 0.2f * dirSectorBoundary ) );
 		}
 
 		// if the player has a mining laser equipped, point to the nearest asteroid
@@ -728,7 +719,7 @@ public:
 			// bounding boxes... involves a bit of plumbing
 			// thrust vectors from ship's engine locations
 			// displacement from center...
-		lines.AddLine( 7, worldPosToScreenPos( shipPosition ), worldPosToScreenPos( shipPosition - ship.GetVelocityVector() * ship.stats.maxThrustDisplacement ) );
+		lines.AddLine( 7, screenPos( vec2( 0.0f ) ), screenPos( shipPosition ) );
 
 		// to add a line:
 		// controller.lines.AddLine( layer, p1, p2 );
