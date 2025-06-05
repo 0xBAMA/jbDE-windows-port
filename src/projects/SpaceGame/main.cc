@@ -176,7 +176,7 @@ public:
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-			vec2 v = controller.ship.GetVelocityVector() * controller.ship.stats.maxThrustDisplacement;
+			vec2 v = controller.ship.GetVelocityVector() * ( controller.ship.velocity / controller.ship.stats.maxSpeedForward ) * controller.ship.stats.maxThrustDisplacement;
 			vec2 p = controller.ship.GetPositionVector();
 			glUniform2f( glGetUniformLocation( shader, "centerPoint" ), p.x - v.x, p.y - v.y );
 
