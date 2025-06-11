@@ -496,15 +496,6 @@ public:
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 4 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
-
-		// and the buffer for the atlas
-		glCreateBuffers( 1, &atlasTextureSSBO );
-		glObjectLabel( GL_BUFFER, atlasTextureSSBO, -1, string( "Atlas Texture Helper SSBO" ).c_str() );
-
-		// buffer allocation
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, atlasTextureSSBO );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, atlasTextureSSBO );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * sizeof( float ), nullptr, GL_DYNAMIC_DRAW );
 	}
 
 	// moving to a static allocation instead of using vectors... maybe?
