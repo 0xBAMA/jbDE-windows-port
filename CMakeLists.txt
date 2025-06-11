@@ -681,3 +681,15 @@ target_link_libraries( DLA
 	PUBLIC
 	engineBase
 )
+
+# =================================================================================================
+# Benchmarking Utility
+# =================================================================================================
+add_executable( Benchmark
+	src/projects/Benchmark/main.cc
+)
+
+target_link_libraries( Benchmark
+	PUBLIC
+	engineBase
+)
