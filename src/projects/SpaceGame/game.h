@@ -650,6 +650,7 @@ public:
 
 		vector< vec2 > stations;
 		vector< vec2 > enemies;
+		vector< vec2 > asteroids;
 		vector< vec2 > sectorBoundaries;
 
 		// populate lists...
@@ -658,6 +659,8 @@ public:
 				stations.push_back( entity.position );
 			} else if ( entity.type == FOE ) {
 				enemies.push_back( entity.position );
+			} else if ( entity.type == ASTEROID ) {
+				asteroids.push_back( entity.position );
 			}
 		}
 
@@ -706,11 +709,17 @@ public:
 			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
 			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] );
 			lines.AddLine( 4, screenPos( shipPosition + 0.15f * dirSectorBoundary ), screenPos( shipPosition + 0.2f * dirSectorBoundary ) );
-			tinyTextDrawString( " SECTOR BOUNDARY", screenPos( shipPosition + 0.25f * dirSectorBoundary ) );
+			tinyTextDrawString( " SECTOR BOUNDARY " + std::to_string( int( length( sectorBoundaries[ 0 ] ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirSectorBoundary ) );
 		}
 
-		// if the player has a mining laser equipped, point to the nearest asteroid
-			// todo
+		// if the player has a mining laser equipped, point to the nearest asteroid... todo: toggle
+		if ( asteroids.size() > 0 ) {
+			// sort by distance, take the closest
+			std::sort( asteroids.begin(), asteroids.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
+			vec2 dirAsteroid = normalize( asteroids[ 0 ] - ship.position );
+			lines.AddLine( 5, screenPos( shipPosition + 0.15f * dirAsteroid ), screenPos( shipPosition + 0.2f * dirAsteroid ) );
+			tinyTextDrawString( " ASTEROID " + std::to_string( int( glm::length( asteroids[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirAsteroid ) );
+		}
 
 		// debug
 			// bounding boxes... involves a bit of plumbing
