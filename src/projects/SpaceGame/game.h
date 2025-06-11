@@ -295,7 +295,7 @@ struct entity {
 
 	// constructor for entity
 	entity () = default;
-	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 1, float sectorSize = 1.0f );
+	entity ( int type, vec2 location, float rotation, universeController *universeP, float scale = 1.0f, int indexOfTexture = 1, float sectorSize = 1.0f );
 
 	bboxData getBBoxPoints () const {
 		ZoneScoped;
@@ -385,7 +385,8 @@ public:
 		// load the sprites from disk
 		LoadSprites();
 
-		// create the sector contents
+		// create the player and then initial sector contents
+		entityList.emplace_back( PLAYER, vec2( 0.5f ), 0.0f, this, 0.02f, 1, sectorSize );
 		handleSectorChange( sectorID );
 	}
 
