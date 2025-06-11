@@ -37,7 +37,8 @@ vec4 sampleSelectedTexture ( int texIndex, vec2 uv ) {
 	// get a sample from the atlas texture, based on the specified UV
 	vec2 atlasSize = vec2( textureSize( atlasTexture, 0 ).xy );
 	vec2 samplePoint = mix( vec2( myAtlasEntry.basePoint ) / atlasSize, vec2( myAtlasEntry.basePoint + myAtlasEntry.size ) / atlasSize, uv );
-	return texture( atlasTexture, samplePoint );
+	vec4 textureSample = texture( atlasTexture, samplePoint );
+	return textureSample;
 }
 
 #include "srgbConvertMini.h"
@@ -76,6 +77,8 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 	// and then perform the sample
 	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.z ), sampleLocation ) );
 	// vec4 textureSample = vec4( 1.0f, sampleLocation, 1.0f );
+	textureSample.a = 1.0f;
+
 	if ( textureSample.a != 0.0f ) {
 		/*
 		// blending the blended result over the texture sample, it's a little weird but it's how the traversal will encounter them

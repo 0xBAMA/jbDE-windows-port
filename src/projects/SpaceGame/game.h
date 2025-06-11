@@ -798,6 +798,7 @@ public:
 		ZoneScoped;
     	logHighPriority( "Atlas Rebuilt" );
         auto tStart = std::chrono::steady_clock::now();
+    	entityRegions.clear();
         while ( true ) {
             nodes.resize( currentAtlasDim );
             stbrp_init_target( &ctx, currentAtlasDim, currentAtlasDim, nodes.data(), currentAtlasDim );
