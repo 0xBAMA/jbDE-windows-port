@@ -8,13 +8,80 @@ public:
 // idea is that each test runs maybe 10 or 100 times, reports the average, variance, of the scores
 	const uint32_t numRuns = 50;
 
+// there are some hitches shortly after startup, we need to wait it out
+	uint32_t numRunsWarmup = 100;
+
+	// using seeded for repeatability
+	rngi hashSeeder = rngi( 0, 1000000, 69420 );
+	GLuint rngAtomicShader;
+	float Test1 () {
+		GLuint queryID[ 2 ];
+		glGenQueries( 2, &queryID[ 0 ] );
+		glQueryCounter( queryID[ 0 ], GL_TIMESTAMP );
+
+		// establish the new RNG seed
+		glUniform1i( glGetUniformLocation( rngAtomicShader, "wangSeed" ), hashSeeder() );
+
+		// dispatch one invocation of the shader and sync
+		glDispatchCompute( 256, 256, 1 );
+		glMemoryBarrier( GL_ALL_BARRIER_BITS );
+
+		// we have another timing sample
+		// runTimes.push_back( Tock() );
+		glQueryCounter( queryID[ 1 ], GL_TIMESTAMP );
+		GLint timeAvailable = 0;
+		while ( !timeAvailable ) { // wait on the most recent of the queries to become available
+			glGetQueryObjectiv( queryID[ 1 ], GL_QUERY_RESULT_AVAILABLE, &timeAvailable );
+		}
+
+		GLuint64 startTime, stopTime; // get the query results, since they're both ready
+		glGetQueryObjectui64v( queryID[ 0 ], GL_QUERY_RESULT, &startTime );
+		glGetQueryObjectui64v( queryID[ 1 ], GL_QUERY_RESULT, &stopTime );
+		glDeleteQueries( 2, &queryID[ 0 ] ); // and then delete them
+
+		// get final operation time in ms, from difference of nanosecond timestamps
+		return ( float( stopTime - startTime ) / 1000000.0f );
+	}
+
+	GLuint transferBuffer;
+	const uint32_t numBytesTransfer = 1 << 30;
+	uint32_t bufferData[ 1 << 28 ] = { 0 };
+
+	float Test2 () {
+		GLuint queryID[ 2 ];
+		glGenQueries( 2, &queryID[ 0 ] );
+		glQueryCounter( queryID[ 0 ], GL_TIMESTAMP );
+
+		for ( int i = 0; i < 500; i++ ) {
+			// we're doing a big 256mb transfer, somewhere inside of a 1gb buffer
+			glBufferData( GL_SHADER_STORAGE_BUFFER, numBytesTransfer, ( GLvoid * ) bufferData[ 0 ], GL_DYNAMIC_COPY );
+			glMemoryBarrier( GL_ALL_BARRIER_BITS );
+		}
+
+		// we have another timing sample
+		// runTimes.push_back( Tock() );
+		glQueryCounter( queryID[ 1 ], GL_TIMESTAMP );
+		GLint timeAvailable = 0;
+		while ( !timeAvailable ) { // wait on the most recent of the queries to become available
+			glGetQueryObjectiv( queryID[ 1 ], GL_QUERY_RESULT_AVAILABLE, &timeAvailable );
+		}
+
+		GLuint64 startTime, stopTime; // get the query results, since they're both ready
+		glGetQueryObjectui64v( queryID[ 0 ], GL_QUERY_RESULT, &startTime );
+		glGetQueryObjectui64v( queryID[ 1 ], GL_QUERY_RESULT, &stopTime );
+		glDeleteQueries( 2, &queryID[ 0 ] ); // and then delete them
+
+		// get final operation time in ms, from difference of nanosecond timestamps
+		return ( float( stopTime - startTime ) / 1000000.0f ) / 500.0f;
+	}
+
 	void OnInit () {
 		ZoneScoped;
 		{
 			// Block Start( "Additional User Init" );
 
 			// compile shaders
-			GLuint rngAtomicShader = computeShader( "../src/projects/Benchmark/shaders/rngAtomic.cs.glsl" ).shaderHandle;
+			rngAtomicShader = computeShader( "../src/projects/Benchmark/shaders/rngAtomic.cs.glsl" ).shaderHandle;
 
 			// begin
 			cout << endl << endl << timeDateString() << " jbDE Benchmarking Results (" << numRuns << " runs/test):" << endl << endl;
@@ -25,58 +92,25 @@ public:
 				glUseProgram( rngAtomicShader );
 
 				// buffer for the atomic operations (1024 bins)
-				std::vector< uint32_t > bufferData( 1024 );
 				GLuint buffer;
 				glGenBuffers( 1, &buffer );
 				glBindBuffer( GL_SHADER_STORAGE_BUFFER, buffer );
-				glBufferData( GL_SHADER_STORAGE_BUFFER, sizeof( uint32_t ) * 1024, ( GLvoid * ) bufferData.data(), GL_DYNAMIC_DRAW );
+				glBufferData( GL_SHADER_STORAGE_BUFFER, sizeof( uint32_t ) * 1024, ( GLvoid * ) bufferData[ 0 ], GL_DYNAMIC_DRAW );
 				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, buffer );
-
-				// using seeded for repeatability
-				rngi hashSeeder = rngi( 0, 1000000, 69420 );
 
 				// run N test runs
 				std::vector< float > runTimes;
 				runTimes.reserve( numRuns );
 
-				// there are some hitches shortly after startup, we need to wait it out
-				uint32_t numRunsWarmup = 100;
-
 				for ( uint32_t i = 0; i < numRuns; ++i ) {
-					// Tick();
-					GLuint queryID[ 2 ];
-					glGenQueries( 2, &queryID[ 0 ] );
-					glQueryCounter( queryID[ 0 ], GL_TIMESTAMP );
-
-					// establish the new RNG seed
-					glUniform1i( glGetUniformLocation( rngAtomicShader, "wangSeed" ), hashSeeder() );
-
-					// dispatch one invocation of the shader and sync
-					glDispatchCompute( 256, 256, 1 );
-					glMemoryBarrier( GL_ALL_BARRIER_BITS );
-
+					float tResult = 0.0f;
+					tResult += Test2();
 					if ( numRunsWarmup ) {
-
 						numRunsWarmup--;
 						i--;
-
 					} else {
-
-						// we have another timing sample
-						// runTimes.push_back( Tock() );
-						glQueryCounter( queryID[ 1 ], GL_TIMESTAMP );
-						GLint timeAvailable = 0;
-						while ( !timeAvailable ) { // wait on the most recent of the queries to become available
-							glGetQueryObjectiv( queryID[ 1 ], GL_QUERY_RESULT_AVAILABLE, &timeAvailable );
-						}
-
-						GLuint64 startTime, stopTime; // get the query results, since they're both ready
-						glGetQueryObjectui64v( queryID[ 0 ], GL_QUERY_RESULT, &startTime );
-						glGetQueryObjectui64v( queryID[ 1 ], GL_QUERY_RESULT, &stopTime );
-						glDeleteQueries( 2, &queryID[ 0 ] ); // and then delete them
-
 						// get final operation time in ms, from difference of nanosecond timestamps
-						runTimes.push_back( float( stopTime - startTime ) / 1000000.0f );
+						runTimes.push_back( tResult );
 					}
 				}
 
@@ -98,14 +132,65 @@ public:
 				cout << " Average Time To Compute 1B Random Numbers: " << averageTime << "ms with a variance of " << variance << " ms" << endl << endl;
 			}
 
-			// Test 2: Bus Transfer (Large Buffer Updates)
+			// Test 2: Bus Transfer (Large Buffer Updates)x
+			{	// result is megabytes/sec
+
+				cout << "Test 2: Large Buffer Transfer" << endl;
+
+				// creating a 1 gigabyte buffer
+				GLuint buffer;
+				glGenBuffers( 1, &transferBuffer );
+				glBindBuffer( GL_SHADER_STORAGE_BUFFER, transferBuffer );
+				glBufferData( GL_SHADER_STORAGE_BUFFER, 1 << 30, ( GLvoid * ) bufferData[ 0 ], GL_DYNAMIC_DRAW );
+				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, transferBuffer );
+
+				// run N test runs
+				std::vector< float > runTimes;
+				runTimes.reserve( numRuns );
+
+				for ( uint32_t i = 0; i < numRuns; ++i ) {
+
+					// do a big transfer of 256mb
+					float tResult = Test2();
+
+					if ( numRunsWarmup ) {
+						numRunsWarmup--;
+						i--;
+					} else {
+						// get final operation time in ms, from difference of nanosecond timestamps
+						runTimes.push_back( tResult );
+					}
+				}
+
+				// going through the list of timing results to get the mean and variance
+				float averageTransferTime = 0.0f;
+				float variance = 0.0f;
+				// mean
+				for ( uint32_t i = 0; i < numRuns; ++i ) {
+					averageTransferTime += ( runTimes[ i ] ) / float( numRuns );
+				}
+				// variance
+				for ( uint32_t i = 0; i < numRuns; ++i ) {
+					variance += pow( runTimes[ i ] - averageTransferTime, 2 ) / float( numRuns );
+				}
+
+				cout << " Large Buffer Transfers (256mb chunks): " << averageTransferTime << "ms with a variance of " << variance << " ms... approx " << float( 1 << 30 ) / averageTransferTime << endl << endl;
+			}
 
 			// Test 3: Bus Transfer (Small Buffer Updates)
+			{	// result in megabytes/sec
+
+			}
 
 			// Test 4: Deterministic Random or Reference Mesh BVH Build + Trace (CPU+GPU)
+			{
+
+			}
 
 			// Test 5: Something to really hammer memory bandwidth
+			{
 
+			}
 		}
 	}
 
@@ -189,8 +274,8 @@ public:
 
 // #pragma comment( linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup" )
 
+engineDemo engineInstance;
 int main ( int argc, char *argv[] ) {
-	engineDemo engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }
