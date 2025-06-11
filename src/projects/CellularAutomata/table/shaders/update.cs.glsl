@@ -11,7 +11,7 @@ layout( binding = 4, rg32ui ) uniform uimage2D ruleBuffer;
 
 // uniform int rule[ 25 ];
 
-int getRuleValue ( int x, int y ) {
+int getRuleValue ( uint x, uint y ) {
 	// int rule[] = {
 	// 	// 2, 0, 2, 2, 1,
 	// 	// 0, 2, 0, 2, 2,
@@ -30,17 +30,17 @@ int getRuleValue ( int x, int y ) {
 
 	// rule is encoded in 2x 32-bit values...
 	uvec2 encodedRule = imageLoad( ruleBuffer, ivec2( gl_GlobalInvocationID.xy ) ).rg;
-	const int index = clamp( x + 5 * y, 0, 24 );
+	const uint index = clamp( x + 5 * y, 0u, 24u );
 
 	// masking out 2 bits of the value loaded from the texel
 	if ( index < 16 ) {
 		// we're pulling from the red channel
-		int shift = 30 - 2 * index;
-		return int( clamp( ( encodedRule.r >> shift ) & 3u, 0, 2 ) );
+		uint shift = 30 - 2 * index;
+		return int( clamp( ( encodedRule.r >> shift ) & 3u, 0u, 2u ) );
 	} else {
 		// we are getting data from the green channel
-		int shift = 30 - 2 * ( index - 16 );
-		return int(  clamp( ( encodedRule.g >> shift ) & 3u, 0, 2 ) );
+		uint shift = 30 - 2 * ( index - 16 );
+		return int(  clamp( ( encodedRule.g >> shift ) & 3u, 0u, 2u ) );
 	}
 }
 
