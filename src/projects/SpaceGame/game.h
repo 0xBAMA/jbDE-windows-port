@@ -371,14 +371,6 @@ public:
 	// the runtime list of entities, with attached logic
 	vector< entity > entityList;
 
-// then prepared data for rendering
-
-// Object Atlas, in 2 pieces
-	// Atlas Texture
-	GLuint atlasTexture;
-	// Atlas Texture SSBO
-	GLuint atlasTextureSSBO;
-
 	// BVH
 	tinybvh::BVH8_CWBVH entityBVH;
 
@@ -405,7 +397,6 @@ public:
 		entityList[ 0 ].rotation = ship.angle;
 		entityList[ 0 ].entityImage = entitySprites[ 1 ];
 		// entityList[ 0 ].scale = vec2( entitySprites[ 0 ].Width(), entitySprites[ 0 ].Height() );
-		entityList[ 0 ].scale = vec2( 1.0f );
 		entityList[ 0 ].type = PLAYER;
 		entityList[ 0 ].sectorSize = sectorSize;
 	}
