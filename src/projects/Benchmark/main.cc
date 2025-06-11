@@ -174,7 +174,7 @@ public:
 					variance += pow( runTimes[ i ] - averageTransferTime, 2 ) / float( numRuns );
 				}
 
-				cout << " Large Buffer Transfers (256mb chunks): " << averageTransferTime << "ms with a variance of " << variance << " ms... approx " << float( 1 << 30 ) / averageTransferTime << endl << endl;
+				cout << " Large Buffer Transfers (256mb chunks): " << averageTransferTime << "ms with a variance of " << variance << " ms... approx " << ( float( 1 << 30 ) / averageTransferTime ) / ( 1000.0f * ( 1 << 20 ) ) << " megabytes/sec" << endl << endl;
 			}
 
 			// Test 3: Bus Transfer (Small Buffer Updates)
