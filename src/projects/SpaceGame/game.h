@@ -680,7 +680,7 @@ public:
 			// max one station per sector, draw the line
 			vec2 dirStation = normalize( stations[ 0 ] - ship.position );
 			lines.AddLine( 0, screenPos( shipPosition + 0.15f * dirStation ), screenPos( shipPosition + 0.2f * dirStation ) );
-			tinyTextDrawString( " STATION", screenPos( shipPosition + 0.25f * dirStation ) );
+			tinyTextDrawString( " STATION " + std::to_string( int( glm::length( stations[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirStation ) );
 		}
 
 		// if there are enemies in the sector, point to the nearest one
@@ -691,7 +691,7 @@ public:
 
 			// can solve for direction with atan, then draw a little caret shape rotated to match - I think I prefer that to the straight lines
 			lines.AddLine( 1, screenPos( shipPosition + 0.15f * dirEnemy ), screenPos( shipPosition + 0.2f * dirEnemy ) );
-			tinyTextDrawString( " ENEMY", screenPos( shipPosition + 0.25f * dirEnemy ) );
+			tinyTextDrawString( " ENEMY " + std::to_string( int( glm::length( enemies[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirEnemy ) );
 		}
 
 		// if the player has a target locked, point to it
