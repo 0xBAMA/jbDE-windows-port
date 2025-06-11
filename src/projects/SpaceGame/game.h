@@ -295,7 +295,7 @@ struct entity {
 
 	// constructor for entity
 	entity () = default;
-	entity ( int type, vec2 location, float rotation, universeController *universeP, vec2 scale = vec2 ( 1.0f ), int indexOfTexture = 1, float sectorSize = 1.0f );
+	entity ( int type, vec2 location, float rotation, universeController *universeP, float scale = 1.0f, int indexOfTexture = 1, float sectorSize = 1.0f );
 
 	bboxData getBBoxPoints () const {
 		ZoneScoped;
@@ -312,8 +312,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( position.x, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
-				RangeRemap( position.y, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+				RangeRemap( glm::fract( position.x ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+				RangeRemap( glm::fract( position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
@@ -371,14 +371,6 @@ public:
 	// the runtime list of entities, with attached logic
 	vector< entity > entityList;
 
-// then prepared data for rendering
-
-// Object Atlas, in 2 pieces
-	// Atlas Texture
-	GLuint atlasTexture;
-	// Atlas Texture SSBO
-	GLuint atlasTextureSSBO;
-
 	// BVH
 	tinybvh::BVH8_CWBVH entityBVH;
 
@@ -393,7 +385,8 @@ public:
 		// load the sprites from disk
 		LoadSprites();
 
-		// create the sector contents
+		// create the player and then initial sector contents
+		entityList.emplace_back( PLAYER, vec2( 0.5f ), 0.0f, this, 0.02f, 1, sectorSize );
 		handleSectorChange( sectorID );
 	}
 
@@ -405,7 +398,6 @@ public:
 		entityList[ 0 ].rotation = ship.angle;
 		entityList[ 0 ].entityImage = entitySprites[ 1 ];
 		// entityList[ 0 ].scale = vec2( entitySprites[ 0 ].Width(), entitySprites[ 0 ].Height() );
-		entityList[ 0 ].scale = vec2( 1.0f );
 		entityList[ 0 ].type = PLAYER;
 		entityList[ 0 ].sectorSize = sectorSize;
 	}
@@ -419,9 +411,9 @@ public:
 		// chance to spawn station at the center of the sector
 		static rng stationChance( 0.0f, 1.0f );
 		// if ( stationChance() < 0.45f ) {
-		if ( stationChance() < 0.99f ) {
-			entityList.emplace_back( STATION, sector + vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0, sectorSize );
-		}
+		// if ( stationChance() < 0.99f ) {
+			entityList.emplace_back( STATION, sector + vec2 ( 0.5f, 0.5f ), 0.0f, this, 0.02f, 0, sectorSize );
+		// }
 
 		rngi countGenerator( 1, 10 );
 		const int numFriends = countGenerator();
@@ -436,7 +428,7 @@ public:
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, sector + vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1, sectorSize );
+			entityList.emplace_back( FRIEND, sector + vec2( friendPosition(), friendPosition() ), rotation(), this, 0.02f, 1, sectorSize );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -444,12 +436,12 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, sector + vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2, sectorSize );
+			entityList.emplace_back( FOE, sector + vec2( x, y ), rotation(), this, 0.02f, 2, sectorSize );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( ASTEROID, sector + vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3, sectorSize );
+			entityList.emplace_back( ASTEROID, sector + vec2( asteroidPosition(), asteroidPosition() ), rotation(), this, 0.02f, 3, sectorSize );
 		}
 	}
 
@@ -496,15 +488,6 @@ public:
 		glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleDataBuffer );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleDataBuffer );
 		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * 4 * sizeof( tinybvh::bvhvec4 ), nullptr, GL_DYNAMIC_DRAW );
-
-		// and the buffer for the atlas
-		glCreateBuffers( 1, &atlasTextureSSBO );
-		glObjectLabel( GL_BUFFER, atlasTextureSSBO, -1, string( "Atlas Texture Helper SSBO" ).c_str() );
-
-		// buffer allocation
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, atlasTextureSSBO );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, atlasTextureSSBO );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, maxTris * sizeof( float ), nullptr, GL_DYNAMIC_DRAW );
 	}
 
 	// moving to a static allocation instead of using vectors... maybe?
@@ -589,8 +572,8 @@ public:
 	textureManager_t *textureManager = nullptr;
 	void tinyTextDrawString ( string s, ivec2 basePoint ) const {
 		ZoneScoped;
-		const int width = 720;
-		const int height = 480;
+		const int width = 1280;
+		const int height = 720;
 
 		vector< uint32_t > stringBytes;
 		for ( auto& c : s ) {
@@ -649,8 +632,8 @@ public:
 
 	ivec2 screenPos ( vec2 worldXY ) {
 		return ivec2( // mapping to pixel coords
-			RangeRemap( worldXY.x, -( 720.0f / 480.0f ), ( 720.0f / 480.0f ), 0.0f, 720.0f ),
-			RangeRemap( worldXY.y, 1.0f, -1.0f, 0.0f, 480.0f )
+			RangeRemap( worldXY.x, -( 1280.0f / 720.0f ), ( 1280.0f / 720.0f ), 0.0f, 1280.0f ),
+			RangeRemap( worldXY.y, 1.0f, -1.0f, 0.0f, 720.0f )
 		);
 	}
 
@@ -659,6 +642,7 @@ public:
 
 		vector< vec2 > stations;
 		vector< vec2 > enemies;
+		vector< vec2 > asteroids;
 		vector< vec2 > sectorBoundaries;
 
 		// populate lists...
@@ -667,6 +651,8 @@ public:
 				stations.push_back( entity.position );
 			} else if ( entity.type == FOE ) {
 				enemies.push_back( entity.position );
+			} else if ( entity.type == ASTEROID ) {
+				asteroids.push_back( entity.position );
 			}
 		}
 
@@ -689,7 +675,7 @@ public:
 			// max one station per sector, draw the line
 			vec2 dirStation = normalize( stations[ 0 ] - ship.position );
 			lines.AddLine( 0, screenPos( shipPosition + 0.15f * dirStation ), screenPos( shipPosition + 0.2f * dirStation ) );
-			tinyTextDrawString( " STATION", screenPos( shipPosition + 0.25f * dirStation ) );
+			tinyTextDrawString( " STATION " + std::to_string( int( glm::length( stations[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirStation ) );
 		}
 
 		// if there are enemies in the sector, point to the nearest one
@@ -700,7 +686,7 @@ public:
 
 			// can solve for direction with atan, then draw a little caret shape rotated to match - I think I prefer that to the straight lines
 			lines.AddLine( 1, screenPos( shipPosition + 0.15f * dirEnemy ), screenPos( shipPosition + 0.2f * dirEnemy ) );
-			tinyTextDrawString( " ENEMY", screenPos( shipPosition + 0.25f * dirEnemy ) );
+			tinyTextDrawString( " ENEMY " + std::to_string( int( glm::length( enemies[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirEnemy ) );
 		}
 
 		// if the player has a target locked, point to it
@@ -715,11 +701,17 @@ public:
 			std::sort( sectorBoundaries.begin(), sectorBoundaries.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
 			vec2 dirSectorBoundary = normalize( sectorBoundaries[ 0 ] );
 			lines.AddLine( 4, screenPos( shipPosition + 0.15f * dirSectorBoundary ), screenPos( shipPosition + 0.2f * dirSectorBoundary ) );
-			tinyTextDrawString( " SECTOR BOUNDARY", screenPos( shipPosition + 0.25f * dirSectorBoundary ) );
+			tinyTextDrawString( " SECTOR BOUNDARY " + std::to_string( int( length( sectorBoundaries[ 0 ] ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirSectorBoundary ) );
 		}
 
-		// if the player has a mining laser equipped, point to the nearest asteroid
-			// todo
+		// if the player has a mining laser equipped, point to the nearest asteroid... todo: toggle
+		if ( asteroids.size() > 0 ) {
+			// sort by distance, take the closest
+			std::sort( asteroids.begin(), asteroids.end(), [=] ( vec2 a, vec2 b ) { return distance( a, ship.position ) < distance( b, ship.position ); } );
+			vec2 dirAsteroid = normalize( asteroids[ 0 ] - ship.position );
+			lines.AddLine( 5, screenPos( shipPosition + 0.15f * dirAsteroid ), screenPos( shipPosition + 0.2f * dirAsteroid ) );
+			tinyTextDrawString( " ASTEROID " + std::to_string( int( glm::length( asteroids[ 0 ] - ship.position ) * sectorSize ) ), screenPos( shipPosition + 0.25f * dirAsteroid ) );
+		}
 
 		// debug
 			// bounding boxes... involves a bit of plumbing
@@ -807,6 +799,7 @@ public:
 		ZoneScoped;
     	logHighPriority( "Atlas Rebuilt" );
         auto tStart = std::chrono::steady_clock::now();
+    	entityRegions.clear();
         while ( true ) {
             nodes.resize( currentAtlasDim );
             stbrp_init_target( &ctx, currentAtlasDim, currentAtlasDim, nodes.data(), currentAtlasDim );

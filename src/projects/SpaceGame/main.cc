@@ -5,7 +5,7 @@
 
 class SpaceGame final : public engineBase {
 public:
-	SpaceGame () { config.forceResolution = ivec2( 720, 480 ); Init(); OnInit(); PostInit(); }
+	SpaceGame () { config.forceResolution = ivec2( 1280, 720 ); Init(); OnInit(); PostInit(); }
 	~SpaceGame () { Quit(); }
 
 	universeController controller;
@@ -104,6 +104,59 @@ public:
 
 	void ImguiPass () {
 		ZoneScoped;
+
+		// doing a window to visualize the state of the sector resources...
+		ImGui::Begin( "Sector Debug" );
+
+		// show the atlas
+		ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager.Get( "AtlasTexture" ) ), ImVec2( 256, 256 ) );
+
+		// show a table of entity information
+		static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
+		if (ImGui::BeginTable("entityTable", 8, flags ) ) {
+			ImGui::TableSetupColumn( "Type" );
+			ImGui::TableSetupColumn( "Atlas x" );
+			ImGui::TableSetupColumn( "Atlas y" );
+			ImGui::TableSetupColumn( "Atlas w" );
+			ImGui::TableSetupColumn( "Atlas h" );
+			ImGui::TableSetupColumn( "Sector X" );
+			ImGui::TableSetupColumn( "Sector Y" );
+			ImGui::TableSetupColumn( "Scale" );
+			ImGui::TableHeadersRow();
+
+			// report the type, atlas x, y, w, h, location x, y for each entity
+			for ( auto& entity : controller.entityList ) {
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex( 0 );
+				switch ( entity.type ) {	// Type label
+				case PLAYER:	ImGui::Text( "PLAYER" );	break;
+				case ASTEROID:	ImGui::Text( "ASTEROID" );	break;
+				case STATION:	ImGui::Text( "STATION" );	break;
+				case FRIEND:	ImGui::Text( "FRIEND" );	break;
+				case FOE:		ImGui::Text( "FOE" );		break;}
+
+				// Atlas info
+				ImGui::TableSetColumnIndex( 1 );
+				ImGui::PushItemWidth( 100 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 0 ] );
+				ImGui::TableSetColumnIndex( 2 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 1 ] );
+				ImGui::TableSetColumnIndex( 3 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 2 ] );
+				ImGui::TableSetColumnIndex( 4 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 3 ] );
+
+				ImGui::TableSetColumnIndex( 5 );
+				ImGui::Text( "%s", fixedWidthNumberString( int( RangeRemap( entity.position.x - floor( entity.position.x ), 0.0f, 1.0f, -controller.sectorSize / 2.0f, controller.sectorSize / 2.0f ) ), 5, ' ' ) );
+				ImGui::TableSetColumnIndex( 6 );
+				ImGui::Text( "%s", fixedWidthNumberString( int( RangeRemap( entity.position.y - floor( entity.position.y ), 0.0f, 1.0f, -controller.sectorSize / 2.0f, controller.sectorSize / 2.0f ) ), 5, ' ' ) );
+				ImGui::PopItemWidth();
+				ImGui::TableSetColumnIndex( 7 );
+				ImGui::Text( "%f, %f", entity.scale.x, entity.scale.y );
+			}
+			ImGui::EndTable();
+		}
+		ImGui::End();
 
 		TonemapControlsWindow();
 
@@ -253,15 +306,14 @@ public:
 		controller.update();
 		// cout << "Controller update finished in " << Tock() / 1000.0f << " seconds" << endl;
 
+		// Tick();
+		RebuildAtlasIfNeeded();
+		// cout << "Atlas conditional update finished in " << Tock() / 1000.0f << " seconds" << endl << endl;
+
 		// prepare to render...
 		// Tick();
 		controller.updateBVH();
 		// cout << "BVH update finished in " << Tock() / 1000.0f << " seconds" << endl;
-
-		// needs to have a pointer to the parent controller, to access list of entities
-		// Tick();
-		RebuildAtlasIfNeeded();
-		// cout << "Atlas conditional update finished in " << Tock() / 1000.0f << " seconds" << endl << endl;
 	}
 
 	void OnRender () {
