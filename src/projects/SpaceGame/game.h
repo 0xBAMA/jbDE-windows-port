@@ -571,8 +571,8 @@ public:
 	textureManager_t *textureManager = nullptr;
 	void tinyTextDrawString ( string s, ivec2 basePoint ) const {
 		ZoneScoped;
-		const int width = 720;
-		const int height = 480;
+		const int width = 1280;
+		const int height = 720;
 
 		vector< uint32_t > stringBytes;
 		for ( auto& c : s ) {
@@ -631,8 +631,8 @@ public:
 
 	ivec2 screenPos ( vec2 worldXY ) {
 		return ivec2( // mapping to pixel coords
-			RangeRemap( worldXY.x, -( 720.0f / 480.0f ), ( 720.0f / 480.0f ), 0.0f, 720.0f ),
-			RangeRemap( worldXY.y, 1.0f, -1.0f, 0.0f, 480.0f )
+			RangeRemap( worldXY.x, -( 1280.0f / 720.0f ), ( 1280.0f / 720.0f ), 0.0f, 1280.0f ),
+			RangeRemap( worldXY.y, 1.0f, -1.0f, 0.0f, 720.0f )
 		);
 	}
 
