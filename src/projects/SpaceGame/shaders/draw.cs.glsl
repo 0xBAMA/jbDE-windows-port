@@ -152,7 +152,7 @@ void main () {
     vec2 pTest = 1.0f * ( globalZoom * centeredUV ) + 50.0f * offset;
     if ( ( pTest.x < ( -sectorSize / 2.0f ) ) || ( pTest.x > ( sectorSize / 2.0f ) )
         || ( pTest.y < ( -sectorSize / 2.0f ) ) || ( pTest.y > ( sectorSize / 2.0f ) ) ) {
-        col.bg *= 0.25f;
+        col = vec3( dot( col, vec3( 0.3086f, 0.6094f, 0.0820f ) ), 0.0f, 0.0f );
     }
 
     col = srgb_to_rgb( col );
