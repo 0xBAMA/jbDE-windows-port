@@ -419,9 +419,9 @@ public:
 		// chance to spawn station at the center of the sector
 		static rng stationChance( 0.0f, 1.0f );
 		// if ( stationChance() < 0.45f ) {
-		if ( stationChance() < 0.99f ) {
-			entityList.emplace_back( STATION, sector + vec2 ( 0.5f, 0.5f ), 0.0f, this, vec2 ( 3.0f ), 0, sectorSize );
-		}
+		// if ( stationChance() < 0.99f ) {
+			entityList.emplace_back( STATION, sector + vec2 ( 0.5f, 0.5f ), 0.0f, this, 0.02f, 0, sectorSize );
+		// }
 
 		rngi countGenerator( 1, 10 );
 		const int numFriends = countGenerator();
