@@ -436,7 +436,7 @@ public:
 
 		// Spawn friendly ships - consistent order of parameters
 		for ( int i = 0; i < numFriends; ++i ) {
-			entityList.emplace_back( FRIEND, sector + vec2 ( friendPosition(), friendPosition() ), rotation(), this, vec2 ( 1.0f ), 1, sectorSize );
+			entityList.emplace_back( FRIEND, sector + vec2( friendPosition(), friendPosition() ), rotation(), this, 0.02f, 1, sectorSize );
 		}
 
 		// Spawn enemy ships along the edges of the sector
@@ -444,12 +444,12 @@ public:
 			const int edge = foeEdgeSelector();
 			const float x = ( edge == 2 ) ? 0.01f : ( edge == 3 ) ? 0.99f : foeEdgePosition();
 			const float y = ( edge == 0 ) ? 0.99f : ( edge == 1 ) ? 0.01f : foeEdgePosition();
-			entityList.emplace_back( FOE, sector + vec2 ( x, y ), rotation(), this, vec2( 1.0f ), 2, sectorSize );
+			entityList.emplace_back( FOE, sector + vec2( x, y ), rotation(), this, 0.02f, 2, sectorSize );
 		}
 
 		// Spawn asteroids across the entire sector
 		for ( int i = 0; i < numAsteroids; ++i ) {
-			entityList.emplace_back( ASTEROID, sector + vec2 ( asteroidPosition(), asteroidPosition() ), rotation(), this, vec2 ( 1.4f ), 3, sectorSize );
+			entityList.emplace_back( ASTEROID, sector + vec2( asteroidPosition(), asteroidPosition() ), rotation(), this, 0.02f, 3, sectorSize );
 		}
 	}
 
