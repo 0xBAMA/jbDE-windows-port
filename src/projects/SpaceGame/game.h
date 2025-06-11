@@ -312,8 +312,8 @@ struct entity {
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
-				RangeRemap( position.x, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
-				RangeRemap( position.y, 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+				RangeRemap( glm::fract( position.x ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
+				RangeRemap( glm::fract( position.y ), 0.0f, 1.0f, -sectorSize / 2.0f, sectorSize / 2.0f ),
 				0.0f ) ) * vec4( p, 1.0f ) ).xyz();
 		}
 
