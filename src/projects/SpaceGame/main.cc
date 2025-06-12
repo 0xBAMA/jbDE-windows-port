@@ -22,9 +22,7 @@ public:
 			// textureManager.SetFilterMinMag( "Display Texture", GL_NEAREST, GL_NEAREST );
 
 			// some initialization tasks that have to be done after OpenGL init
-			controller.init();
-			controller.textureManager = &textureManager;
-			controller.ship.sectorSize = controller.sectorSize;
+			controller.init( &textureManager, &inputHandler );
 
 			// make sure that the atlasManager gets created and setup
 			controller.atlas = new( AtlasManager );
@@ -187,8 +185,8 @@ public:
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
 			// "position", center of the view, is V ahead of the ship's location at P (with some scale factors)
-			vec2 v = controller.ship.GetVelocityVector();
-			vec2 p = controller.ship.GetPositionVector() * vec2( 1.0f, -1.0f ) * 0.02f;
+			vec2 v = controller.entityList[ 0 ].GetVelocityVector();
+			vec2 p = controller.entityList[ 0 ].GetPositionVector() * vec2( 1.0f, -1.0f ) * 0.02f;
 			glUniform2f( glGetUniformLocation( shader, "positionVector" ), p.x - v.x, p.y + v.y );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
@@ -229,8 +227,8 @@ public:
 			static rngi noiseOffset( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
 
-			vec2 v = controller.ship.GetVelocityVector() * ( controller.ship.velocity / controller.ship.stats.maxSpeedForward ) * controller.ship.stats.maxThrustDisplacement;
-			vec2 p = controller.ship.GetPositionVector();
+			vec2 v = controller.entityList[ 0 ].GetVelocityVector() * ( controller.entityList[ 0 ].shipSpeed / controller.entityList[ 0 ].stats.maxSpeedForward ) * controller.entityList[ 0 ].stats.maxThrustDisplacement;
+			vec2 p = controller.entityList[ 0 ].GetPositionVector();
 			glUniform2f( glGetUniformLocation( shader, "centerPoint" ), p.x - v.x, p.y - v.y );
 
 			textureManager.BindTexForShader( "AtlasTexture", "atlasTexture" , shader, 3 );
@@ -296,24 +294,9 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-		// update player
-		// Tick();
-		controller.ship.Update( inputHandler );
-		// cout << "Ship update finished in " << Tock() / 1000.0f << " seconds" << endl;
-
-		// update rest of the world based on player changes
-		// Tick();
 		controller.update();
-		// cout << "Controller update finished in " << Tock() / 1000.0f << " seconds" << endl;
-
-		// Tick();
 		RebuildAtlasIfNeeded();
-		// cout << "Atlas conditional update finished in " << Tock() / 1000.0f << " seconds" << endl << endl;
-
-		// prepare to render...
-		// Tick();
 		controller.updateBVH();
-		// cout << "BVH update finished in " << Tock() / 1000.0f << " seconds" << endl;
 	}
 
 	void OnRender () {
