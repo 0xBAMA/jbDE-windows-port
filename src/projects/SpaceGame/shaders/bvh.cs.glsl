@@ -26,13 +26,14 @@ struct atlasEntry {
 	uvec2 basePoint;
 	uvec2 size;
 };
-layout( binding = 4, std430 ) readonly buffer atlasOffsets{ atlasEntry atlasEntries[]; };
+layout( binding = 3, std430 ) readonly buffer atlasOffsets{ atlasEntry atlasEntries[]; };
 layout( binding = 3 ) uniform sampler2D atlasTexture;
 
 // this needs to go into the custom leaf test, for alpha testing
 vec4 sampleSelectedTexture ( int texIndex, vec2 uv ) {
 	// load the parameters to sample the atlas texture...
-	atlasEntry myAtlasEntry = atlasEntries[ texIndex ];
+	// atlasEntry myAtlasEntry = atlasEntries[ texIndex ];
+	atlasEntry myAtlasEntry = atlasEntries[ 0 ];
 
 	// get a sample from the atlas texture, based on the specified UV
 	vec2 atlasSize = vec2( textureSize( atlasTexture, 0 ).xy );
@@ -68,9 +69,9 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 
 	// we need to interpolate the texcoord from the vertex data...
 	const uint baseIndex = 3 * index;
-	vec4 t0 = triangleData[ baseIndex + 1 ];
-	vec4 t1 = triangleData[ baseIndex + 2 ];
-	vec4 t2 = triangleData[ baseIndex + 0 ];
+	vec4 t0 = triangleData[ baseIndex + 0 ];
+	vec4 t1 = triangleData[ baseIndex + 1 ];
+	vec4 t2 = triangleData[ baseIndex + 2 ];
 	// using the barycentrics
 	vec2 sampleLocation = t0.xy * uv.x + t1.xy * uv.y + t2.xy * ( 1.0f - uv.x - uv.y );
 
@@ -78,6 +79,13 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.z ), sampleLocation ) );
 	// vec4 textureSample = vec4( 1.0f, sampleLocation, 1.0f );
 	textureSample.a = 1.0f;
+	// textureSample.bg = uv;
+
+	/*
+	if ( clamp( sampleLocation, vec2( 0.0f ), vec2( 1.0f ) ) != sampleLocation ) {
+		textureSample = vec4( 1.0f );
+	}
+	*/
 
 	if ( textureSample.a != 0.0f ) {
 		/*

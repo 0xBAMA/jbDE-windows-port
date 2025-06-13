@@ -776,7 +776,7 @@ public:
         // Update SSBO data used to reference the atlas
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, ssbo );
         glBufferData( GL_SHADER_STORAGE_BUFFER, entityRegions.size() * sizeof( uint32_t ) * 4, entityRegions.data(), GL_DYNAMIC_DRAW );
-        glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, ssbo );
+        glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, ssbo );
         glBindBuffer( GL_SHADER_STORAGE_BUFFER, 0 ); // unbind
     }
 
@@ -785,7 +785,6 @@ public:
 
     void UpdateAtlas ( vector< entity > &entityList ) {
 		ZoneScoped;
-    	logHighPriority( "Atlas Rebuilt" );
         auto tStart = std::chrono::steady_clock::now();
     	entityRegions.clear();
         while ( true ) {
@@ -827,6 +826,7 @@ public:
         CreateOrUpdateSSBO();
 
         // cout << "Atlas Creation took " << float( std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::steady_clock::now() - tStart ).count() / 1000.0f ) << " ms" << endl;
+    	logHighPriority( "Atlas Rebuilt, " + to_string( currentAtlasDim ) + "px, " + fixedPointNumberStringF(float( std::chrono::duration_cast< std::chrono::microseconds >( std::chrono::steady_clock::now() - tStart ).count() / 1000.0f ), 3, 2 ) + "ms" );
     }
 };
 #endif
