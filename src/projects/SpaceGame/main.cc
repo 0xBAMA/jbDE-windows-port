@@ -198,23 +198,6 @@ public:
 			GLuint shader = shaders[ "BVH Draw" ];
 			glUseProgram( shader );
 
-			/*
-			// need to make sure that the atlas texture is up to date, because it will be used by the BVH pass
-			for ( auto& entity : controller.entityList ) {
-				controller.atlas.AddSprite( &entity.entityImage );
-			}
-			controller.atlas.UpdateAtlas();
-			// pQuit = true;
-			*/
-
-		// rendering objects in the sector via the BVH, instead of sprites
-			// need atlas texture
-			// need atlas texture index SSBO (4 values per id -> [2D basePoint, 2D textureSize])
-			// need the BVH nodes
-			// need the BVH triangles
-			// need the BVH payload (points, texcoords with texture ID for atlas SSBO map in the z coord)
-			// need the accumulator texture, to write the result
-
 		// having this BVH is actually very nice, because it means that I can have this model of all objects in the sector available on CPU and GPU
 			// low geometric complexity of the ship bounding boxes means that this will scale to large object counts easily, even having to be updated every frame
 			// occlusion solution via symmetric z scaling of the bounding boxes... smaller ships are taller bboxes, so viewed from above, they are encountered first, closer
