@@ -111,8 +111,10 @@ public:
 
 		// show a table of entity information
 		static ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit;
-		if (ImGui::BeginTable("entityTable", 8, flags ) ) {
+		if (ImGui::BeginTable("entityTable", 10, flags ) ) {
 			ImGui::TableSetupColumn( "Type" );
+			ImGui::TableSetupColumn( "Heading" );
+			ImGui::TableSetupColumn( "Speed" );
 			ImGui::TableSetupColumn( "Atlas x" );
 			ImGui::TableSetupColumn( "Atlas y" );
 			ImGui::TableSetupColumn( "Atlas w" );
@@ -133,23 +135,28 @@ public:
 				case FRIEND:	ImGui::Text( "FRIEND" );	break;
 				case FOE:		ImGui::Text( "FOE" );		break;}
 
-				// Atlas info
 				ImGui::TableSetColumnIndex( 1 );
+				ImGui::Text( "%.2f", entity.shipHeading );
+				ImGui::TableSetColumnIndex( 2 );
+				ImGui::Text( "%.2f", entity.shipSpeed );
+
+				// Atlas info
+				ImGui::TableSetColumnIndex( 3 );
 				ImGui::PushItemWidth( 100 );
 				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 0 ] );
-				ImGui::TableSetColumnIndex( 2 );
-				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 1 ] );
-				ImGui::TableSetColumnIndex( 3 );
-				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 2 ] );
 				ImGui::TableSetColumnIndex( 4 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 1 ] );
+				ImGui::TableSetColumnIndex( 5 );
+				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 2 ] );
+				ImGui::TableSetColumnIndex( 6 );
 				ImGui::Text( "%d", controller.atlas->entityRegions[ entity.atlasIndex ][ 3 ] );
 
-				ImGui::TableSetColumnIndex( 5 );
+				ImGui::TableSetColumnIndex( 7 );
 				ImGui::Text( "%s", fixedWidthNumberString( int( RangeRemap( entity.position.x - floor( entity.position.x ), 0.0f, 1.0f, -controller.sectorSize / 2.0f, controller.sectorSize / 2.0f ) ), 5, ' ' ) );
-				ImGui::TableSetColumnIndex( 6 );
+				ImGui::TableSetColumnIndex( 8 );
 				ImGui::Text( "%s", fixedWidthNumberString( int( RangeRemap( entity.position.y - floor( entity.position.y ), 0.0f, 1.0f, -controller.sectorSize / 2.0f, controller.sectorSize / 2.0f ) ), 5, ' ' ) );
 				ImGui::PopItemWidth();
-				ImGui::TableSetColumnIndex( 7 );
+				ImGui::TableSetColumnIndex( 9 );
 				ImGui::Text( "%f, %f", entity.scale.x, entity.scale.y );
 			}
 			ImGui::EndTable();
