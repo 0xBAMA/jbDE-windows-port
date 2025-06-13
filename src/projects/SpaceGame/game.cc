@@ -1,7 +1,7 @@
 #include "game.h"
 
 entity::entity( int type, vec2 location, float rotation, universeController * universeP, float scale_in, int indexOfTexture, float sectorSize_in )
-    : type( type ), position( location ), rotation( rotation ), universe( universeP ) {
+    : type( type ), shipHeading( rotation ), position( location ), universe( universeP ) {
     // setting the base texture for the entity, from a list of loaded images
     entityImage = universe->entitySprites[ indexOfTexture ];
     sectorSize = sectorSize_in;

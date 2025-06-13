@@ -236,7 +236,6 @@ struct entity {
 	// for the display primitive
 	vec2 position = vec2( 0.0f );
 	vec2 scale = vec2( 1.0f );
-	float rotation = 0.0f;
 	float sectorSize;
 
 	// constructor for entity
@@ -254,7 +253,7 @@ struct entity {
 			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y + 0.001f * atlasIndex ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply rotation
-			p = ( glm::angleAxis( -rotation, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
+			p = ( glm::angleAxis( -shipHeading, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply translation - accounting for the scaling that needs to be applied to the stored location value
 			p = ( glm::translate( vec3(
@@ -281,10 +280,10 @@ struct entity {
 		shipSpeed *= 0.99f;
 
 		// consider inputs
-		if ( inputHandler->getState( KEY_W ) ) { accelerate( stats.accelerationRate * deltaT * inputHandler->getState_soft( KEY_W ) ); logHighPriority( "Ship Accelerating" ); }
-		if ( inputHandler->getState( KEY_S ) ) { accelerate( -stats.decelerationRate * deltaT * inputHandler->getState_soft( KEY_S ) ); logHighPriority( "Ship Decelerating" ); }
-		if ( inputHandler->getState( KEY_A ) ) { turn( -stats.turnRate * deltaT * inputHandler->getState_soft( KEY_A ) ); logHighPriority( "Ship Turning Left" ); }
-		if ( inputHandler->getState( KEY_D ) ) { turn( stats.turnRate * deltaT * inputHandler->getState_soft( KEY_D ) ); logHighPriority( "Ship Turning Right" ); }
+		if ( inputHandler->getState( KEY_W ) ) { accelerate( stats.accelerationRate * deltaT * inputHandler->getState_soft( KEY_W ) ); logLowPriority( "Ship Accelerating" ); }
+		if ( inputHandler->getState( KEY_S ) ) { accelerate( -stats.decelerationRate * deltaT * inputHandler->getState_soft( KEY_S ) ); logLowPriority( "Ship Decelerating" ); }
+		if ( inputHandler->getState( KEY_A ) ) { turn( -stats.turnRate * deltaT * inputHandler->getState_soft( KEY_A ) ); logLowPriority( "Ship Turning Left" ); }
+		if ( inputHandler->getState( KEY_D ) ) { turn( stats.turnRate * deltaT * inputHandler->getState_soft( KEY_D ) ); logLowPriority( "Ship Turning Right" ); }
 		break;
 
 		case FRIEND: // todo - ai steering logic ( seeking FOE ships )
@@ -379,14 +378,6 @@ public:
 		LoadSprites();
 
 		// put the player in the first element, before populating the sector
-		entityList.resize( 1 );
-		entityList[ 0 ].position = vec2( 0.5f );
-		entityList[ 0 ].rotation = 0.0f;
-		entityList[ 0 ].entityImage = entitySprites[ 1 ];
-		entityList[ 0 ].type = PLAYER;
-		entityList[ 0 ].sectorSize = sectorSize;
-
-		// create the player and then initial sector contents
 		entityList.emplace_back( PLAYER, vec2( 0.5f ), 0.0f, this, 0.02f, 1, sectorSize );
 		handleSectorChange( sectorID );
 	}
@@ -504,7 +495,6 @@ public:
 		uint32_t numTriangles = 0;
 		for ( auto& e : entityList ) {
 			bboxData bbox = e.getBBoxPoints();
-			cout << e.shipHeading << endl;
 
 			// 12 triangles, 3 points each - triangles only for basic traversal, texcoords needed for alpha test
 			for ( int i = 0; i < 12; i++ ) {
