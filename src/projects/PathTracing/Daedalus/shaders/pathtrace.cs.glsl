@@ -1823,7 +1823,44 @@ float deKaliChannel(vec3 pos) {
 	return min(sc,fr);
 }
 
+vec3 foldGG(vec3 p0){
+	vec3 p = p0;
+	if(length(p) > 2.)return p;
+	p = mod(p,2.)-1.;
+	return p;
+}
 
+float deGGGAZ( vec3 p0 ){
+	vec4 p = vec4(p0, 1.);
+	escape = 0.;
+	if(p.x > p.z)p.xz = p.zx;
+	if(p.z > p.y)p.zy = p.yz;
+	if(p.y > p.x)p.yx = p.xy;
+	p = abs(p);
+	for(int i = 0; i < 4; i++){
+		p.xyz = foldGG(p.xyz);
+		p.xyz = fract(p.xyz*0.5 - 1.)*2.-1.0;
+		p*=(1.1/clamp(dot(p.xyz,p.xyz),-0.1,1.));
+	}
+	p/=p.w;
+	return abs(p.x)*0.25;
+}
+
+float deGGGAZ2( vec3 p0 ){
+	vec4 p = vec4(p0, 1.);
+	escape = 0.;
+	if(p.x > p.z)p.xz = p.zx;
+	if(p.z > p.y)p.zy = p.yz;
+	if(p.y > p.x)p.yx = p.xy;
+	p = abs(p);
+	for(int i = 0; i < 8; i++){
+		p.xyz = foldGG(p.xyz);
+		p.xyz = fract(p.xyz*0.5 - 1.)*2.-1.0;
+		p*=(1.1/clamp(dot(p.xyz,p.xyz),-0.1,1.));
+	}
+	p/=p.w;
+	return abs(p.x)*0.25;
+}
 
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
@@ -1851,7 +1888,7 @@ float de( in vec3 p ) {
 	const float dBounds = sdBox( p, vec3( marbleRadius ) );
 
 	{
-		const float d = max( max( deGatee3( p ), dBounds ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGGGAZ2( p ), dBounds ), sdBox( p, bboxDim ) );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1880,9 +1917,10 @@ float de( in vec3 p ) {
 
 
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
-			// hitColor = vec3( 0.99f );
-			// hitColor = vec3( ( hitSurfaceType == DIFFUSE ) ? 0.00618f : 0.9f );
-			hitColor = vec3( ( hitSurfaceType != MIRROR ) ? ( vec3( blood.grb / 3.0f ) ) : vec3( 0.9f ) );
+			hitColor = vec3( 0.99f );
+			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
+			// hitColor = vec3( ( hitSurfaceType != MIRROR ) ? gold : vec3( 0.99f ) );
+			// hitColor = vec3( ( hitSurfaceType != MIRROR ) ? ( vec3( blood.grb / 3.0f ) ) : vec3( 0.9f ) );
 			hitRoughness = 0.1f;
 
 
@@ -1896,8 +1934,8 @@ float de( in vec3 p ) {
 		}
 	}
 
-	{
-		const float d = max( max( deGatee2( p ), dBounds ), sdBox( p, bboxDim ) );
+	if ( true ) {
+		const float d = max( max( deGGGAZ( p ), dBounds ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
@@ -1909,11 +1947,13 @@ float de( in vec3 p ) {
 
 			// hitColor = mix( nickel, brass, 0.2f );
 			// hitColor = brass;
-			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
-			hitColor = iron;
-			hitRoughness = 0.1f;
-			hitSurfaceType = METALLIC;
+			// hitColor = mix( mix( gold, vec3( 0.99f ), -0.3f ), vec3( 1.0f, 0.0f, 0.0f ), 0.5f ); // hypergold
+			hitColor = vec3( 0.3f, 0.0f, 0.0f );
+			// hitRoughness = 0.1f;
+			// hitSurfaceType = METALLIC;
+			hitSurfaceType = DIFFUSE;
 
+			/*
 			const float noiseValue = saturate( pow( perlinfbm( p, 30.0f, 4 ), 4 ) * 2.0f );
 			if ( noiseValue > 0.05f ) {
 				const float remappedN = RangeRemapValue( noiseValue, 0.05f, 0.1f, 0.0f, 1.0f );
@@ -1921,11 +1961,12 @@ float de( in vec3 p ) {
 				hitSurfaceType = ( NormalizedRandomFloat() < remappedN ) ? DIFFUSE : METALLIC;
 				hitRoughness = remappedN;
 			}
+			*/
 		}
 	}
 
 
-	if ( true ) {
+	if ( false ) {
 		const float d = max( max( deGatee( p ), dBounds ), sdBox( p, bboxDim ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1953,7 +1994,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
+	if ( true ) {
 		const float scale = 0.5f;
 		// const float d = max( max( deKaliChannel( p * scale - vec3( -0.5f, -0.5f, 0.0f ) ) / scale, dBounds ), sdBox( p, bboxDim ) );
 		const float d = length( p ) - 0.2f;
@@ -1962,7 +2003,7 @@ float de( in vec3 p ) {
 			// hitSurfaceType = DIFFUSE;
 			// hitColor = nvidia * 0.1f;
 			hitSurfaceType = EMISSIVE;
-			hitColor = vec3( 20.0f );
+			hitColor = vec3( 2.0f, 0.1618f, 0.1618f ).rrr;
 		}
 	}
 
@@ -1976,6 +2017,17 @@ float de( in vec3 p ) {
 			hitColor = vec3( ( hitSurfaceType == DIFFUSE ) ? 0.00618f : 0.9f );
 		}
 	}
+
+
+	 {
+	 	const float d = fBox( p, vec3( 100.0f, 0.02f, 0.02f ) );
+	 	sceneDist = min( sceneDist, d );
+	 	if ( sceneDist == d && d < epsilon ) {
+	 		hitSurfaceType = EMISSIVE;
+	 		// hitSurfaceType = DIFFUSE;
+	 		hitColor = vec3( 0.618f );
+	 	}
+	 }
 
 	return sceneDist;
 
@@ -2108,16 +2160,7 @@ float de( in vec3 p ) {
 
 
 
-	// {
-	// 	p = pOriginal;
-	// 	const float d = fBox( p, vec3( 100.0f, 0.1f, 0.1f ) );
-	// 	sceneDist = min( sceneDist, d );
-	// 	if ( sceneDist == d && d < epsilon ) {
-	// 		hitSurfaceType = EMISSIVE;
-	// 		// hitSurfaceType = DIFFUSE;
-	// 		hitColor = vec3( 0.618f );
-	// 	}
-	// }
+
 
 	// {
 	// 	// const float d = max( deFEFE( p ), distance( p, vec3( 0.0f ) ) - 20.0f );
