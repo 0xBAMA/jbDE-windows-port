@@ -11,19 +11,13 @@ in ivec2 pixel;
 out vec4 apiPosition;
 out vec4 color;
 
-// rotation
-uniform vec3 xBasis;
-uniform vec3 yBasis;
-uniform vec3 zBasis;
-uniform float scale;
+// rotation, scaling, translation + lookat, perspective
+uniform mat4 transform;
 
 void main () {
     vec4 imageData = imageLoad( displacementImage, pixel );
-    vec3 p = scale * vec3( position, ( imageData.a - 0.5f ) / 10.0f );
-    p = p.x * xBasis + p.y * yBasis + p.z * zBasis;
-    p.x /= ( 3840.0f / 2160.0f );
-    p.z /= 3.0f;
+    vec4 p = transform * vec4( position, ( imageData.a - 0.5f ) / 10.0f, 1.0f );
 
-    gl_Position = apiPosition = vec4( p, 1.0f );
+    gl_Position = apiPosition = p;
     color = vec4( imageData.rgb, 1.0f );
 }

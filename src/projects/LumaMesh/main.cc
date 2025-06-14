@@ -182,10 +182,13 @@ public:
 
 			textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
 
-			glUniform3fv( glGetUniformLocation( shader, "xBasis" ), 1, glm::value_ptr( trident.basisX ) );
-			glUniform3fv( glGetUniformLocation( shader, "yBasis" ), 1, glm::value_ptr( trident.basisY ) );
-			glUniform3fv( glGetUniformLocation( shader, "zBasis" ), 1, glm::value_ptr( trident.basisZ ) );
-			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			// perspective projection changes
+			rngN jitter( 0.0f, 0.1f );
+			glm::mat3 tridentOrientationMatrix = glm::mat3( trident.basisX, trident.basisY, trident.basisZ );
+			glm::mat4 transform = glm::mat4( tridentOrientationMatrix ) * glm::scale( vec3( scale ) ) * glm::mat4( 1.0f );
+			transform = glm::lookAt( vec3( jitter(), jitter(), -10.0f ), vec3( 0.0f ), vec3( 0.0f, 1.0f, 0.0f ) ) * transform;
+			transform = glm::perspective( 0.5f, float( config.width ) / float( config.height ), 1.0f, 1000.0f ) * transform;
+			glUniformMatrix4fv( glGetUniformLocation( shader, "transform" ), 1, GL_FALSE, glm::value_ptr( transform ) );
 
 			glDrawArrays( GL_LINES, 0, xyPos.size() );
 		}
