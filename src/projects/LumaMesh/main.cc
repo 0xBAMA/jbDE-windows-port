@@ -25,9 +25,10 @@ public:
 
 			// load the image we want to draw, create a texture
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/circuitBoard.png" );
-			// Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
+			Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/crinkle.png" );
-			Image_4F testImage( "../src/projects/LumaMesh/testImages/velvet.png" );
+			// Image_4F testImage( "../src/projects/LumaMesh/testImages/ISLAND_2.png" );
+			testImage.Resize( 2.0f );
 			testImage.Swizzle( "rgbl" ); // compute luma term into alpha value
 
 			textureOptions_t opts;
@@ -176,9 +177,13 @@ public:
 			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
 
 			glEnable( GL_DEPTH_TEST );
-			// glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
+			glEnable( GL_MULTISAMPLE );
+			glHint(  GL_LINE_SMOOTH_HINT, GL_NICEST );
+			glDepthMask( GL_FALSE );
+			glEnable( GL_BLEND );
+			glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
 			glDepthFunc( GL_LEQUAL );
-			// glLineWidth( 1.5f );
+			glLineWidth( 0.5f );
 
 			textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
 
