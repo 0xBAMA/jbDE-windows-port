@@ -1,46 +1,65 @@
 #include "../../engine/engine.h"
 
-#include "LineSpam.h"
-
-class LineSpam final : public engineBase { // sample derived from base engine class
+class LumaMesh final : public engineBase { // sample derived from base engine class
 public:
-	LineSpam () { Init(); OnInit(); PostInit(); }
-	~LineSpam () { Quit(); }
+	LumaMesh () { Init(); OnInit(); PostInit(); }
+	~LumaMesh () { Quit(); }
 
-	LineSpamConfig_t LineSpamConfig;
+	GLuint lineVAO;
+	GLuint lineVBO;
+
+	// vertex data
+	vector< vec2 > xyPos;
+	vector< ivec2 > pixelIdx;
+
+	// state
+	float scale = 1.0f;
 
 	void OnInit () {
 		ZoneScoped;
 		{
 			Block Start( "Additional User Init" );
 
-			// something to put some basic data in the accumulator texture
 			shaders[ "Draw" ] = computeShader( "../src/projects/LumaMesh/shaders/draw.cs.glsl" ).shaderHandle;
+			shaders[ "Line Draw" ] = regularShader( "../src/projects/LumaMesh/shaders/line.vs.glsl", "../src/projects/LumaMesh/shaders/line.fs.glsl" ).shaderHandle;
 
-			// compile the shaders
-			LineSpamConfig.CompileShaders();
-
-			// add the textures
-			LineSpamConfig.textureManager = &textureManager;
-			LineSpamConfig.CreateTextures();
-
+			// load the image we want to draw, create a texture
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/circuitBoard.png" );
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/crinkle.png" );
-			Image_4F testImage( "../src/projects/LumaMesh/testImages/flower.png" );
+			Image_4F testImage( "../src/projects/LumaMesh/testImages/velvet.png" );
+			testImage.Swizzle( "rgbl" ); // compute luma term into alpha value
 
-			PerlinNoise p;
+			textureOptions_t opts;
+			opts.dataType		= GL_RGBA32F;
+			opts.width			= testImage.Width();
+			opts.height			= testImage.Height();
+			opts.minFilter		= GL_NEAREST;
+			opts.magFilter		= GL_NEAREST;
+			opts.textureType	= GL_TEXTURE_2D;
+			opts.wrap			= GL_CLAMP_TO_BORDER;
+			opts.pixelDataType	= GL_FLOAT;
+			opts.initialData	= testImage.GetImageDataBasePtr();
+			textureManager.Add( "Displacement Image", opts );
 
-			const float zDispMin = -0.03f;
-			const float zDispMax = 0.03f;
-			const float noiseScale = 5.0f;
-			const float ampScale = 0.0f;
+			// create the lines and put them in buffers to draw on the GPU
+			const float ratio = float( testImage.Height() ) / float( testImage.Width() );
+			for ( int x = 1; x < testImage.Width(); x++ )  {
+				for ( int y = 1; y < testImage.Height(); y++ ) {
 
-			for ( int y = 1; y < testImage.Height(); y++ ) {
-				for ( int x = 1; x < testImage.Width(); x++ ) {
-					line l;
+					ivec2 iA = ivec2( x - 1, y - 1 );
+					vec2 pA = vec2( RemapRange( iA.x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( iA.y, 0, testImage.Height(), -ratio, ratio ) );
 
-				// four corners of a square - 5 lines to draw
+					ivec2 iB = ivec2( x - 1, y );
+					vec2 pB = vec2( RemapRange( iB.x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( iB.y, 0, testImage.Height(), -ratio, ratio ) );
+
+					ivec2 iC = ivec2( x, y - 1 );
+					vec2 pC = vec2( RemapRange( iC.x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( iC.y, 0, testImage.Height(), -ratio, ratio ) );
+
+					ivec2 iD = ivec2( x, y );
+					vec2 pD = vec2( RemapRange( iD.x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( iD.y, 0, testImage.Height(), -ratio, ratio ) );
+
+					// four corners of a square - 5 lines to draw
 					/*	C	@=======@ D
 							|      /|
 							|     / |
@@ -50,51 +69,84 @@ public:
 							| /     |
 							|/      |
 						A	@=======@ B --> X */
-					color_4F colA = testImage.GetAtXY( x - 1, y - 1 );
-					vec4 cA = vec4( colA[ 0 ], colA[ 1 ], colA[ 2 ], 1.0f );
-					vec4 pA = vec4( RemapRange( x - 1, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( y - 1, 0, testImage.Height(), -1.0f, 1.0f ), RemapRange( colA.GetLuma(), 0.0f, 1.0f, zDispMin, zDispMax ), 1.0f );
-					pA.z += ampScale * p.noise( pA.x * noiseScale, pA.y * noiseScale, pA.z * noiseScale );
 
-					color_4F colB = testImage.GetAtXY( x - 1, y );
-					vec4 cB = vec4( colB[ 0 ], colB[ 1 ], colB[ 2 ], 1.0f );
-					vec4 pB = vec4( RemapRange( x - 1, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( y, 0, testImage.Height(), -1.0f, 1.0f ), RemapRange( colB.GetLuma(), 0.0f, 1.0f, zDispMin, zDispMax ), 1.0f );
-					pB.z += ampScale * p.noise( pB.x * noiseScale, pB.y * noiseScale, pB.z * noiseScale );
+					// line AB
+					xyPos.push_back( pA );
+					xyPos.push_back( pB );
+					pixelIdx.push_back( iA );
+					pixelIdx.push_back( iB );
 
-					color_4F colC = testImage.GetAtXY( x, y - 1 );
-					vec4 cC = vec4( colC[ 0 ], colC[ 1 ], colC[ 2 ], 1.0f );
-					vec4 pC = vec4( RemapRange( x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( y - 1, 0, testImage.Height(), -1.0f, 1.0f ), RemapRange( colC.GetLuma(), 0.0f, 1.0f, zDispMin, zDispMax ), 1.0f );
-					pC.z += ampScale * p.noise( pC.x * noiseScale, pC.y * noiseScale, pC.z * noiseScale );
+					// line AC
+					xyPos.push_back( pA );
+					xyPos.push_back( pC );
+					pixelIdx.push_back( iA );
+					pixelIdx.push_back( iC );
 
-					color_4F colD = testImage.GetAtXY( x, y );
-					vec4 cD = vec4( colD[ 0 ], colD[ 1 ], colD[ 2 ], 1.0f );
-					vec4 pD = vec4( RemapRange( x, 0, testImage.Width(), -1.0f, 1.0f ), RemapRange( y, 0, testImage.Height(), -1.0f, 1.0f ), RemapRange( colD.GetLuma(), 0.0f, 1.0f, zDispMin, zDispMax ), 1.0f );
-					pD.z += ampScale * p.noise( pD.x * noiseScale, pD.y * noiseScale, pD.z * noiseScale );
+					// line CD
+					xyPos.push_back( pC );
+					xyPos.push_back( pD );
+					pixelIdx.push_back( iC );
+					pixelIdx.push_back( iD );
 
-					LineSpamConfig.AddLine( { pA, pB, cA, cB } ); // AB
-					LineSpamConfig.AddLine( { pA, pC, cA, cC } ); // AC
-					LineSpamConfig.AddLine( { pC, pD, cC, cD } ); // CD
-					LineSpamConfig.AddLine( { pB, pD, cB, cD } ); // BD
-					// LineSpamConfig.AddLine( { pA, pD, cA, cD } ); // AD
+					// line BD
+					xyPos.push_back( pB );
+					xyPos.push_back( pD );
+					pixelIdx.push_back( iB );
+					pixelIdx.push_back( iD );
+
+					// line AD
+					xyPos.push_back( pA );
+					xyPos.push_back( pD );
+					pixelIdx.push_back( iA );
+					pixelIdx.push_back( iD );
 				}
 			}
 
-			// prepare the line buffers
-			LineSpamConfig.PrepLineBuffers();
+			// so we have vec2's for position and ivec2's for pixel index
+
+			cout << "Generating resources" << endl;
+			glGenVertexArrays( 1, &lineVAO );
+			glBindVertexArray( lineVAO );
+
+			glGenBuffers( 1, &lineVBO );
+			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
+
+			cout << "Buffering resources" << endl;
+			glBufferData( GL_ARRAY_BUFFER, sizeof( vec2 ) * xyPos.size() + sizeof( ivec2 ) * pixelIdx.size(), NULL, GL_DYNAMIC_DRAW );
+			glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof( vec2 ) * xyPos.size(), xyPos.data() );
+			glBufferSubData( GL_ARRAY_BUFFER, sizeof( vec2 ) * xyPos.size(), sizeof( ivec2 ) * pixelIdx.size(), pixelIdx.data() );
+
+			cout << "Targeting resources" << endl;
+			glEnableVertexAttribArray( glGetAttribLocation( shaders[ "Line Draw" ], "position" ) );
+			glVertexAttribPointer( glGetAttribLocation( shaders[ "Line Draw" ], "position" ), 2, GL_FLOAT, GL_FALSE, 0, ( GLvoid * ) 0 );
+
+			glEnableVertexAttribArray( glGetAttribLocation( shaders[ "Line Draw" ], "pixel" ) );
+			glVertexAttribIPointer( glGetAttribLocation( shaders[ "Line Draw" ], "pixel" ), 2, GL_INT, 0, ( GLvoid * ) ( sizeof( vec2 ) * xyPos.size() ) );
 		}
 	}
 
 	void HandleCustomEvents () { // application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
+
+		// zoom in and out with plus/minus
+		if ( inputHandler.getState( KEY_MINUS ) ) {
+			scale /= 0.99f;
+		}
+		if ( inputHandler.getState( KEY_EQUALS ) ) {
+			scale *= 0.99f;
+		}
 	}
 
 	void ImguiPass () {
 		ZoneScoped;
 
+			/*
 		ImGui::Begin( "LineSpam", NULL );
 		ImGui::Text( "Loaded %d opaque lines", LineSpamConfig.opaqueLines.size() );
 		ImGui::Text( "Loaded %d transparent lines", LineSpamConfig.transparentLines.size() );
 		ImGui::SliderFloat( "Depth Range", &LineSpamConfig.depthRange, 0.001f, 10.0f );
 		ImGui::End();
+			*/
 
 		if ( tonemap.showTonemapWindow ) {
 			TonemapControlsWindow();
@@ -115,18 +167,33 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // update the frame
-			scopedTimer Start( "LineSpam Update" );
-			LineSpamConfig.UpdateTransform( inputHandler );
-			LineSpamConfig.ClearPass();
-			LineSpamConfig.OpaquePass();
-			LineSpamConfig.TransparentPass();
-			LineSpamConfig.CompositePass();
+		// draw the current set of lines
+		{
+			scopedTimer Start( "Drawing" );
+			const GLuint shader = shaders[  "Line Draw" ];
+			glUseProgram( shader );
+			glBindVertexArray( lineVAO );
+			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
+
+			glEnable( GL_DEPTH_TEST );
+			// glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
+			glDepthFunc( GL_LEQUAL );
+			// glLineWidth( 1.5f );
+
+			textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
+
+			glUniform3fv( glGetUniformLocation( shader, "xBasis" ), 1, glm::value_ptr( trident.basisX ) );
+			glUniform3fv( glGetUniformLocation( shader, "yBasis" ), 1, glm::value_ptr( trident.basisY ) );
+			glUniform3fv( glGetUniformLocation( shader, "zBasis" ), 1, glm::value_ptr( trident.basisZ ) );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+
+			glDrawArrays( GL_LINES, 0, xyPos.size() );
 		}
 
+		/*
 		{ // copy the composited image into accumulatorTexture
-			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
+			scopedTimer Start( "Drawing" );
 			glUseProgram( shaders[ "Draw" ] );
 			textureManager.BindTexForShader( "Composite Target", "compositedResult", shaders[ "Draw" ], 2 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
@@ -141,6 +208,7 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
+		*/
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
@@ -180,6 +248,7 @@ public:
 		terminal.update( inputHandler );
 
 		// event handling
+		HandleTridentEvents();
 		HandleCustomEvents();
 		HandleQuitEvents();
 
@@ -193,7 +262,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
-	LineSpam engineInstance;
+	LumaMesh engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }
