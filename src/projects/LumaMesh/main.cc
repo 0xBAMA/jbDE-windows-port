@@ -103,26 +103,49 @@ public:
 				}
 			}
 
-			// so we have vec2's for position and ivec2's for pixel index
-
-			cout << "Generating resources" << endl;
+		// create the vertex buffers
+			// we have vec2's for position and ivec2's for pixel index
 			glGenVertexArrays( 1, &lineVAO );
 			glBindVertexArray( lineVAO );
-
 			glGenBuffers( 1, &lineVBO );
 			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
-
-			cout << "Buffering resources" << endl;
 			glBufferData( GL_ARRAY_BUFFER, sizeof( vec2 ) * xyPos.size() + sizeof( ivec2 ) * pixelIdx.size(), NULL, GL_DYNAMIC_DRAW );
 			glBufferSubData( GL_ARRAY_BUFFER, 0, sizeof( vec2 ) * xyPos.size(), xyPos.data() );
 			glBufferSubData( GL_ARRAY_BUFFER, sizeof( vec2 ) * xyPos.size(), sizeof( ivec2 ) * pixelIdx.size(), pixelIdx.data() );
 
-			cout << "Targeting resources" << endl;
+		// setup the vertex attribs
 			glEnableVertexAttribArray( glGetAttribLocation( shaders[ "Line Draw" ], "position" ) );
 			glVertexAttribPointer( glGetAttribLocation( shaders[ "Line Draw" ], "position" ), 2, GL_FLOAT, GL_FALSE, 0, ( GLvoid * ) 0 );
-
 			glEnableVertexAttribArray( glGetAttribLocation( shaders[ "Line Draw" ], "pixel" ) );
 			glVertexAttribIPointer( glGetAttribLocation( shaders[ "Line Draw" ], "pixel" ), 2, GL_INT, 0, ( GLvoid * ) ( sizeof( vec2 ) * xyPos.size() ) );
+
+		// create the framebuffer
+			{
+				textureOptions_t opts;
+
+				// ==== Depth =========================
+				opts.dataType = GL_DEPTH_COMPONENT32;
+				opts.textureType = GL_TEXTURE_2D;
+				opts.width = config.width;
+				opts.height = config.height;
+				textureManager.Add( "Framebuffer Depth", opts );
+				// ==== Color =========================
+				opts.dataType = GL_RGBA16F;
+				textureManager.Add( "Framebuffer Color", opts );
+				// ====================================
+
+				// == Framebuffer Objects =============
+				glGenFramebuffers( 1, &framebuffer );
+				const GLenum bufs[] = { GL_COLOR_ATTACHMENT0 }; // 2x 32-bit primitive ID/instance ID, 2x half float encoded normals
+
+				glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
+				glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureManager.Get( "Framebuffer Depth" ), 0 );
+				glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureManager.Get( "Framebuffer Color" ), 0 );
+				glDrawBuffers( 1, bufs );
+				if ( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE ) {
+					cout << "framebuffer creation successful" << endl;
+				}
+			}
 		}
 	}
 
@@ -170,12 +193,18 @@ public:
 
 		// draw the current set of lines
 		{
-			scopedTimer Start( "Drawing" );
-			const GLuint shader = shaders[  "Line Draw" ];
+			scopedTimer Start( "Line Draw" );
+			const GLuint shader = shaders[ "Line Draw" ];
+
+			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
+			glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
 			glUseProgram( shader );
 			glBindVertexArray( lineVAO );
 			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
 
+			/*
+		// using this requires that the framebuffer be created with multisample buffers... maybe worth playing with at some point
 			glEnable( GL_DEPTH_TEST );
 			glEnable( GL_MULTISAMPLE );
 			glHint(  GL_LINE_SMOOTH_HINT, GL_NICEST );
@@ -184,26 +213,33 @@ public:
 			glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
 			glDepthFunc( GL_LEQUAL );
 			glLineWidth( 0.5f );
+			*/
 
 			textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
 
 			// perspective projection changes
-			rngN jitter( 0.0f, 0.1f );
+			rngN jitter( 0.0f, 1.618f );
 			glm::mat3 tridentOrientationMatrix = glm::mat3( trident.basisX, trident.basisY, trident.basisZ );
 			glm::mat4 transform = glm::mat4( tridentOrientationMatrix ) * glm::scale( vec3( scale ) ) * glm::mat4( 1.0f );
-			transform = glm::lookAt( vec3( jitter(), jitter(), -10.0f ), vec3( 0.0f ), vec3( 0.0f, 1.0f, 0.0f ) ) * transform;
-			transform = glm::perspective( 0.5f, float( config.width ) / float( config.height ), 1.0f, 1000.0f ) * transform;
+			transform = glm::lookAt( vec3( jitter(), jitter(), -500.0f ), vec3( 0.0f ), vec3( 0.0f, 1.0f, 0.0f ) ) * transform;
+			transform = glm::perspective( 0.0025f, float( config.width ) / float( config.height ), 100.0f, 1000.0f ) * transform;
 			glUniformMatrix4fv( glGetUniformLocation( shader, "transform" ), 1, GL_FALSE, glm::value_ptr( transform ) );
 
+			glViewport( 0, 0, config.width, config.height );
 			glDrawArrays( GL_LINES, 0, xyPos.size() );
+			glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 		}
 
-		/*
 		{ // copy the composited image into accumulatorTexture
 			bindSets[ "Drawing" ].apply();
 			scopedTimer Start( "Drawing" );
-			glUseProgram( shaders[ "Draw" ] );
-			textureManager.BindTexForShader( "Composite Target", "compositedResult", shaders[ "Draw" ], 2 );
+			const GLuint shader = shaders[ "Draw" ];
+			glUseProgram( shader );
+
+			textureManager.BindTexForShader( "Framebuffer Depth", "depthResult", shader, 2 );
+			textureManager.BindTexForShader( "Framebuffer Color", "colorResult", shader, 3 );
+			glUniform1f( glGetUniformLocation( shader, "blendRate" ), blendRate );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}

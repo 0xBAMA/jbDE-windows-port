@@ -4,7 +4,8 @@
 in vec4 position;
 in vec4 color;
 
-// output fragment color
+// fragment output
+out float depth;
 out vec4 fragColor;
 
 void main () {
