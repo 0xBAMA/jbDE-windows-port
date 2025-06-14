@@ -621,6 +621,18 @@ target_link_libraries( LineSpam
 )
 
 # =================================================================================================
+# messing with using the luma of an image as a displacement source
+# =================================================================================================
+add_executable( LumaMesh
+	src/projects/LumaMesh/main.cc
+)
+
+target_link_libraries( LumaMesh
+	PUBLIC
+	engineBase
+)
+
+# =================================================================================================
 # Grass rendering
 # =================================================================================================
 add_executable( Raqia
