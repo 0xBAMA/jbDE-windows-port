@@ -7,6 +7,7 @@ public:
 
 	GLuint lineVAO;
 	GLuint lineVBO;
+	GLuint framebuffer;
 
 	// vertex data
 	vector< vec2 > xyPos;
@@ -14,6 +15,7 @@ public:
 
 	// state
 	float scale = 1.0f;
+	float blendRate = 0.99f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -154,10 +156,16 @@ public:
 
 		// zoom in and out with plus/minus
 		if ( inputHandler.getState( KEY_MINUS ) ) {
-			scale /= 0.99f;
+			scale *= 0.99f;
 		}
 		if ( inputHandler.getState( KEY_EQUALS ) ) {
-			scale *= 0.99f;
+			scale /= 0.99f;
+		}
+
+		if ( inputHandler.getState( KEY_R ) ) {
+			blendRate = 0.0f;
+		} else {
+			blendRate = 0.99f;
 		}
 	}
 
@@ -252,7 +260,6 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
-		*/
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
