@@ -20,18 +20,18 @@ public:
 			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/draw.cs.glsl" ).shaderHandle;
 			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/simulate.cs.glsl" ).shaderHandle;
 
-			// // field max, single value
-			// constexpr uint32_t countValue = 0;
-			// glGenBuffers( 1, &path2DConfig.maxBuffer );
-			// glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
-			// glBufferData( GL_SHADER_STORAGE_BUFFER, 1, ( GLvoid * ) &countValue, GL_DYNAMIC_COPY );
-			// glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
+			// field max, single value
+			constexpr uint32_t countValue = 0;
+			glGenBuffers( 1, &path2DConfig.maxBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, 1, ( GLvoid * ) &countValue, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
 
 			// buffer image
 			textureOptions_t opts;
 			opts.dataType		= GL_RGBA32F;
-			opts.width			= 1920;
-			opts.height			= 1200;
+			opts.width			= config.width;
+			opts.height			= config.height;
 			opts.minFilter		= GL_NEAREST;
 			opts.magFilter		= GL_NEAREST;
 			opts.textureType	= GL_TEXTURE_2D;
