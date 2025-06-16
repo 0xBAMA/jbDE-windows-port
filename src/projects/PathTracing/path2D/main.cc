@@ -44,16 +44,6 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		// // current state of the whole keyboard
-		// const uint8_t * state = SDL_GetKeyboardState( NULL );
-
-		// // current state of the modifier keys
-		// const SDL_Keymod k	= SDL_GetModState();
-		// const bool shift		= ( k & KMOD_SHIFT );
-		// const bool alt		= ( k & KMOD_ALT );
-		// const bool control	= ( k & KMOD_CTRL );
-		// const bool caps		= ( k & KMOD_CAPS );
-		// const bool super		= ( k & KMOD_GUI );
 
 	}
 
@@ -71,8 +61,6 @@ public:
 		}
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
-
-		// if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 	}
 
 	void ComputePasses () {
