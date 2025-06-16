@@ -132,7 +132,7 @@ public:
 				opts.height = config.height;
 				textureManager.Add( "Framebuffer Depth", opts );
 				// ==== Color =========================
-				opts.dataType = GL_RGBA16F;
+				opts.dataType = GL_RGBA32F;
 				textureManager.Add( "Framebuffer Color", opts );
 				// ====================================
 
@@ -165,7 +165,7 @@ public:
 		if ( inputHandler.getState( KEY_R ) ) {
 			blendRate = 0.0f;
 		} else {
-			blendRate = 0.99f;
+			blendRate = 0.9955f;
 		}
 	}
 
