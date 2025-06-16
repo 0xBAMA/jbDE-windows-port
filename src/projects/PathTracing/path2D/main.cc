@@ -1,15 +1,15 @@
 #include "../../../engine/engine.h"
 
-struct CausticConfig_t {
+struct path2DConfig_t {
 	GLuint maxBuffer;
 };
 
-class Caustic final : public engineBase { // sample derived from base engine class
+class path2D final : public engineBase { // sample derived from base engine class
 public:
-	Caustic () { Init(); OnInit(); PostInit(); }
-	~Caustic () { Quit(); }
+	path2D () { Init(); OnInit(); PostInit(); }
+	~path2D () { Quit(); }
 
-	CausticConfig_t CausticConfig;
+	path2DConfig_t path2DConfig;
 
 	void OnInit () {
 		ZoneScoped;
@@ -17,21 +17,21 @@ public:
 			Block Start( "Additional User Init" );
 
 			// image prep
-			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/Caustic/shaders/draw.cs.glsl" ).shaderHandle;
-			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/Caustic/shaders/simulate.cs.glsl" ).shaderHandle;
+			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/draw.cs.glsl" ).shaderHandle;
+			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/simulate.cs.glsl" ).shaderHandle;
 
 			// field max, single value
 			constexpr uint32_t countValue = 0;
-			glGenBuffers( 1, &CausticConfig.maxBuffer );
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, CausticConfig.maxBuffer );
+			glGenBuffers( 1, &path2DConfig.maxBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, 1, ( GLvoid * ) &countValue, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, CausticConfig.maxBuffer );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
 
 			// buffer image
 			textureOptions_t opts;
-			opts.dataType		= GL_R32UI;
-			opts.width			= 1024;
-			opts.height			= 1024;
+			opts.dataType		= GL_RGBA32F;
+			opts.width			= config.width;
+			opts.height			= config.height;
 			opts.minFilter		= GL_NEAREST;
 			opts.magFilter		= GL_NEAREST;
 			opts.textureType	= GL_TEXTURE_2D;
@@ -44,16 +44,6 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		// // current state of the whole keyboard
-		// const uint8_t * state = SDL_GetKeyboardState( NULL );
-
-		// // current state of the modifier keys
-		// const SDL_Keymod k	= SDL_GetModState();
-		// const bool shift		= ( k & KMOD_SHIFT );
-		// const bool alt		= ( k & KMOD_ALT );
-		// const bool control	= ( k & KMOD_CTRL );
-		// const bool caps		= ( k & KMOD_CAPS );
-		// const bool super		= ( k & KMOD_GUI );
 
 	}
 
@@ -71,8 +61,6 @@ public:
 		}
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
-
-		// if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 	}
 
 	void ComputePasses () {
@@ -110,9 +98,9 @@ public:
 		// clear out the buffers
 		//static constexpr uint32_t zeroes[ 1024 * 1024 ] = { 0 };
 
-		// glBindBuffer( GL_SHADER_STORAGE_BUFFER, CausticConfig.maxBuffer );
+		// glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
 		// glBufferData( GL_SHADER_STORAGE_BUFFER, 4, ( GLvoid * ) &zeroes[ 0 ], GL_DYNAMIC_COPY );
-		// glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, CausticConfig.maxBuffer );
+		// glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
 
 		//glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field" ) );
 		//glTexImage2D( GL_TEXTURE_2D, 0, GL_R32UI, 1024, 1024, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &zeroes[ 0 ] );
@@ -163,7 +151,7 @@ public:
 };
 
 int main ( int argc, char *argv[] ) {
-	Caustic engineInstance;
+	path2D engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }
