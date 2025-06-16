@@ -250,8 +250,21 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // update agents, held in the SSBO
+		const int iterations = 100;
+		for ( int i = 0; i < iterations; i++ ) { // update agents, held in the SSBO
 			scopedTimer Start( "Agent Sim" );
+
+			// run the shader to do the gaussian blur
+			glUseProgram( shaders[ "Diffuse and Decay" ] );
+
+			//swap the images
+			glBindImageTexture( 1, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "0" : "1" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // previous
+			glBindImageTexture( 2, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "1" : "0" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // current
+			glUniform1f( glGetUniformLocation( shaders[ "Diffuse and Decay" ], "decayFactor" ), physarumConfig.decayFactor );
+			physarumConfig.oddFrame = !physarumConfig.oddFrame;
+
+			glDispatchCompute( ( physarumConfig.dimensionX + 7 ) / 8, ( physarumConfig.dimensionY + 7 ) / 8, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 			// send the simulation parameters
 			glUseProgram( shaders[ "Agents" ] );
@@ -271,7 +284,9 @@ public:
 
 			glDispatchCompute( 1, numSlices, 1 );
 			glMemoryBarrier( GL_SHADER_STORAGE_BARRIER_BIT );
+
 		}
+		// once more with feeling (negates final loop iteration)
 
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
@@ -318,17 +333,6 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-		// run the shader to do the gaussian blur
-		glUseProgram( shaders[ "Diffuse and Decay" ] );
-
-		//swap the images
-		glBindImageTexture( 1, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "0" : "1" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // previous
-		glBindImageTexture( 2, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "1" : "0" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // current
-		glUniform1f( glGetUniformLocation( shaders[ "Diffuse and Decay" ], "decayFactor" ), physarumConfig.decayFactor );
-		physarumConfig.oddFrame = !physarumConfig.oddFrame;
-
-		glDispatchCompute( ( physarumConfig.dimensionX + 7 ) / 8, ( physarumConfig.dimensionY + 7 ) / 8, 1 );
-		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 	}
 
