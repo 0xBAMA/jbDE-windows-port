@@ -15,7 +15,7 @@ public:
 
 	// state
 	float scale = 1.0f;
-	float blendRate = 0.99f;
+	float blendRate = 0.996f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -27,23 +27,25 @@ public:
 
 			// load the image we want to draw, create a texture
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/circuitBoard.png" );
-			Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
+			// Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/crinkle.png" );
-			// Image_4F testImage( "../src/projects/LumaMesh/testImages/ISLAND_2.png" );
-			testImage.Resize( 2.0f );
+			Image_4F testImage( "../src/projects/LumaMesh/testImages/arch.png" );
+			testImage.SRGBtoRGB();
 			testImage.Swizzle( "rgbl" ); // compute luma term into alpha value
 
-			textureOptions_t opts;
-			opts.dataType		= GL_RGBA32F;
-			opts.width			= testImage.Width();
-			opts.height			= testImage.Height();
-			opts.minFilter		= GL_NEAREST;
-			opts.magFilter		= GL_NEAREST;
-			opts.textureType	= GL_TEXTURE_2D;
-			opts.wrap			= GL_CLAMP_TO_BORDER;
-			opts.pixelDataType	= GL_FLOAT;
-			opts.initialData	= testImage.GetImageDataBasePtr();
-			textureManager.Add( "Displacement Image", opts );
+			{
+				textureOptions_t opts;
+				opts.dataType		= GL_RGBA32F;
+				opts.width			= testImage.Width();
+				opts.height			= testImage.Height();
+				opts.minFilter		= GL_NEAREST;
+				opts.magFilter		= GL_NEAREST;
+				opts.textureType	= GL_TEXTURE_2D;
+				opts.wrap			= GL_CLAMP_TO_BORDER;
+				opts.pixelDataType	= GL_FLOAT;
+				opts.initialData	= testImage.GetImageDataBasePtr();
+				textureManager.Add( "Displacement Image", opts );
+			}
 
 			// create the lines and put them in buffers to draw on the GPU
 			const float ratio = float( testImage.Height() ) / float( testImage.Width() );
@@ -199,57 +201,68 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		// draw the current set of lines
-		{
-			scopedTimer Start( "Line Draw" );
-			const GLuint shader = shaders[ "Line Draw" ];
+		static int frame = 0;
+		frame++;
 
-			glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
-			glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		const int iterations = 10;
+		for ( int i = 0; i < iterations; i++ ) {
+			// draw the current set of lines
+			{
+				scopedTimer Start( "Line Draw" );
+				const GLuint shader = shaders[ "Line Draw" ];
 
-			glUseProgram( shader );
-			glBindVertexArray( lineVAO );
-			glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
+				glBindFramebuffer( GL_FRAMEBUFFER, framebuffer );
+				glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-			/*
-		// using this requires that the framebuffer be created with multisample buffers... maybe worth playing with at some point
-			glEnable( GL_DEPTH_TEST );
-			glEnable( GL_MULTISAMPLE );
-			glHint(  GL_LINE_SMOOTH_HINT, GL_NICEST );
-			glDepthMask( GL_FALSE );
-			glEnable( GL_BLEND );
-			glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
-			glDepthFunc( GL_LEQUAL );
-			glLineWidth( 0.5f );
-			*/
+				glUseProgram( shader );
+				glBindVertexArray( lineVAO );
+				glBindBuffer( GL_ARRAY_BUFFER, lineVBO );
 
-			textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
+				/*
+			// using this requires that the framebuffer be created with multisample buffers... maybe worth playing with at some point
+				glEnable( GL_DEPTH_TEST );
+				glEnable( GL_MULTISAMPLE );
+				glHint(  GL_LINE_SMOOTH_HINT, GL_NICEST );
+				glDepthMask( GL_FALSE );
+				glEnable( GL_BLEND );
+				glEnable( GL_LINE_SMOOTH ); // extremely resource heavy... curious what the actual implementation is
+				glDepthFunc( GL_LEQUAL );
+				glLineWidth( 0.5f );
+				*/
 
-			// perspective projection changes
-			rngN jitter( 0.0f, 1.618f );
-			glm::mat3 tridentOrientationMatrix = glm::mat3( trident.basisX, trident.basisY, trident.basisZ );
-			glm::mat4 transform = glm::mat4( tridentOrientationMatrix ) * glm::scale( vec3( scale ) ) * glm::mat4( 1.0f );
-			transform = glm::lookAt( vec3( jitter(), jitter(), -500.0f ), vec3( 0.0f ), vec3( 0.0f, 1.0f, 0.0f ) ) * transform;
-			transform = glm::perspective( 0.0025f, float( config.width ) / float( config.height ), 100.0f, 1000.0f ) * transform;
-			glUniformMatrix4fv( glGetUniformLocation( shader, "transform" ), 1, GL_FALSE, glm::value_ptr( transform ) );
+				textureManager.BindImageForShader( "Displacement Image", "displacementImage", shaders[ "Line Draw" ], 0 );
 
-			glViewport( 0, 0, config.width, config.height );
-			glDrawArrays( GL_LINES, 0, xyPos.size() );
-			glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-		}
+				// perspective projection changes
+				rngN jitter( 0.0f, 1.618f );
+				glm::mat3 tridentOrientationMatrix = glm::mat3( trident.basisX, trident.basisY, trident.basisZ );
+				glm::mat4 transform = glm::mat4( tridentOrientationMatrix ) * glm::scale( vec3( scale ) ) * glm::mat4( 1.0f );
+				transform = glm::lookAt( vec3( jitter(), jitter(), -500.0f + jitter() ), vec3( 0.0f ), vec3( 0.0f, 1.0f, 0.0f ) ) * transform;
+				transform = glm::perspective( 0.0025f, float( config.width ) / float( config.height ), 100.0f, 1000.0f ) * transform;
+				glUniformMatrix4fv( glGetUniformLocation( shader, "transform" ), 1, GL_FALSE, glm::value_ptr( transform ) );
 
-		{ // copy the composited image into accumulatorTexture
-			bindSets[ "Drawing" ].apply();
-			scopedTimer Start( "Drawing" );
-			const GLuint shader = shaders[ "Draw" ];
-			glUseProgram( shader );
+				static rngi wangSeed( 0, 99999999 );
+				glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeed() );
 
-			textureManager.BindTexForShader( "Framebuffer Depth", "depthResult", shader, 2 );
-			textureManager.BindTexForShader( "Framebuffer Color", "colorResult", shader, 3 );
-			glUniform1f( glGetUniformLocation( shader, "blendRate" ), blendRate );
+				glUniform1i( glGetUniformLocation( shader, "frame" ), frame );
 
-			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glViewport( 0, 0, config.width, config.height );
+				glDrawArrays( GL_LINES, 0, xyPos.size() );
+				glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+			}
+
+			{ // copy the composited image into accumulatorTexture
+				bindSets[ "Drawing" ].apply();
+				scopedTimer Start( "Drawing" );
+				const GLuint shader = shaders[ "Draw" ];
+				glUseProgram( shader );
+
+				textureManager.BindTexForShader( "Framebuffer Depth", "depthResult", shader, 2 );
+				textureManager.BindTexForShader( "Framebuffer Color", "colorResult", shader, 3 );
+				glUniform1f( glGetUniformLocation( shader, "blendRate" ), blendRate );
+
+				glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			}
 		}
 
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping

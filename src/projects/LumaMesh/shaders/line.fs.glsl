@@ -8,6 +8,14 @@ in vec4 color;
 out float depth;
 out vec4 fragColor;
 
+// #include "random.h"
+uniform int wangSeed;
+
 void main () {
+    // seed = wangSeed + int( gl_FragCoord.x ) * 420 + int( gl_FragCoord.y ) * 31415;
+
+    // if ( NormalizedRandomFloat() < 0.9f )
+        // discard;
+
     fragColor = color;
 }
