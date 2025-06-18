@@ -356,10 +356,18 @@ vec3 SkyColor( ray_t ray ) {
 #define REFRACTIVE_BACKFACE			100
 //=============================================================================================================================
 float Reflectance ( const float cosTheta, const float IoR ) {
+	/*
 	// Use Schlick's approximation for reflectance
 	float r0 = ( 1.0f - IoR ) / ( 1.0f + IoR );
 	r0 = r0 * r0;
 	return r0 + ( 1.0f - r0 ) * pow( ( 1.0f - cosTheta ), 5.0f );
+	*/
+
+	// "Full Fresnel", from https://www.shadertoy.com/view/csfSz7
+	float g = sqrt( IoR * IoR + cosTheta * cosTheta - 1.0f );
+	float a = ( g - cosTheta ) / ( g + cosTheta );
+	float b = ( ( g + cosTheta ) * cosTheta - 1.0f ) / ( ( g - cosTheta ) * cosTheta + 1.0f );
+	return 0.5f * a * a * ( 1.0f + b * b );
 }
 //=============================================================================================================================
 vec3 anglePhong( float a, vec3 n ){
