@@ -46,6 +46,12 @@ vec2 RandomInUnitDisk () {
 	return RandomUnitVector().xy;
 }
 
+float NormalDistributionRand() {
+	// https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+	float U1 = NormalizedRandomFloat();
+	float U2 = NormalizedRandomFloat();
+	return sqrt( -2.0f * log( U1 ) ) * cos( tau * U2 );
+}
 
 vec3 cosWeightedRandomHemisphereDirection( const vec3 n ) {
 	vec2 rv2 = vec2( NormalizedRandomFloat(), NormalizedRandomFloat() );
