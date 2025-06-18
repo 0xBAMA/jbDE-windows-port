@@ -1806,70 +1806,6 @@ float deGatee3( vec3 p ) {
 	return deGateep( p / scale, 5 ) * scale - 0.0006;
 }
 
-
-vec4 formula(vec4 p) {
-	p.xz = abs(p.xz+1.)-abs(p.xz-1.)-p.xz;
-	p=p*2./clamp(dot(p.xyz,p.xyz),.15,1.)-vec4(0.5,0.5,0.8,0.);
-	p.xy*=rot(.5);
-	return p;
-}
-float screen(vec3 p) {
-	float d1=length(p.yz-vec2(.25,0.))-.5;
-	float d2=length(p.yz-vec2(.25,2.))-.5;
-	return min(max(d1,abs(p.x-.3)-.01),max(d2,abs(p.x+2.3)-.01));
-}
-float deKaliChannel(vec3 pos) {
-	vec3 tpos=pos;
-	tpos.z=abs(2.-mod(tpos.z,4.));
-	vec4 p=vec4(tpos,1.5);
-	float y=max(0.,.35-abs(pos.y-3.35))/.35;
-
-	for (int i=0; i<8; i++) {p=formula(p);}
-	float fr=max(-tpos.x-4.,(length(max(vec2(0.),p.yz-3.)))/p.w);
-
-	float sc=screen(tpos);
-	return min(sc,fr);
-}
-
-vec3 foldGG(vec3 p0){
-	vec3 p = p0;
-	if(length(p) > 2.)return p;
-	p = mod(p,2.)-1.;
-	return p;
-}
-
-float deGGGAZ( vec3 p0 ){
-	vec4 p = vec4(p0, 1.);
-	escape = 0.;
-	if(p.x > p.z)p.xz = p.zx;
-	if(p.z > p.y)p.zy = p.yz;
-	if(p.y > p.x)p.yx = p.xy;
-	p = abs(p);
-	for(int i = 0; i < 4; i++){
-		p.xyz = foldGG(p.xyz);
-		p.xyz = fract(p.xyz*0.5 - 1.)*2.-1.0;
-		p*=(1.1/clamp(dot(p.xyz,p.xyz),-0.1,1.));
-	}
-	p/=p.w;
-	return abs(p.x)*0.25;
-}
-
-float deGGGAZ2( vec3 p0 ){
-	vec4 p = vec4(p0, 1.);
-	escape = 0.;
-	if(p.x > p.z)p.xz = p.zx;
-	if(p.z > p.y)p.zy = p.yz;
-	if(p.y > p.x)p.yx = p.xy;
-	p = abs(p);
-	for(int i = 0; i < 8; i++){
-		p.xyz = foldGG(p.xyz);
-		p.xyz = fract(p.xyz*0.5 - 1.)*2.-1.0;
-		p*=(1.1/clamp(dot(p.xyz,p.xyz),-0.1,1.));
-	}
-	p/=p.w;
-	return abs(p.x)*0.25;
-}
-
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -1891,12 +1827,12 @@ float de( in vec3 p ) {
 	// }
 
 	const vec3 bboxDim = vec3( 3.0f, 3.0f, 6.0f );
-	// const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
+	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	// const float dBounds = sdBox( p, bboxDim );
-	const float dBounds = sdBox( p, vec3( marbleRadius ) );
+	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
 
 	{
-		const float d = max( max( deGGGAZ2( p ), dBounds ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee3( p ), dBounds ), dBounds );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1917,19 +1853,18 @@ float de( in vec3 p ) {
 			hitSurfaceType = METALLIC;
 			*/
 
-			// hitSurfaceType = DIFFUSE;
-			// hitColor = nvidia * 0.1f;
-
 			// hitSurfaceType = MIRROR;
 
-
-
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			hitColor = vec3( 0.99f );
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+
+
+			// hitColor = vec3( 0.99f );
 			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			// hitColor = vec3( ( hitSurfaceType != MIRROR ) ? gold : vec3( 0.99f ) );
 			// hitColor = vec3( ( hitSurfaceType != MIRROR ) ? ( vec3( blood.grb / 3.0f ) ) : vec3( 0.9f ) );
-			hitRoughness = 0.1f;
+			// hitRoughness = 0.1f;
 
 
 
@@ -1943,11 +1878,11 @@ float de( in vec3 p ) {
 	}
 
 	if ( true ) {
-		const float d = max( max( deGGGAZ( p ), dBounds ), sdBox( p, bboxDim ) );
+		const float d = max( max( deGatee2( p ), dBounds ), dBounds );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			// hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-			// hitColor = vec3( 0.99f );
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			hitColor = ( hitSurfaceType == DIFFUSE ) ? vec3( 0.01618f ) : vec3( 0.99f );
 			// hitColor = blood;
 
 			// hitSurfaceType = DIFFUSE;
@@ -1955,11 +1890,7 @@ float de( in vec3 p ) {
 
 			// hitColor = mix( nickel, brass, 0.2f );
 			// hitColor = brass;
-			// hitColor = mix( mix( gold, vec3( 0.99f ), -0.3f ), vec3( 1.0f, 0.0f, 0.0f ), 0.5f ); // hypergold
-			hitColor = vec3( 0.3f, 0.0f, 0.0f );
-			// hitRoughness = 0.1f;
-			// hitSurfaceType = METALLIC;
-			hitSurfaceType = DIFFUSE;
+
 
 			/*
 			const float noiseValue = saturate( pow( perlinfbm( p, 30.0f, 4 ), 4 ) * 2.0f );
@@ -1973,66 +1904,11 @@ float de( in vec3 p ) {
 		}
 	}
 
-
-	if ( false ) {
-		const float d = max( max( deGatee( p ), dBounds ), sdBox( p, bboxDim ) );
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			// hitColor = vec3( 0.2f, 0.2f, 0.75f );
-			// hitColor = vec3( 0.99f );
-			// hitColor = honey;
-			// hitSurfaceType = EMISSIVE;
-
-			hitSurfaceType = METALLIC;
-			hitRoughness = 0.1f;
-			// hitColor = mix( mix( gold, vec3( GetLuma( gold ) ), -0.2f ), blood, 0.5f );
-			hitColor = titanium;
-
-			/*
-			bool behaviorSwitch = ( NormalizedRandomFloat() < 0.1f );
-			if ( behaviorSwitch ) {
-				hitSurfaceType = MIRROR;
-				hitColor = vec3( 0.99f );
-			} else {
-				hitSurfaceType = METALLIC;
-				hitRoughness = 0.1f;
-				hitColor = copper;
-			}
-			*/
-		}
-	}
-
-	if ( true ) {
-		const float scale = 0.5f;
-		// const float d = max( max( deKaliChannel( p * scale - vec3( -0.5f, -0.5f, 0.0f ) ) / scale, dBounds ), sdBox( p, bboxDim ) );
-		const float d = length( p ) - 0.2f;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			// hitSurfaceType = DIFFUSE;
-			// hitColor = nvidia * 0.1f;
-			hitSurfaceType = EMISSIVE;
-			hitColor = vec3( 2.0f, 0.1618f, 0.1618f ).rrr;
-		}
-	}
-
-	if ( false ) {
-		const float scale = 0.5f;
-		const vec3 offset = vec3( -1.5f, -2.0f, 0.5f );
-		const float d = max( deWater( offset + p * scale ) / scale, sdBox( p, vec3( 3.0f ) ) );
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = NormalizedRandomFloat() < 0.1f ? MIRROR : DIFFUSE;
-			hitColor = vec3( ( hitSurfaceType == DIFFUSE ) ? 0.00618f : 0.9f );
-		}
-	}
-
-
-	 {
+	{
 	 	const float d = fBox( p, vec3( 100.0f, 0.02f, 0.02f ) );
 	 	sceneDist = min( sceneDist, d );
 	 	if ( sceneDist == d && d < epsilon ) {
 	 		hitSurfaceType = EMISSIVE;
-	 		// hitSurfaceType = DIFFUSE;
 	 		hitColor = vec3( 0.618f );
 	 	}
 	 }
@@ -2769,8 +2645,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 
 		// this will need to be handled in a way that can do multiple types of parameters - distance and normal are the outputs
 		const float currentNearestPositive =
-			// iSphereOffset( ray.origin, ray.direction, tempNormal, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.xyz );
-			iBoxOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w ), spheres[ i ].positionRadius.xyz );
+			iSphereOffset( ray.origin, ray.direction, tempNormal, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.xyz );
+			// iBoxOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w ), spheres[ i ].positionRadius.xyz );
 			// iTorusOffset( ray.origin, ray.direction, tempNormal, vec2( spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w / 5.0f ), spheres[ i ].positionRadius.xyz );
 			// iEllipsoidOffset( ray.origin, ray.direction, tempNormal, vec3( spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w * 3.0f ), spheres[ i ].positionRadius.xyz );
 			// iGoursat( ray.origin - spheres[ i ].positionRadius.xyz, ray.direction, tempNormal, 5.0f * 0.16f * spheres[ i ].positionRadius.w, spheres[ i ].positionRadius.w );
@@ -2796,8 +2672,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		}
 		result.albedo = spheres[ indexOfHit ].colorMaterial.xyz;
 		result.IoR = spheres[ indexOfHit ].materialProps.r;
-		// result.roughness = spheres[ indexOfHit ].materialProps.g;
-		result.roughness = saturate( pow( perlinfbm( ray.origin + ray.direction * result.dTravel, 20.0f, 4 ), 3.0f ) * 0.2f );
+		result.roughness = spheres[ indexOfHit ].materialProps.g;
+		// result.roughness = saturate( pow( perlinfbm( ray.origin + ray.direction * result.dTravel, 20.0f, 4 ), 3.0f ) * 0.2f );
 	}
 	return result;
 }

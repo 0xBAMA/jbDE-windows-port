@@ -244,7 +244,7 @@ void Daedalus::PrepSphereBufferRandom() {
 	// simple implementation, randomizing all parameters
 	rng c = rng(  0.3f, 1.0f );
 	rngN o = rngN( 0.0f, 0.125f );
-	rng r = rng( 0.1f, 0.15f );
+	rng r = rng( 0.2f, 1.5f );
 	rng IoR = rng( 1.0f / 1.1f, 1.0f / 1.5f );
 	rng Roughness = rng( 0.0f, 0.5f );
 
