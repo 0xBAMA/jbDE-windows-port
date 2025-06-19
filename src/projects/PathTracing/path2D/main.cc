@@ -2,6 +2,7 @@
 
 struct path2DConfig_t {
 	GLuint maxBuffer;
+	ivec2 dims = ivec2( 1920 / 2, 1080 / 2 );
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -30,8 +31,8 @@ public:
 			// buffer image
 			textureOptions_t opts;
 			opts.dataType		= GL_RGBA32F;
-			opts.width			= config.width;
-			opts.height			= config.height;
+			opts.width			= path2DConfig.dims.x;
+			opts.height			= path2DConfig.dims.y;
 			opts.minFilter		= GL_NEAREST;
 			opts.magFilter		= GL_NEAREST;
 			opts.textureType	= GL_TEXTURE_2D;
@@ -102,7 +103,7 @@ public:
 		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 		textureManager.BindImageForShader( "Field", "bufferImage", shader, 2 );
-		glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+		glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
