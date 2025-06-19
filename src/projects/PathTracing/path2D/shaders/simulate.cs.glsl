@@ -155,15 +155,6 @@ float de ( vec2 p ) {
 		}
 	}
 
-	{
-		const float d = distance( p, vec2( -200.0f, 0.0f ) ) - 10.0f;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = DIFFUSE;
-			hitAlbedo = ( wavelength < 500.0f ) ? ( RangeRemapValue( wavelength, 300, 500, 0.0f, 0.2f ) ) : ( RangeRemapValue( wavelength, 500, 900, 0.2f, 0.0f ) );
-		}
-	}
-
 	{ // an example object (refractive)
 		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 100.0f, 0.0f ) ) - 150.0f );
 		sceneDist = min( sceneDist, d );
@@ -271,6 +262,12 @@ void main () {
 		}
 
 		// "chance to consume" russian roulette term... tbd
+
+		// if ( loc.x < imageSize( bufferImage ).x / 2 ) {
+			// russian roulette termination
+			if ( NormalizedRandomFloat() > transmission ) break;
+			transmission *= 1.0f / transmission; // compensation term
+		// }
 
 		// attenuate transmission by the surface albedo
 		if ( result.materialType != EMISSIVE ) transmission *= result.albedo;
