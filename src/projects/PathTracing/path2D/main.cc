@@ -70,7 +70,7 @@ public:
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
-			textureManager.BindImageForShader( "Field", "bufferImage", shaders[ "Draw" ], 2 );
+			textureManager.BindTexForShader( "Field", "bufferImage", shaders[ "Draw" ], 2 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -95,27 +95,14 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-		// clear out the buffers
-		//static constexpr uint32_t zeroes[ 1024 * 1024 ] = { 0 };
-
-		// glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
-		// glBufferData( GL_SHADER_STORAGE_BUFFER, 4, ( GLvoid * ) &zeroes[ 0 ], GL_DYNAMIC_COPY );
-		// glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
-
-		//glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field" ) );
-		//glTexImage2D( GL_TEXTURE_2D, 0, GL_R32UI, 1024, 1024, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &zeroes[ 0 ] );
-		//glMemoryBarrier( GL_ALL_BARRIER_BITS );
-
-		textureManager.ZeroTexture2D( "Field" );
-
 		// run the shader to run some rays
-		static rngi wangSeeder = rngi( 0, 100000 );
+		static rngi wangSeeder = rngi( 0, 1000000 );
 		const GLuint shader = shaders[ "Simulate" ];
 		glUseProgram( shader );
 		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
-		textureManager.BindImageForShader( "Field", "bufferImage", shader, 0 );
-		glDispatchCompute( ( 1024 ) / 16, ( 1024 ) / 16, 1 );
+		textureManager.BindImageForShader( "Field", "bufferImage", shader, 2 );
+		glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
