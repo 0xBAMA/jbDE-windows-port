@@ -239,8 +239,8 @@ void main () {
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
 	// initial ray origin coming from jittered subpixel location, random direction
-	vec2 rayOrigin = 0.5f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
-	vec2 rayDirection = CircleOffset(); // consider uniform remappings, might create diffraction spikes?
+	vec2 rayOrigin = 2.0f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
+	vec2 rayDirection = normalize( CircleOffset() ); // consider uniform remappings, might create diffraction spikes?
 
 	// transmission and energy totals
 	float transmission = 1.0f;
@@ -263,11 +263,9 @@ void main () {
 
 		// "chance to consume" russian roulette term... tbd
 
-		// if ( loc.x < imageSize( bufferImage ).x / 2 ) {
-			// russian roulette termination
-			if ( NormalizedRandomFloat() > transmission ) break;
-			transmission *= 1.0f / transmission; // compensation term
-		// }
+		// russian roulette termination
+		if ( NormalizedRandomFloat() > transmission ) break;
+		transmission *= 1.0f / transmission; // compensation term
 
 		// attenuate transmission by the surface albedo
 		if ( result.materialType != EMISSIVE ) transmission *= result.albedo;
@@ -282,7 +280,7 @@ void main () {
 		switch ( result.materialType ) {
 		case EMISSIVE:
 		case DIFFUSE:
-			rayDirection = CircleOffset();
+			rayDirection = normalize( CircleOffset() );
 			// invert if going into the surface
 			if ( dot( rayDirection, result.normal ) < 0.0f ) {
 				rayDirection = -rayDirection;
