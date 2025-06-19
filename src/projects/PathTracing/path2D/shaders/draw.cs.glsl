@@ -5,11 +5,9 @@ layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 
 // the field buffer image
-layout( r32ui ) uniform uimage2D bufferImage;
-layout( binding = 0, std430 ) buffer maxBuffer { uint maxCount; };
+layout( rgba32f ) uniform image2D bufferImage;
 
-#include "mathUtils.h"
-#include "colorRamps.glsl.h"
+#include "colorspaceConversions.glsl"
 
 void main () {
 	// pixel location
@@ -17,10 +15,9 @@ void main () {
 
 	vec3 col = vec3( 0.0f );
 	if ( all( lessThan( loc, imageSize( bufferImage ) ) ) ) {
-		// col = vec3( float( imageLoad( bufferImage, loc ).r ) / float( maxCount ) ) * 10.0f;
-		// col = vec3( float( imageLoad( bufferImage, loc ).r ) / 20.0f );
-		// col = inferno( saturate( float( imageLoad( bufferImage, loc ).r ) / 20.0f ) );
-		col = PuBu_r( saturate( float( imageLoad( bufferImage, loc ).r ) / 100.0f ) );
+		// accumulated value is in the XYZ colorspace
+		vec3 inXYZ = imageLoad( bufferImage, loc ).rgb;
+		col = xyz_to_rgb( inXYZ );
 	}
 
 	// write the data to the image
