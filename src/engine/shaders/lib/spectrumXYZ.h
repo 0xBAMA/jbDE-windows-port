@@ -1,5 +1,3 @@
-#include "common.hpp"
-#include "vec3.hpp"
 // coming from https://www.shadertoy.com/view/M3jcDW
 vec3 cie_1964(float lambda) {
     switch(int(lambda)) {

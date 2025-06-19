@@ -929,7 +929,7 @@ float find_gamut_intersection(float a, float b, float L1, float C1, float L0, ve
 
 				float r = 4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s - 1.f;
 				float r1 = 4.0767416621f * ldt - 3.3077115913f * mdt + 0.2309699292f * sdt;
-				float r2 = 4.0767416621f * ldt2 - 3.3077115913f * mdt2 + 0.2309699292f * sdt2;yyyy
+				float r2 = 4.0767416621f * ldt2 - 3.3077115913f * mdt2 + 0.2309699292f * sdt2;
 
 				float u_r = r1 / (r1 * r1 - 0.5f * r * r2);
 				float t_r = -r * u_r;
