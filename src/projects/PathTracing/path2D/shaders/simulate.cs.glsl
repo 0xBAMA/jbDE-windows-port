@@ -17,6 +17,7 @@ float rayPlaneIntersect ( in vec3 rayOrigin, in vec3 rayDirection ) {
 #include "mathUtils.h"
 #include "spectrumXYZ.h"
 #include "colorspaceConversions.glsl"
+#include "hg_sdf.glsl"
 
 // drawing inspiration from https://www.shadertoy.com/view/M3jcDW
 	// they use a "presence" term, which projects one color onto another to judge similarity... their usage is as a
@@ -118,18 +119,26 @@ float getIORForMaterial ( int material ) {
 	return IoR;
 }
 
+float rectangle ( vec2 samplePosition, vec2 halfSize ) {
+	vec2 componentWiseEdgeDistance = abs( samplePosition ) - halfSize;
+	float outsideDistance = length( max( componentWiseEdgeDistance, 0 ) );
+	float insideDistance = min( max( componentWiseEdgeDistance.x, componentWiseEdgeDistance.y ), 0 );
+	return outsideDistance + insideDistance;
+}
+
 // should we invert the lenses?
 bool invert = false;
 
 float de ( vec2 p ) {
+	const vec2 pOriginal = p;
 	float sceneDist = 100000.0f;
 
 	hitAlbedo = 0.0f;
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
-	{ // an example object (emissive)
-		const float d = distance( p, vec2( -200.0f, -200.0f ) ) - 20.0f;
+	if ( false ) { // an example object (emissive)
+		const float d = distance( p, vec2( -250.0f, -250.0f ) ) - 5.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;
@@ -137,8 +146,8 @@ float de ( vec2 p ) {
 		}
 	}
 
-	{
-		const float d = distance( p, vec2( -200.0f, 200.0f ) ) - 20.0f;
+	if ( false ) { // an example object (emissive)
+		const float d = min( distance( p, vec2( -460.0f, 85.0f ) ) - 20.0f, distance( p, vec2(  460.0f, 115.0f ) ) - 20.0f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;
@@ -146,8 +155,9 @@ float de ( vec2 p ) {
 		}
 	}
 
-	{
-		const float d = distance( p, vec2( -400.0f, 0.0f ) ) - 20.0f;
+	if ( true ) {
+		pModInterval1( p.x, 700.0f, -1.0f, 1.0f );
+		const float d = min( distance( p, vec2( 0.0f, 350.0f ) ), distance( p, vec2( 0.0f, -350.0f ) ) ) - 10.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;
@@ -155,12 +165,26 @@ float de ( vec2 p ) {
 		}
 	}
 
+	p = Rotate2D( 0.3f ) * pOriginal;
+	vec2 gridIndex;
+	gridIndex.x = pModInterval1( p.x, 100.0f, -10.0f, 10.0f );
+	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 6.0f );
+
 	{ // an example object (refractive)
-		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 100.0f, 0.0f ) ) - 150.0f );
+		bool checker = checkerBoard( 1.0f, vec3( gridIndex / 3.0f + vec2( 0.1f ), 0.5f ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 32.0f ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 32.0f ) ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
-			hitAlbedo = 0.99f;
+			if ( checker ) {
+				// hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				hitSurfaceType = MIRROR;
+				hitAlbedo = 1.0f;
+			} else {
+				hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				bool checker2 =  checkerBoard( 1.0f, vec3( gridIndex / 2.0f + vec2( 0.1f ), 0.5f ) );
+				// hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, checker2 ? 0.5f : 1.0f, checker2 ? 1.0f : 0.3f );
+				hitAlbedo = 1.0f;
+			}
 		}
 	}
 
@@ -318,6 +342,6 @@ void main () {
 	vec4 previousValue = imageLoad( bufferImage, loc );
 	float sampleCount = previousValue.a + 1.0f;
 	const float mixFactor = 1.0f / sampleCount;
-	const vec4 mixedColor = vec4( mix( previousValue.xyz, energyTotal * wavelengthColor( wavelength ) / 2, mixFactor ), sampleCount );
+	const vec4 mixedColor = vec4( mix( previousValue.xyz, energyTotal * wavelengthColor( wavelength ), mixFactor ), sampleCount );
 	imageStore( bufferImage, loc, mixedColor );
 }
