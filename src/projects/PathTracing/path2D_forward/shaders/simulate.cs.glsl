@@ -130,16 +130,23 @@ float getIORForMaterial ( int material ) {
 // should we invert the lenses?
 bool invert = false;
 
+float rectangle ( vec2 samplePosition, vec2 halfSize ) {
+	vec2 componentWiseEdgeDistance = abs( samplePosition ) - halfSize;
+	float outsideDistance = length( max( componentWiseEdgeDistance, 0 ) );
+	float insideDistance = min( max( componentWiseEdgeDistance.x, componentWiseEdgeDistance.y ), 0 );
+	return outsideDistance + insideDistance;
+}
+
 float de ( vec2 p ) {
 	float sceneDist = 100000.0f;
+	const vec2 pOriginal = p;
 
 	hitAlbedo = 0.0f;
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
-	pModPolar( p.xy, 13.0f );
-
-	{ // an example object (refractive)
+	if ( false ) { // an example object (refractive)
+		pModPolar( p.xy, 13.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( max( distance( p, vec2( 90.0f, 0.0f ) ) - 100.0f, distance( p, vec2( 110.0f, 0.0f ) ) - 150.0f ) );
 		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 250.0f, 0.0f ) ) - 35.0f );
 		sceneDist = min( sceneDist, d );
@@ -148,6 +155,31 @@ float de ( vec2 p ) {
 			hitAlbedo = 0.99f;
 		}
 	}
+
+	p = Rotate2D( 0.3f ) * pOriginal;
+	vec2 gridIndex;
+	gridIndex.x = pModInterval1( p.x, 100.0f, -10.0f, 10.0f );
+	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 6.0f );
+
+	{ // an example object (refractive)
+		bool checker = checkerBoard( 1.0f, vec3( gridIndex / 3.0f + vec2( 0.1f ), 0.5f ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 32.0f ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 32.0f ) ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			if ( checker ) {
+				// hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				hitSurfaceType = MIRROR;
+				hitAlbedo = 1.0f;
+			} else {
+				hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				bool checker2 =  checkerBoard( 1.0f, vec3( gridIndex / 2.0f + vec2( 0.1f ), 0.5f ) );
+				// hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, checker2 ? 0.5f : 1.0f, checker2 ? 1.0f : 0.3f );
+				hitAlbedo = 1.0f;
+			}
+		}
+	}
+
+
 
 	// get back final result
 	return sceneDist;
@@ -322,7 +354,7 @@ void main () {
 		// rayOrigin = vec2( 0.0f, 0.0f ) + 6.0f * CircleOffset();
 		// rayDirection = normalize( CircleOffset() * vec2( 10.0f, 1.0f ) );
 	// } else { // overhead light
-		rayOrigin = vec2( 800.0f * ( NormalizedRandomFloat() - 0.5f ), -400.0f );
+		rayOrigin = vec2( 800.0f * ( NormalizedRandomFloat() - 0.5f ), -900.0f );
 		rayDirection = normalize( vec2( 0.1f * ( NormalizedRandomFloat() ), 1.0f ) );
 	//}
 
