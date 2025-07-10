@@ -1,7 +1,10 @@
 #version 430 core
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
-layout( rgba32f ) uniform image2D bufferImage;
+layout( rgba32ui ) uniform uimage2D bufferImageX;
+layout( rgba32ui ) uniform uimage2D bufferImageY;
+layout( rgba32ui ) uniform uimage2D bufferImageZ;
+layout( rgba32ui ) uniform uimage2D bufferImageCount;
 
 uniform float t;
 uniform int rngSeed;
@@ -320,4 +323,8 @@ void main () {
 	const float mixFactor = 1.0f / sampleCount;
 	const vec4 mixedColor = vec4( mix( previousValue.xyz, energyTotal * wavelengthColor( wavelength ) / 2, mixFactor ), sampleCount );
 	imageStore( bufferImage, loc, mixedColor );
+
+	// instead of averaging like this... we need to keep tally sums for the three channels, plus a count
+		// additionally, this has to happen between each bounce... basically the preceeding ray will be
+		// drawn as part of the material evaluation for the point where it intersects the next surface
 }
