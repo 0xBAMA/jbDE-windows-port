@@ -707,7 +707,7 @@ target_link_libraries( DLA
 )
 
 # =================================================================================================
-# Benchmarking Utility
+# Benchmarking Utility... very WIP
 # =================================================================================================
 add_executable( Benchmark
 	src/projects/Benchmark/main.cc
@@ -716,4 +716,16 @@ add_executable( Benchmark
 target_link_libraries( Benchmark
 	PUBLIC
 	engineBase
+)
+
+# =================================================================================================
+# Sudoku toy
+# =================================================================================================
+add_executable( Sudoku
+		src/projects/Sudoku/main.cc
+)
+
+target_link_libraries( Sudoku
+		PUBLIC
+		engineBase
 )
