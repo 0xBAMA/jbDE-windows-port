@@ -1,10 +1,10 @@
 #version 430 core
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
-layout( rgba32ui ) uniform uimage2D bufferImageX;
-layout( rgba32ui ) uniform uimage2D bufferImageY;
-layout( rgba32ui ) uniform uimage2D bufferImageZ;
-layout( rgba32ui ) uniform uimage2D bufferImageCount;
+layout( r32i ) uniform iimage2D bufferImageX;
+layout( r32i ) uniform iimage2D bufferImageY;
+layout( r32i ) uniform iimage2D bufferImageZ;
+layout( r32i ) uniform iimage2D bufferImageCount;
 
 uniform float t;
 uniform int rngSeed;
@@ -32,10 +32,9 @@ float presence ( vec3 a, vec3 b ) { // call presence( a, b ) to see if
 // trace against the scene
 	// this abstraction makes it easier to target raymarch/other scene intersection methods when I want to swap it out
 #define NOHIT						0
-#define EMISSIVE					1
-#define DIFFUSE						2
-#define METALLIC					3
-#define MIRROR						4
+#define DIFFUSE						1
+#define METALLIC					2
+#define MIRROR						3
 
 // below this point, we have specific forms of glass
 #define CAUCHY_FUSEDSILICA			5
@@ -86,7 +85,6 @@ const float epsilon = 0.00005f;
 const float maxDistance = 10000.0f;
 const int maxSteps = 1000;
 
-
 // getting the wavelength-dependent IoR for materials
 float evaluateCauchy ( float A, float B, float wms ) {
 	return A + B / wms;
@@ -130,33 +128,6 @@ float de ( vec2 p ) {
 	hitAlbedo = 0.0f;
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
-
-	{ // an example object (emissive)
-		const float d = distance( p, vec2( -200.0f, -200.0f ) ) - 20.0f;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = EMISSIVE;
-			hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, 0.0f, 1.0f );
-		}
-	}
-
-	{
-		const float d = distance( p, vec2( -200.0f, 200.0f ) ) - 20.0f;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = EMISSIVE;
-			hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, 1.0f, 0.0f );
-		}
-	}
-
-	{
-		const float d = distance( p, vec2( -400.0f, 0.0f ) ) - 20.0f;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = EMISSIVE;
-			hitAlbedo = 1.0f;
-		}
-	}
 
 	{ // an example object (refractive)
 		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 100.0f, 0.0f ) ) - 150.0f );
@@ -236,16 +207,75 @@ float Reflectance ( const float cosTheta, const float IoR ) {
 	return 0.5f * a * a * ( 1.0f + b * b );
 }
 
+void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
+	// do the atomic increments for this sample
+	ivec3 increment = ivec3(
+		int( 1024 * XYZColor.r ),
+		int( 1024 * XYZColor.g ),
+		int( 1024 * XYZColor.b )
+	);
+	// maintaining sum + count by doing atomic writes along the ray
+	ivec2 p = ivec2( x, y );
+	imageAtomicAdd( bufferImageX, p, increment.x );
+	imageAtomicAdd( bufferImageY, p, increment.y );
+	imageAtomicAdd( bufferImageZ, p, increment.z );
+	imageAtomicAdd( bufferImageCount, p, int( 256 * AAFactor ) );
+}
+
+void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
+	// compute the color once for this line
+	vec3 XYZColor = energyTotal * wavelengthColor( wavelength ) / 5.0f;
+
+	// figure out where these two endpoints lie, on the field, draw a line between them
+		// use 0-255 AA factor as a scalar on the summand, so that we have soft edged rays
+	int x0, y0, x1, y1;
+	const ivec2 iS = imageSize( bufferImageX ).xy;
+
+	// x0 = int( p0.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
+	x0 = int( p0.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
+	y0 = int( p0.y / 2.0f + iS.y / 2 + NormalizedRandomFloat() );
+	x1 = int( p1.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
+	y1 = int( p1.y / 2.0f + iS.y / 2 + NormalizedRandomFloat() );
+
+	int dx = abs( x1 - x0 ), sx = x0 < x1 ? 1 : -1;
+	int dy = abs( y1 - y0 ), sy = y0 < y1 ? 1 : -1;
+	int err = dx - dy, e2, x2;                       /* error value e_xy */
+	int ed = int( dx + dy == 0 ? 1 : sqrt( float( dx * dx ) + float( dy * dy ) ) );
+
+	int maxIterations = 2000;
+	while ( maxIterations-- != 0 && ( x0 > 0 && x0 < iS.x && y0 > 0 && y0 < iS.y ) ) {                                         /* pixel loop */
+		drawPixel( x0, y0, ( 1.0f - ( 255 * abs( err - dx + dy ) / ed ) / 255.0f ), XYZColor );
+		e2 = err; x2 = x0;
+		if ( 2 * e2 >= -dx ) {                                    /* x step */
+			if ( x0 == x1 ) break;
+			if ( e2 + dy < ed )
+			drawPixel( x0, y0 + sy, ( 1.0f - ( 255 * ( e2 + dy ) / ed ) / 255.0f ), XYZColor );
+			err -= dy; x0 += sx;
+		}
+		if ( 2 * e2 <= dy ) {                                     /* y step */
+			if ( y0 == y1 ) break;
+			if ( dx - e2 < ed )
+			drawPixel( x2 + sx,y0, ( 1.0f - ( 255 * ( dx - e2 ) / ed ) / 255.0f ), XYZColor );
+			err += dx; y0 += sy;
+		}
+	}
+}
+
 void main () {
 	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + gl_GlobalInvocationID.y;
 
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
-	// need to generate a point on the light source, plus emission spectra
+	// need to pick a light source, point on the light source, plus emission spectra, plus direction
 
-	// initial ray origin coming from jittered subpixel location, random direction
-	vec2 rayOrigin = 2.0f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
-	vec2 rayDirection = normalize( CircleOffset() ); // consider uniform remappings, might create diffraction spikes?
+	// hacky, but I want something to compare against the backwards impl at least temporarily
+	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
+	switch ( clamp( int( NormalizedRandomFloat() * 2.99f ), 0, 2 ) ) {
+		case 0: rayOrigin = vec2( -200.0f, -200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
+		case 1: rayOrigin = vec2( -400.0f, 0.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
+		case 2: rayOrigin = vec2( -200.0f, 200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
+		default: break;
+	}
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
@@ -260,18 +290,17 @@ void main () {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
 
-		// if we did not hit anything, break out of the loop
-		/*
-		if ( result.dist < 0.0f ) {
-			energyTotal += transmission * result.albedo;
-			break;
-		}
-		*/
-
 	// instead of averaging like before... we need to keep tally sums for the three channels, plus a count
 		// additionally, this has to happen between each bounce... basically the preceeding ray will be
 		// drawn as part of the material evaluation for the point where it intersects the next surface
-		drawLine( p1, p2, energyTotal, wavelength );
+		drawLine( rayOrigin, rayOrigin + rayDirection * result.dist, energyTotal, wavelength );
+
+		// if we did not hit anything, break out of the loop (after drawing the escaping ray)
+		/*
+		if ( result.dist < 0.0f ) {
+			break;
+		}
+		*/
 
 		/*
 		// russian roulette termination
@@ -280,20 +309,14 @@ void main () {
 		*/
 
 		// attenuate transmission by the surface albedo
-		if ( result.materialType != EMISSIVE ) {
-			energyTotal *= result.albedo;
-			transmission *= result.albedo;
-		}
-
-		// if we hit something emissive, add emission term times the transmission to the accumulated energy total
-		if ( result.materialType == EMISSIVE ) energyTotal += transmission * result.albedo;
+		energyTotal *= result.albedo;
+		transmission *= result.albedo;
 
 		// update position + epsilon bump
 		rayOrigin = rayOrigin + result.dist * rayDirection + result.normal * epsilon * 3;
 
 		// material evaluation/new value of rayDirection
 		switch ( result.materialType ) {
-		case EMISSIVE:
 		case DIFFUSE:
 			rayDirection = normalize( CircleOffset() );
 			// invert if going into the surface
@@ -314,7 +337,7 @@ void main () {
 			// varying behavior already, we can just treat it uniformly, only need to consider frontface/backface for inversion
 		default:
 			rayOrigin -= result.normal * epsilon * 5;
-			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR );
+			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR ); // "reverse" back to physical properties for IoR
 
 			float cosTheta = min( dot( -normalize( rayDirection ), result.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );

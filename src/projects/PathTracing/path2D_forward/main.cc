@@ -30,7 +30,7 @@ public:
 
 			// buffer image
 			textureOptions_t opts;
-			opts.dataType		= GL_RGBA32UI;
+			opts.dataType		= GL_R32I;
 			opts.width			= path2DConfig.dims.x;
 			opts.height			= path2DConfig.dims.y;
 			opts.minFilter		= GL_NEAREST;
@@ -112,11 +112,12 @@ public:
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 
 		textureManager.BindImageForShader( "Field X Tally", "bufferImageX", shader, 2 );
-		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 2 );
-		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 2 );
-		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 2 );
+		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
+		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
+		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
 
-		glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
+		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
+		glDispatchCompute( 10, 10, 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
