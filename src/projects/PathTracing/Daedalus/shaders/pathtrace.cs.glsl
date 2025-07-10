@@ -338,19 +338,20 @@ vec3 SkyColor( ray_t ray ) {
 //=============================================================================================================================
 #define NOHIT						0
 #define EMISSIVE					1
-#define DIFFUSE						2
-#define METALLIC					3
-#define MIRROR						4
-#define PERFECTMIRROR				5
-#define POLISHEDWOOD				6
-#define WOOD						7
-#define MALACHITE					8
-#define LUMARBLE					9
-#define LUMARBLE2					10
-#define LUMARBLE3					11
-#define LUMARBLECHECKER				12
-#define CHECKER						13
-#define REFRACTIVE					14
+#define EMISSIVE_FRESNEL            2
+#define DIFFUSE						3
+#define METALLIC					4
+#define MIRROR						5
+#define PERFECTMIRROR				6
+#define POLISHEDWOOD				7
+#define WOOD						8
+#define MALACHITE					9
+#define LUMARBLE					10
+#define LUMARBLE2					11
+#define LUMARBLE3					12
+#define LUMARBLECHECKER				13
+#define CHECKER						14
+#define REFRACTIVE					15
 //=============================================================================================================================
 // objects shouldn't have this material set directly, it is used for backface hits
 #define REFRACTIVE_BACKFACE			100
@@ -430,6 +431,12 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 			ray.direction = randomVectorDiffuse;
 			finalColor += throughput * intersection.albedo;
 			break;
+		}
+
+		case EMISSIVE_FRESNEL: {
+		    ray.direction = randomVectorDiffuse;
+            finalColor += throughput * intersection.albedo * clamp( Reflectance( min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f ), 1.5f ), 0.0f, 1.0f );
+		    break;
 		}
 
 		case DIFFUSE: {
