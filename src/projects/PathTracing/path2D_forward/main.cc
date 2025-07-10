@@ -18,8 +18,8 @@ public:
 			Block Start( "Additional User Init" );
 
 			// image prep
-			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/draw.cs.glsl" ).shaderHandle;
-			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D/shaders/simulate.cs.glsl" ).shaderHandle;
+			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/draw.cs.glsl" ).shaderHandle;
+			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/simulate.cs.glsl" ).shaderHandle;
 
 			// field max, single value
 			constexpr uint32_t countValue = 0;

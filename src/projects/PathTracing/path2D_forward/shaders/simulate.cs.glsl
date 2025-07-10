@@ -241,13 +241,15 @@ void main () {
 
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
+	// need to generate a point on the light source, plus emission spectra
+
 	// initial ray origin coming from jittered subpixel location, random direction
 	vec2 rayOrigin = 2.0f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
 	vec2 rayDirection = normalize( CircleOffset() ); // consider uniform remappings, might create diffraction spikes?
 
-	// transmission and energy totals
+	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
-	float energyTotal = 0.0f;
+	float energyTotal = 1.0f;
 
 	// selected wavelength - using full range, we can revisit this later
 	wavelength = RangeRemapValue( NormalizedRandomFloat(), 0.0f, 1.0f, 360.0f, 830.0f );
@@ -259,19 +261,29 @@ void main () {
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
 
 		// if we did not hit anything, break out of the loop
+		/*
 		if ( result.dist < 0.0f ) {
 			energyTotal += transmission * result.albedo;
 			break;
 		}
+		*/
 
-		// "chance to consume" russian roulette term... tbd
+	// instead of averaging like before... we need to keep tally sums for the three channels, plus a count
+		// additionally, this has to happen between each bounce... basically the preceeding ray will be
+		// drawn as part of the material evaluation for the point where it intersects the next surface
+		drawLine( p1, p2, energyTotal, wavelength );
 
+		/*
 		// russian roulette termination
 		if ( NormalizedRandomFloat() > transmission ) break;
 		transmission *= 1.0f / transmission; // compensation term
+		*/
 
 		// attenuate transmission by the surface albedo
-		if ( result.materialType != EMISSIVE ) transmission *= result.albedo;
+		if ( result.materialType != EMISSIVE ) {
+			energyTotal *= result.albedo;
+			transmission *= result.albedo;
+		}
 
 		// if we hit something emissive, add emission term times the transmission to the accumulated energy total
 		if ( result.materialType == EMISSIVE ) energyTotal += transmission * result.albedo;
@@ -317,14 +329,12 @@ void main () {
 		}
 	}
 
+	/*
 	// result is then averaged, in XYZ space, and written back
 	vec4 previousValue = imageLoad( bufferImage, loc );
 	float sampleCount = previousValue.a + 1.0f;
 	const float mixFactor = 1.0f / sampleCount;
 	const vec4 mixedColor = vec4( mix( previousValue.xyz, energyTotal * wavelengthColor( wavelength ) / 2, mixFactor ), sampleCount );
 	imageStore( bufferImage, loc, mixedColor );
-
-	// instead of averaging like this... we need to keep tally sums for the three channels, plus a count
-		// additionally, this has to happen between each bounce... basically the preceeding ray will be
-		// drawn as part of the material evaluation for the point where it intersects the next surface
+	*/
 }
