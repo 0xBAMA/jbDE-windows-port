@@ -129,7 +129,7 @@ float de ( vec2 p ) {
 	hitRoughness = 0.0f;
 
 	{ // an example object (emissive)
-		const float d = distance( p, vec2( -200.0f, -200.0f ) ) - 5.0f;
+		const float d = distance( p, vec2( -200.0f, -200.0f ) ) - 20.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;
@@ -137,7 +137,7 @@ float de ( vec2 p ) {
 		}
 	}
 
-	{ // an example object (emissive)
+	{
 		const float d = distance( p, vec2( -200.0f, 200.0f ) ) - 20.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -147,7 +147,7 @@ float de ( vec2 p ) {
 	}
 
 	{
-		const float d = distance( p, vec2( -400.0f, 0.0f ) ) - 10.0f;
+		const float d = distance( p, vec2( -400.0f, 0.0f ) ) - 20.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;

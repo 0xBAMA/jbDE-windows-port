@@ -2,7 +2,7 @@
 
 struct path2DConfig_t {
 	GLuint maxBuffer;
-	ivec2 dims = ivec2( 1920 / 2, 1080 / 2 );
+	ivec2 dims = ivec2( 2880 / 4, 1800 / 4 );
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
