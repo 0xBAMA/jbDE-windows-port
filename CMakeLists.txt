@@ -238,6 +238,18 @@ target_link_libraries( path2D
 )
 
 # =================================================================================================
+# forward version (rays emanate from lights, as photons)
+# =================================================================================================
+add_executable( path2D_forward
+		src/projects/PathTracing/path2D_forward/main.cc
+)
+
+target_link_libraries( path2D_forward
+		PUBLIC
+		engineBase
+)
+
+# =================================================================================================
 # Icarus
 # =================================================================================================
 add_executable( Icarus
