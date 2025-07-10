@@ -20,8 +20,8 @@
 				"g": 0.7,
 				"r": 1.0
 			},
-			"dimensionX": 512,
-			"dimensionY": 256,
+			"dimensionX": 2048,
+			"dimensionY": 1024,
 			"numAgents": 1048576
 		},
 		"Physarum2.5D": {
@@ -167,15 +167,15 @@
 		}
 	},
 	"system": {
-		"MSAACount": 1,
+		"MSAACount": 8,
 		"OpenGLVerboseInit": false,
 		"OpenGLVersionMajor": 4,
 		"OpenGLVersionMinor": 5,
 		"SDLDisplayModeDump": false,
-		"SDL_WINDOW_BORDERLESS": true,
-		"SDL_WINDOW_FULLSCREEN": true,
+		"SDL_WINDOW_BORDERLESS": false,
+		"SDL_WINDOW_FULLSCREEN": false,
 		"SDL_WINDOW_INPUT_GRABBED": false,
-		"SDL_WINDOW_RESIZABLE": false,
+		"SDL_WINDOW_RESIZABLE": true,
 		"SRGBFramebuffer": true,
 		"allowMultipleViewports": false,
 		"clearColor": {
@@ -200,8 +200,8 @@
 		"severeCallsToKill": 16,
 		"oneShot": false,
 		"reportPlatformInfo": true,
-		"screenHeight": 1200,
-		"screenWidth": 1920,
+		"screenHeight": 2160,
+		"screenWidth": 3840,
 		"showImGUIDemoWindow": false,
 		"showProfiler": true,
 		"startOnScreen": 1,
