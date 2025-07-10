@@ -1,8 +1,9 @@
 #include "../../../engine/engine.h"
 
 struct path2DConfig_t {
+	bool screenshotRequested = false;
 	GLuint maxBuffer;
-	ivec2 dims = ivec2( 2880 / 4, 1800 / 4 );
+	ivec2 dims = ivec2( 2880 / 2, 1800 / 2 );
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -49,7 +50,9 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-
+		if ( inputHandler.getState4( KEY_T ) == KEYSTATE_RISING ) {
+			path2DConfig.screenshotRequested = true;
+		}
 	}
 
 	void ImguiPass () {
@@ -91,6 +94,20 @@ public:
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
+		if ( path2DConfig.screenshotRequested == true ) {
+			path2DConfig.screenshotRequested = false;
+			const GLuint tex = textureManager.Get( "Display Texture" );
+			uvec2 dims = textureManager.GetDimensions( "Display Texture" );
+			std::vector< float > imageBytesToSave;
+			imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+			glBindTexture( GL_TEXTURE_2D, tex );
+			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+			screenshot.RGBtoSRGB();
+			const string filename = string( "Path2D_Forward-" ) + timeDateString() + string( ".png" );
+			screenshot.Save( filename, Image_4F::backend::LODEPNG );
 		}
 
 		{ // text rendering timestamp - required texture binds are handled internally
