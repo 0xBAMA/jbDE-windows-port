@@ -161,7 +161,7 @@ float de ( vec2 p ) {
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE;
-			hitAlbedo = 1.0f;
+			hitAlbedo = 0.9f;
 		}
 	}
 
@@ -257,13 +257,16 @@ float Reflectance ( const float cosTheta, const float IoR ) {
 	return 0.5f * a * a * ( 1.0f + b * b );
 }
 
+// where we are updating on the image
+uniform ivec2 tileOffset;
+
 void main () {
 	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + gl_GlobalInvocationID.y;
 
-	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
+	const ivec2 loc = tileOffset + ivec2( gl_GlobalInvocationID.xy );
 
 	// initial ray origin coming from jittered subpixel location, random direction
-	vec2 rayOrigin = 2.0f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
+	vec2 rayOrigin = 1.125f * ( ( vec2( loc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) ) - imageSize( bufferImage ).xy / 2 );
 	vec2 rayDirection = normalize( CircleOffset() ); // consider uniform remappings, might create diffraction spikes?
 
 	// transmission and energy totals
@@ -274,7 +277,7 @@ void main () {
 	wavelength = RangeRemapValue( NormalizedRandomFloat(), 0.0f, 1.0f, 360.0f, 830.0f );
 
 	// pathtracing loop
-	const int maxBounces = 10;
+	const int maxBounces = 15;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );

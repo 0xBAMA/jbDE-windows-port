@@ -1,8 +1,11 @@
 #include "../../../engine/engine.h"
+#include "tileDispenser.h"
 
 struct path2DConfig_t {
 	GLuint maxBuffer;
-	ivec2 dims = ivec2( 2880 / 4, 1800 / 4 );
+	ivec2 dims = ivec2( 1920 * 2, 1080 * 2 );
+
+	tileDispenser dispenser;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -38,6 +41,8 @@ public:
 			opts.textureType	= GL_TEXTURE_2D;
 			opts.wrap			= GL_CLAMP_TO_BORDER;
 			textureManager.Add( "Field", opts );
+
+			path2DConfig.dispenser = tileDispenser( 256, path2DConfig.dims.x, path2DConfig.dims.y );
 		}
 	}
 
@@ -85,9 +90,25 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
+		// get a screenshot after N frames
+		if ( path2DConfig.dispenser.tileListPasses == 4096 ) {
+			const GLuint tex = textureManager.Get( "Display Texture" );
+			uvec2 dims = textureManager.GetDimensions( "Display Texture" );
+			std::vector< float > imageBytesToSave;
+			imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+			glBindTexture( GL_TEXTURE_2D, tex );
+			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+			screenshot.RGBtoSRGB();
+			const string filename = string( "Path2D-" ) + timeDateString() + string( ".png" );
+			screenshot.Save( filename, Image_4F::backend::LODEPNG );
+			pQuit = true;
+		}
+
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Update( ImGui::GetIO().DeltaTime );
+			textRenderer.DrawBlackBackedColorString( 3, to_string( path2DConfig.dispenser.tileListPasses ) + "/4096", GOLD );
 			textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -100,11 +121,16 @@ public:
 		static rngi wangSeeder = rngi( 0, 1000000 );
 		const GLuint shader = shaders[ "Simulate" ];
 		glUseProgram( shader );
-		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
-		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
-		textureManager.BindImageForShader( "Field", "bufferImage", shader, 2 );
-		glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+		for ( int i = 0; i < 5; i++ ) {
+			ivec2 tileOffset = path2DConfig.dispenser.GetTile();
+			glUniform2i( glGetUniformLocation( shader, "tileOffset" ), tileOffset.x, tileOffset.y );
+			glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
+			glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
+			textureManager.BindImageForShader( "Field", "bufferImage", shader, 2 );
+			glDispatchCompute( ( path2DConfig.dispenser.tileSize + 15 ) / 16, ( path2DConfig.dispenser.tileSize + 15 ) / 16, 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
 	}
 
 	void OnRender () {
