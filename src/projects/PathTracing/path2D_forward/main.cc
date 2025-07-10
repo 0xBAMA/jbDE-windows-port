@@ -111,13 +111,17 @@ public:
 		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 
+		rng offset = rng( 0, 512 );
+		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), offset(), offset() );
+
+		textureManager.BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
 		textureManager.BindImageForShader( "Field X Tally", "bufferImageX", shader, 2 );
 		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
 		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
 		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
 
 		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		glDispatchCompute( 10, 10, 1 );
+		glDispatchCompute( 6, 6, 6 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 

@@ -1,6 +1,13 @@
 #version 430 core
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
+uniform ivec2 noiseOffset;
+uniform sampler2D blueNoise;
+vec4 blueNoiseRead ( ivec2 loc ) {
+	ivec2 wrappedLoc = ( loc + noiseOffset ) % textureSize( blueNoise, 0 );
+	return texelFetch( blueNoise, wrappedLoc, 0 );
+}
+
 layout( r32i ) uniform iimage2D bufferImageX;
 layout( r32i ) uniform iimage2D bufferImageY;
 layout( r32i ) uniform iimage2D bufferImageZ;
@@ -17,6 +24,7 @@ float rayPlaneIntersect ( in vec3 rayOrigin, in vec3 rayDirection ) {
 }
 
 #include "random.h"
+#include "hg_sdf.glsl"
 #include "mathUtils.h"
 #include "spectrumXYZ.h"
 #include "colorspaceConversions.glsl"
@@ -81,8 +89,8 @@ float hitRoughness = 0.0f;
 float hitAlbedo = 0.0f;
 
 // raymarch parameters
-const float epsilon = 0.00005f;
-const float maxDistance = 10000.0f;
+const float epsilon = 0.0001f;
+const float maxDistance = 2000.0f;
 const int maxSteps = 1000;
 
 // getting the wavelength-dependent IoR for materials
@@ -129,11 +137,14 @@ float de ( vec2 p ) {
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
+	pModPolar( p.xy, 13.0f );
+
 	{ // an example object (refractive)
-		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 100.0f, 0.0f ) ) - 150.0f );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( max( distance( p, vec2( 90.0f, 0.0f ) ) - 100.0f, distance( p, vec2( 110.0f, 0.0f ) ) - 150.0f ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 250.0f, 0.0f ) ) - 35.0f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+			hitSurfaceType = SELLMEIER_FUSEDSILICA;
 			hitAlbedo = 0.99f;
 		}
 	}
@@ -193,18 +204,18 @@ intersectionResult sceneTrace ( vec2 rayOrigin, vec2 rayDirection ) {
 
 // support for glass behavior
 float Reflectance ( const float cosTheta, const float IoR ) {
-	/*
+#if 0
 	// Use Schlick's approximation for reflectance
 	float r0 = ( 1.0f - IoR ) / ( 1.0f + IoR );
 	r0 = r0 * r0;
 	return r0 + ( 1.0f - r0 ) * pow( ( 1.0f - cosTheta ), 5.0f );
-	*/
-
+#else
 	// "Full Fresnel", from https://www.shadertoy.com/view/csfSz7
 	float g = sqrt( IoR * IoR + cosTheta * cosTheta - 1.0f );
 	float a = ( g - cosTheta ) / ( g + cosTheta );
 	float b = ( ( g + cosTheta ) * cosTheta - 1.0f ) / ( ( g - cosTheta ) * cosTheta + 1.0f );
 	return 0.5f * a * a * ( 1.0f + b * b );
+#endif
 }
 
 void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
@@ -224,14 +235,33 @@ void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
 
 void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
 	// compute the color once for this line
-	vec3 XYZColor = energyTotal * wavelengthColor( wavelength ) / 5.0f;
+	vec3 XYZColor = energyTotal * wavelengthColor( wavelength ) / 10.0f;
 
 	// figure out where these two endpoints lie, on the field, draw a line between them
 		// use 0-255 AA factor as a scalar on the summand, so that we have soft edged rays
-	int x0, y0, x1, y1;
 	const ivec2 iS = imageSize( bufferImageX ).xy;
 
-	// x0 = int( p0.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
+	// vec2 p0i = vec2( p0 / 2.0f + iS / 2 + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
+	// vec2 p1i = vec2( p1 / 2.0f + iS / 2 + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
+
+	vec4 blue = blueNoiseRead( ivec2( gl_GlobalInvocationID.xy ) ) / 255.0f;
+	vec2 p0i = vec2( p0 / 2.0f + iS / 2 );
+	vec2 p1i = vec2( p1 / 2.0f + iS / 2 );
+	// float stepSize = clamp( length( p0i - p1i ) / 2000.0f + blue.a, 0.619f, 1.4f );
+	float stepSize = 0.619f + blue.a;
+
+	vec2 diff = normalize( p0i - p1i );
+	float l = length( p0i - p1i );
+	float accum = blue.r;
+
+	for ( int i = 0; i < 3000 && accum < l; i++ ) {
+		vec2 p = p1i + diff * accum;
+		accum += stepSize + ( ( mod( i, 3 ) == 0 ) ? blue.b : ( mod( i, 2 ) == 0 ) ? blue.r : blue.g );
+		drawPixel( int( p.x + NormalizedRandomFloat() - 0.5f ), int( p.y + NormalizedRandomFloat() - 0.5f ), 1.0f, XYZColor );
+	}
+
+	/*
+	int x0, y0, x1, y1;
 	x0 = int( p0.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
 	y0 = int( p0.y / 2.0f + iS.y / 2 + NormalizedRandomFloat() );
 	x1 = int( p1.x / 2.0f + iS.x / 2 + NormalizedRandomFloat() );
@@ -239,43 +269,62 @@ void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
 
 	int dx = abs( x1 - x0 ), sx = x0 < x1 ? 1 : -1;
 	int dy = abs( y1 - y0 ), sy = y0 < y1 ? 1 : -1;
-	int err = dx - dy, e2, x2;                       /* error value e_xy */
+	int err = dx - dy, e2, x2;
 	int ed = int( dx + dy == 0 ? 1 : sqrt( float( dx * dx ) + float( dy * dy ) ) );
 
 	int maxIterations = 2000;
-	while ( maxIterations-- != 0 && ( x0 > 0 && x0 < iS.x && y0 > 0 && y0 < iS.y ) ) {                                         /* pixel loop */
+	while ( maxIterations-- != 0 && ( x0 > 0 && x0 < iS.x && y0 > 0 && y0 < iS.y ) ) {
 		drawPixel( x0, y0, ( 1.0f - ( 255 * abs( err - dx + dy ) / ed ) / 255.0f ), XYZColor );
 		e2 = err; x2 = x0;
-		if ( 2 * e2 >= -dx ) {                                    /* x step */
+		if ( 2 * e2 >= -dx ) {
 			if ( x0 == x1 ) break;
 			if ( e2 + dy < ed )
 			drawPixel( x0, y0 + sy, ( 1.0f - ( 255 * ( e2 + dy ) / ed ) / 255.0f ), XYZColor );
 			err -= dy; x0 += sx;
 		}
-		if ( 2 * e2 <= dy ) {                                     /* y step */
+		if ( 2 * e2 <= dy ) {
 			if ( y0 == y1 ) break;
 			if ( dx - e2 < ed )
 			drawPixel( x2 + sx,y0, ( 1.0f - ( 255 * ( dx - e2 ) / ed ) / 255.0f ), XYZColor );
 			err += dx; y0 += sy;
 		}
 	}
+	*/
 }
 
 void main () {
-	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + gl_GlobalInvocationID.y;
-
+	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + 6969 * gl_GlobalInvocationID.y + 619 * gl_GlobalInvocationID.z;
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
 	// need to pick a light source, point on the light source, plus emission spectra, plus direction
 
 	// hacky, but I want something to compare against the backwards impl at least temporarily
 	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
+	/*
 	switch ( clamp( int( NormalizedRandomFloat() * 2.99f ), 0, 2 ) ) {
 		case 0: rayOrigin = vec2( -200.0f, -200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
 		case 1: rayOrigin = vec2( -400.0f, 0.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
 		case 2: rayOrigin = vec2( -200.0f, 200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
 		default: break;
 	}
+	*/
+
+	// rayOrigin = vec2( -400.0f, 100.0f + 30.0f * ( NormalizedRandomFloat() - 0.5f ) );
+	// rayDirection = normalize( vec2( 1.0f, 0.01f * ( NormalizedRandomFloat() - 0.5f ) ) );
+	// if ( NormalizedRandomFloat() < 0.3f ) { // beams
+		// rayOrigin = vec2( -400.0f, 100.0f + 3.0f * NormalizedRandomFloat() );
+		// rayDirection = vec2( 1.0f, 0.0f );
+		// if ( NormalizedRandomFloat() < 0.5f ) {
+			// rayOrigin = -rayOrigin;
+			// rayDirection = -rayDirection;
+		// }
+	// } else if ( NormalizedRandomFloat() < 0.4f ) { // ambient omnidirectional point
+		// rayOrigin = vec2( 0.0f, 0.0f ) + 6.0f * CircleOffset();
+		// rayDirection = normalize( CircleOffset() * vec2( 10.0f, 1.0f ) );
+	// } else { // overhead light
+		rayOrigin = vec2( 800.0f * ( NormalizedRandomFloat() - 0.5f ), -400.0f );
+		rayDirection = normalize( vec2( 0.1f * ( NormalizedRandomFloat() ), 1.0f ) );
+	//}
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
@@ -285,7 +334,7 @@ void main () {
 	wavelength = RangeRemapValue( NormalizedRandomFloat(), 0.0f, 1.0f, 360.0f, 830.0f );
 
 	// pathtracing loop
-	const int maxBounces = 10;
+	const int maxBounces = 20;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
@@ -293,7 +342,7 @@ void main () {
 	// instead of averaging like before... we need to keep tally sums for the three channels, plus a count
 		// additionally, this has to happen between each bounce... basically the preceeding ray will be
 		// drawn as part of the material evaluation for the point where it intersects the next surface
-		drawLine( rayOrigin, rayOrigin + rayDirection * result.dist, energyTotal, wavelength );
+		drawLine( rayOrigin, rayOrigin + rayDirection * result.dist + result.normal * epsilon, energyTotal, wavelength );
 
 		// if we did not hit anything, break out of the loop (after drawing the escaping ray)
 		/*
@@ -351,13 +400,4 @@ void main () {
 			break;
 		}
 	}
-
-	/*
-	// result is then averaged, in XYZ space, and written back
-	vec4 previousValue = imageLoad( bufferImage, loc );
-	float sampleCount = previousValue.a + 1.0f;
-	const float mixFactor = 1.0f / sampleCount;
-	const vec4 mixedColor = vec4( mix( previousValue.xyz, energyTotal * wavelengthColor( wavelength ) / 2, mixFactor ), sampleCount );
-	imageStore( bufferImage, loc, mixedColor );
-	*/
 }
