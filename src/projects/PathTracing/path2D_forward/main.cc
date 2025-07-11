@@ -1,9 +1,8 @@
 #include "../../../engine/engine.h"
 
 struct path2DConfig_t {
-	bool screenshotRequested = false;
 	GLuint maxBuffer;
-	ivec2 dims = ivec2( 2880 / 2, 1800 / 2 );
+	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -12,6 +11,8 @@ public:
 	~path2D () { Quit(); }
 
 	path2DConfig_t path2DConfig;
+	bool screenshotRequested = false;
+	int screenshotIndex = -1;
 
 	void OnInit () {
 		ZoneScoped;
@@ -50,8 +51,9 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		if ( inputHandler.getState4( KEY_T ) == KEYSTATE_RISING ) {
-			path2DConfig.screenshotRequested = true;
+		if ( inputHandler.getState( KEY_T ) ) {
+			cout << "Screenshot Requested" << endl;
+			screenshotRequested = true;
 		}
 	}
 
@@ -67,6 +69,13 @@ public:
 			profilerWindow.gpuGraph.LoadFrameData( &tasks_GPU[ 0 ], tasks_GPU.size() );
 			profilerWindow.Render(); // GPU graph is presented on top, CPU on bottom
 		}
+
+		ImGui::Begin( "Screenshot Window" );
+		if ( ImGui::Button(  "Screenshot" ) ) {
+			cout << "Screenshot Requested" << endl;
+			screenshotRequested = true;
+		}
+		ImGui::End();
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
 	}
@@ -96,8 +105,9 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		if ( path2DConfig.screenshotRequested == true ) {
-			path2DConfig.screenshotRequested = false;
+		if ( screenshotRequested == true ) {
+			screenshotRequested = false;
+			cout << "Attempting Screenshot" << endl;
 			const GLuint tex = textureManager.Get( "Display Texture" );
 			uvec2 dims = textureManager.GetDimensions( "Display Texture" );
 			std::vector< float > imageBytesToSave;
@@ -106,7 +116,9 @@ public:
 			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
 			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
 			screenshot.RGBtoSRGB();
-			const string filename = string( "Path2D_Forward-" ) + timeDateString() + string( ".png" );
+			screenshot.FlipVertical();
+			const string filename = ( ( screenshotIndex != -1 ) ? ( string( "frames/" ) + fixedWidthNumberString( screenshotIndex, 4 ) ) :
+				string( "Path2D_Forward-" ) + timeDateString() ) + string( ".png" );
 			screenshot.Save( filename, Image_4F::backend::LODEPNG );
 		}
 
@@ -125,7 +137,28 @@ public:
 		static rngi wangSeeder = rngi( 0, 1000000 );
 		const GLuint shader = shaders[ "Simulate" ];
 		glUseProgram( shader );
-		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
+
+		static int t = 0;
+		static int samples = 0;
+		static bool resetRequested = false;
+		if ( resetRequested ) {
+			resetRequested = false;
+			textureManager.ZeroTexture2D( "Field X Tally" );
+			textureManager.ZeroTexture2D( "Field Y Tally" );
+			textureManager.ZeroTexture2D( "Field Z Tally" );
+			textureManager.ZeroTexture2D( "Field Count" );
+		}
+		if ( samples++ == 200 ) {
+			samples = 0;
+			t++;
+			if ( t == 2000 ) {
+				pQuit = true;
+			}
+			screenshotRequested = true;
+			screenshotIndex = t;
+			resetRequested = true;
+		}
+		glUniform1f( glGetUniformLocation( shader, "t" ), float( t ) );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 
 		rng offset = rng( 0, 512 );
@@ -138,7 +171,7 @@ public:
 		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
 
 		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		glDispatchCompute( 6, 6, 6 );
+		glDispatchCompute( 6, 6, 3 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
@@ -160,6 +193,7 @@ public:
 		ZoneScoped;
 
 		// event handling
+		inputHandler.update();
 		HandleCustomEvents();
 		HandleQuitEvents();
 

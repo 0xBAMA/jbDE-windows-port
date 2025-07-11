@@ -158,12 +158,13 @@ float de ( vec2 p ) {
 
 	p = Rotate2D( 0.3f ) * pOriginal;
 	vec2 gridIndex;
-	gridIndex.x = pModInterval1( p.x, 100.0f, -10.0f, 10.0f );
+	gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
 	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 6.0f );
 
 	{ // an example object (refractive)
-		bool checker = checkerBoard( 1.0f, vec3( gridIndex / 3.0f + vec2( 0.1f ), 0.5f ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 32.0f ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 32.0f ) ) );
+		// bool checker = checkerBoard( 1.0f, vec3( gridIndex / 3.0f + vec2( 0.1f ), 0.5f ) );
+		bool checker = false;
+		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 32.0f ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 40.0f ) ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			if ( checker ) {
@@ -179,7 +180,19 @@ float de ( vec2 p ) {
 		}
 	}
 
-
+	// walls at the edges of the screen for the rays to bounce off of
+	{
+		const float d = min( min( min(
+			rectangle( pOriginal - vec2( 0.0f, -1900.0f ), vec2( 4000.0f, 20.0f ) ),
+			rectangle( pOriginal - vec2( 0.0f, 1700.0f ), vec2( 4000.0f, 20.0f ) ) ),
+			rectangle( pOriginal - vec2( -2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) ),
+			rectangle( pOriginal - vec2( 2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = MIRROR;
+			hitAlbedo = 0.99f;
+		}
+	}
 
 	// get back final result
 	return sceneDist;
@@ -343,20 +356,24 @@ void main () {
 
 	// rayOrigin = vec2( -400.0f, 100.0f + 30.0f * ( NormalizedRandomFloat() - 0.5f ) );
 	// rayDirection = normalize( vec2( 1.0f, 0.01f * ( NormalizedRandomFloat() - 0.5f ) ) );
-	// if ( NormalizedRandomFloat() < 0.3f ) { // beams
-		// rayOrigin = vec2( -400.0f, 100.0f + 3.0f * NormalizedRandomFloat() );
-		// rayDirection = vec2( 1.0f, 0.0f );
-		// if ( NormalizedRandomFloat() < 0.5f ) {
-			// rayOrigin = -rayOrigin;
-			// rayDirection = -rayDirection;
-		// }
+//	 if ( NormalizedRandomFloat() < 0.3f ) { // beams
+		  rayDirection = vec2( 0.0f, 1.0f );
+		  if ( NormalizedRandomFloat() < 0.5f ) {
+			  rayOrigin = vec2( -2000.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+		  } else {
+			  rayOrigin = vec2( -200.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+		  }
 	// } else if ( NormalizedRandomFloat() < 0.4f ) { // ambient omnidirectional point
-		// rayOrigin = vec2( 0.0f, 0.0f ) + 6.0f * CircleOffset();
-		// rayDirection = normalize( CircleOffset() * vec2( 10.0f, 1.0f ) );
-	// } else { // overhead light
-		rayOrigin = vec2( 800.0f * ( NormalizedRandomFloat() - 0.5f ), -900.0f );
-		rayDirection = normalize( vec2( 0.1f * ( NormalizedRandomFloat() ), 1.0f ) );
-	//}
+//		 rayOrigin = vec2( 20.0f * ( NormalizedRandomFloat() - 0.5f ), -1800.0f );
+//		 rayDirection = normalize( CircleOffset() * vec2( 1.0f, 3.0f ) );
+//		 if (  rayDirection.y < 0.0f ) {
+//			 rayDirection.y *= -1.0f;
+//		 }
+//	 } else { // overhead light
+		// rayOrigin = vec2( 10.0f * ( NormalizedRandomFloat() - 0.5f ) + int( ( NormalizedRandomFloat() - 0.5f ) * 69.0f ) * 30.0f, -1800.0f );
+//		 rayOrigin = vec2( 1400.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+//		 rayDirection = vec2( 0.0f, 1.0f );
+//	}
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
@@ -366,7 +383,7 @@ void main () {
 	wavelength = RangeRemapValue( NormalizedRandomFloat(), 0.0f, 1.0f, 360.0f, 830.0f );
 
 	// pathtracing loop
-	const int maxBounces = 20;
+	const int maxBounces = 50;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
