@@ -138,7 +138,8 @@ public:
 		const GLuint shader = shaders[ "Simulate" ];
 		glUseProgram( shader );
 
-		static int t = 0;
+		/*
+		static int t = 1711;
 		static int samples = 0;
 		static bool resetRequested = false;
 		if ( resetRequested ) {
@@ -150,15 +151,16 @@ public:
 		}
 		if ( samples++ == 200 ) {
 			samples = 0;
-			t++;
-			if ( t == 2000 ) {
+			t--;
+			if ( t == 1690 ) {
 				pQuit = true;
 			}
 			screenshotRequested = true;
 			screenshotIndex = t;
 			resetRequested = true;
 		}
-		glUniform1f( glGetUniformLocation( shader, "t" ), float( t ) );
+		*/
+		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 
 		rng offset = rng( 0, 512 );
