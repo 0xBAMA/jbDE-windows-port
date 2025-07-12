@@ -90,7 +90,7 @@ float hitAlbedo = 0.0f;
 
 // raymarch parameters
 const float epsilon = 0.0001f;
-const float maxDistance = 2000.0f;
+const float maxDistance = 5000.0f;
 const int maxSteps = 1000;
 
 // getting the wavelength-dependent IoR for materials
@@ -299,7 +299,7 @@ void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
 	float l = length( p0i - p1i );
 	float accum = blue.r;
 
-	for ( int i = 0; i < 3000 && accum < l; i++ ) {
+	for ( int i = 0; i < 5000 && accum < l; i++ ) {
 		vec2 p = p1i + diff * accum;
 		accum += stepSize + ( ( mod( i, 3 ) == 0 ) ? blue.b : ( mod( i, 2 ) == 0 ) ? blue.r : blue.g );
 		drawPixel( int( p.x + NormalizedRandomFloat() - 0.5f ), int( p.y + NormalizedRandomFloat() - 0.5f ), 1.0f, XYZColor );
