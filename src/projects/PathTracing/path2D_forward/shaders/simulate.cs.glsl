@@ -280,7 +280,7 @@ void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
 
 void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
 	// compute the color once for this line
-	vec3 XYZColor = energyTotal * wavelengthColor( wavelength ) / 10.0f;
+	vec3 XYZColor = energyTotal * wavelengthColor( wavelength );
 
 	// figure out where these two endpoints lie, on the field, draw a line between them
 		// use 0-255 AA factor as a scalar on the summand, so that we have soft edged rays
