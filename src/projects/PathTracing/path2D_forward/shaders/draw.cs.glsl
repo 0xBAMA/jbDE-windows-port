@@ -24,7 +24,7 @@ void main () {
 		( float( texture( bufferImageX, samplePoint ).r ) / 1024.0f ),
 		( float( texture( bufferImageY, samplePoint ).r ) / 1024.0f ),
 		( float( texture( bufferImageZ, samplePoint ).r ) / 1024.0f )
-	) / 300000.0f ) );
+	) / 160000.0f ) );
 
 	// write the data to the image
 	imageStore( accumulatorTexture, loc, vec4( col, 1.0f ) );
