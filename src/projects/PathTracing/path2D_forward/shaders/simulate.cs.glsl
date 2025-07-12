@@ -24,6 +24,7 @@ float rayPlaneIntersect ( in vec3 rayOrigin, in vec3 rayDirection ) {
 }
 
 #include "random.h"
+#include "noise.h"
 #include "hg_sdf.glsl"
 #include "mathUtils.h"
 #include "spectrumXYZ.h"
@@ -159,21 +160,31 @@ float de ( vec2 p ) {
 	p = Rotate2D( 0.3f ) * pOriginal;
 	vec2 gridIndex;
 	gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
-	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 6.0f );
+	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 16.0f );
 
 	{ // an example object (refractive)
-		// bool checker = checkerBoard( 1.0f, vec3( gridIndex / 3.0f + vec2( 0.1f ), 0.5f ) );
-		bool checker = false;
-		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 32.0f ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 40.0f ) ) );
+		 bool checker = checkerBoard( 1.0f, vec3( gridIndex / 1.0f + vec2( 0.1f ), 0.5f ) );
+		// bool checker = false;
+		uint seedCache = seed;
+		seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
+//		const float d = ( invert ? -1.0f : 1.0f ) * ( checker ? ( rectangle( p, vec2( checker ? 20.0f : 50.0f - 40.0f * NormalizedRandomFloat() ) ) ) : ( distance( p, vec2( 0.0f ) ) - ( checker ? 20.0f : 50.0f - 40.0f * NormalizedRandomFloat() ) ) );
+//		const float noiseValue = perlinfbm( vec3( gridIndex.xy * 0.1f, 0.0f ), 1.0f, 2 );
+//		const float noiseValue2 = perlinfbm( vec3( gridIndex.xy * 0.4f, 3.0f ), 1.6f, 2 );
+		const vec3 noise = hash33( vec3( gridIndex.xy, 0.0f ) ) + vec3( 1.0f );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( rectangle( Rotate2D( NormalizedRandomFloat() * tau ) * p, vec2( 10.0f + 20.0f * NormalizedRandomFloat() ) ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 30.0f * noise.y, 15.0f * noise.z ) ) ) );
+		 const float d = ( invert ? -1.0f : 1.0f ) * ( ( rectangle( Rotate2D( noise.z + 3.0f ) * p, vec2( 48.0f, 15.0f ) ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z < 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 30.0f * noise.y, 15.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
+		seed = seedCache;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			if ( checker ) {
+			if ( noise.z < 0.5f ) {
 				// hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
 				hitSurfaceType = MIRROR;
 				hitAlbedo = 1.0f;
 			} else {
 				hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
-				bool checker2 =  checkerBoard( 1.0f, vec3( gridIndex / 2.0f + vec2( 0.1f ), 0.5f ) );
+//				bool checker2 = checkerBoard( 1.0f, vec3( gridIndex / 2.0f + vec2( 0.1f ), 0.5f ) );
 				// hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, checker2 ? 0.5f : 1.0f, checker2 ? 1.0f : 0.3f );
 				hitAlbedo = 1.0f;
 			}
@@ -183,7 +194,7 @@ float de ( vec2 p ) {
 	// walls at the edges of the screen for the rays to bounce off of
 	{
 		const float d = min( min( min(
-			rectangle( pOriginal - vec2( 0.0f, -1900.0f ), vec2( 4000.0f, 20.0f ) ),
+			rectangle( pOriginal - vec2( 0.0f, -1800.0f ), vec2( 4000.0f, 20.0f ) ),
 			rectangle( pOriginal - vec2( 0.0f, 1700.0f ), vec2( 4000.0f, 20.0f ) ) ),
 			rectangle( pOriginal - vec2( -2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) ),
 			rectangle( pOriginal - vec2( 2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
@@ -354,17 +365,28 @@ void main () {
 	}
 	*/
 
+	// pinwheel
+	const int count = 3;
+	// rayDirection = Rotate2D( 6.28f * ( int( count * NormalizedRandomFloat() ) ) / count + 0.3f ) * vec2( 0.0f, 1.0f );
+//	rayDirection = Rotate2D( ( pi / 3.0f ) * pow( NormalizedRandomFloat(), 3.0f ) - 0.1f ) * vec2( 0.0f, 1.0f );
+	//	rayOrigin = mix( vec2( 0.0f, -1100.0f ), vec2( 1000.0f, -1300.0f ), NormalizedRandomFloat() );
+
+//	 rayDirection = ( NormalizedRandomFloat() < 0.1f ) ? Rotate2D( 0.25f * ( NormalizedRandomFloat() - 0.5f ) ) * vec2( 0.0f, 1.0f ) : vec2( 0.0f, 1.0f );
+
+//	rayDirection = Rotate2D( 0.02f * ( NormalizedRandomFloat() - 0.5f ) ) * vec2( 0.0f, 1.0f );
+//	rayOrigin = mix( vec2( -1000.0f, -1600.0f ), vec2( 1000.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
+
 	// rayOrigin = vec2( -400.0f, 100.0f + 30.0f * ( NormalizedRandomFloat() - 0.5f ) );
 	// rayDirection = normalize( vec2( 1.0f, 0.01f * ( NormalizedRandomFloat() - 0.5f ) ) );
-//	 if ( NormalizedRandomFloat() < 0.3f ) { // beams
-		  rayDirection = vec2( 0.0f, 1.0f );
-		  if ( NormalizedRandomFloat() < 0.5f ) {
-			  rayOrigin = vec2( -2000.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-		  } else {
-			  rayOrigin = vec2( -200.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-		  }
+	//	 if ( NormalizedRandomFloat() < 0.3f ) { // beams
+		rayDirection = vec2( 0.0f, 1.0f );
+		if ( NormalizedRandomFloat() < 0.5f ) {
+			rayOrigin = vec2( -2000.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+		} else {
+			rayOrigin = vec2( -200.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+		}
 	// } else if ( NormalizedRandomFloat() < 0.4f ) { // ambient omnidirectional point
-//		 rayOrigin = vec2( 20.0f * ( NormalizedRandomFloat() - 0.5f ), -1800.0f );
+//		 rayOrigin = vec2( 20.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //		 rayDirection = normalize( CircleOffset() * vec2( 1.0f, 3.0f ) );
 //		 if (  rayDirection.y < 0.0f ) {
 //			 rayDirection.y *= -1.0f;
@@ -372,7 +394,7 @@ void main () {
 //	 } else { // overhead light
 		// rayOrigin = vec2( 10.0f * ( NormalizedRandomFloat() - 0.5f ) + int( ( NormalizedRandomFloat() - 0.5f ) * 69.0f ) * 30.0f, -1800.0f );
 //		 rayOrigin = vec2( 1400.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-//		 rayDirection = vec2( 0.0f, 1.0f );
+//		 rayDirection = vec2( 0.1f * ( NormalizedRandomFloat() - 0.5f ), 1.0f );
 //	}
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
@@ -380,7 +402,7 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// selected wavelength - using full range, we can revisit this later
-	wavelength = RangeRemapValue( NormalizedRandomFloat(), 0.0f, 1.0f, 360.0f, 830.0f );
+	wavelength = RangeRemapValue( pow( NormalizedRandomFloat(), 0.95 ), 0.0f, 1.0f, 360.0f, 830.0f );
 
 	// pathtracing loop
 	const int maxBounces = 50;
