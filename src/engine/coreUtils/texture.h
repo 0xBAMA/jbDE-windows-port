@@ -12,6 +12,7 @@ inline size_t bytesPerPixel ( GLint type ) {
 	case GL_R8UI:				return 1; break;
 	case GL_DEPTH_COMPONENT16:	return 1 * 2; break;
 
+	case GL_R32I:
 	case GL_R32UI:
 	case GL_R32F:
 	case GL_DEPTH_COMPONENT32:	return 1 * 4; break;
