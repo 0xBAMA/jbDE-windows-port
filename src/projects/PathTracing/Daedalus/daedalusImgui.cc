@@ -58,7 +58,7 @@ void Daedalus::ShowDaedalusConfigWindow() {
 			ImGui::Checkbox( "Enable##raymarch", &daedalusConfig.render.scene.raymarchEnable );
 			ImGui::SliderFloat( "Understep", &daedalusConfig.render.scene.raymarchUnderstep, 0.5f, 1.0f );
 			ImGui::SliderFloat( "Max Distance", &daedalusConfig.render.scene.raymarchMaxDistance, 0.0f, 300.0f );
-			ImGui::SliderInt( "Max Steps", &daedalusConfig.render.scene.raymarchMaxSteps, 0, 300 );
+			ImGui::SliderInt( "Max Steps", &daedalusConfig.render.scene.raymarchMaxSteps, 0, 1000 );
 
 			ImGui::SeparatorText( "DDA Spheres" );
 			ImGui::Checkbox( "Enable##ddaspheres", &daedalusConfig.render.scene.ddaSpheresEnable );
