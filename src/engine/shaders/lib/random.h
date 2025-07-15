@@ -163,6 +163,19 @@ vec2 RingBokeh () {
 	return randConcentric( 0.6f, 1.1f, NormalizedRandomFloat(), NormalizedRandomFloat() );
 }
 
+/*
+// n-blade aperture, from loicvdb, https://www.shadertoy.com/view/WsBfWD
+vec2 sampleAperture ( int nbBlades, float rotation, float rand1, float rand2, float rand3 ) {
+	const float side = sin( pi / float( nbBlades ) );
+	vec2 tri = vec2( rand1, rand2 );
+	if ( tri.x - tri.y > 0.0f ) tri = vec2( tri.x - 1.0f, 1.0f - tri.y );
+	tri *= vec2( side, -sqrt( 1.0f - side * side ) );
+	const float angle = rotation + 2.0f * pi * floor( rand3 * float( nbBlades ) ) / float( nbBlades );
+	return vec2( tri.x * cos( angle ) + tri.y * sin( angle ),
+				tri.y * cos( angle ) - tri.x * sin( angle ) );
+}
+*/
+
 // regular n-gon with radius 1
 vec2 randPolygon ( float n, float rand1, float rand2 ) {
 	float u = n * rand1;
