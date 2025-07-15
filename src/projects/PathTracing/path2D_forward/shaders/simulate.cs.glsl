@@ -272,6 +272,7 @@ float Reflectance ( const float cosTheta, const float IoR ) {
 	float b = ( ( g + cosTheta ) * cosTheta - 1.0f ) / ( ( g - cosTheta ) * cosTheta + 1.0f );
 	return 0.5f * a * a * ( 1.0f + b * b );
 #endif
+//	another expression used here... https://www.shadertoy.com/view/wlyXzt - what's going on there?
 }
 
 void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
@@ -366,7 +367,7 @@ void main () {
 	*/
 
 	// pinwheel
-	const int count = 3;
+	const float count = 8;
 	// rayDirection = Rotate2D( 6.28f * ( int( count * NormalizedRandomFloat() ) ) / count + 0.3f ) * vec2( 0.0f, 1.0f );
 //	rayDirection = Rotate2D( ( pi / 3.0f ) * pow( NormalizedRandomFloat(), 3.0f ) - 0.1f ) * vec2( 0.0f, 1.0f );
 	//	rayOrigin = mix( vec2( 0.0f, -1100.0f ), vec2( 1000.0f, -1300.0f ), NormalizedRandomFloat() );
@@ -379,12 +380,9 @@ void main () {
 	// rayOrigin = vec2( -400.0f, 100.0f + 30.0f * ( NormalizedRandomFloat() - 0.5f ) );
 	// rayDirection = normalize( vec2( 1.0f, 0.01f * ( NormalizedRandomFloat() - 0.5f ) ) );
 	//	 if ( NormalizedRandomFloat() < 0.3f ) { // beams
-		rayDirection = vec2( 0.0f, 1.0f );
-		if ( NormalizedRandomFloat() < 0.5f ) {
-			rayOrigin = vec2( -2000.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-		} else {
-			rayOrigin = vec2( -200.0f + t + 50.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-		}
+		rayDirection = vec2( 0.01f * ( NormalizedRandomFloat() - 0.5f ), 1.0f );
+		rayOrigin = vec2( RangeRemapValue( int( NormalizedRandomFloat() * count ) / count, 0.0f, 1.0f, -2000.0f + t, 600.f + t ) + 75.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+
 	// } else if ( NormalizedRandomFloat() < 0.4f ) { // ambient omnidirectional point
 //		 rayOrigin = vec2( 20.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //		 rayDirection = normalize( CircleOffset() * vec2( 1.0f, 3.0f ) );
