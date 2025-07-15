@@ -1,8 +1,10 @@
 #include "../../../engine/engine.h"
 
 struct path2DConfig_t {
-	GLuint maxBuffer;
+	GLuint maxBuffer = 0;
 	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
+
+	uint32_t autoExposureBufferDim = 0;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -44,6 +46,27 @@ public:
 			textureManager.Add( "Field Y Tally", opts );
 			textureManager.Add( "Field Z Tally", opts );
 			textureManager.Add( "Field Count", opts );
+
+		// additional buffer used for autoexposure
+			// round up the dimensions
+			path2DConfig.autoExposureBufferDim = nextPowerOfTwo( std::max( path2DConfig.dims.x, path2DConfig.dims.y ) );
+
+			opts.width			= path2DConfig.autoExposureBufferDim;
+			opts.height			= path2DConfig.autoExposureBufferDim;
+			opts.dataType		= GL_R32F;
+			opts.minFilter		= GL_NEAREST;
+			opts.magFilter		= GL_NEAREST;
+			textureManager.Add( "Field Max", opts );
+
+			// create the mip levels explicitly... we want to be able to sample the texel (0,0) of the highest mip of the texture for the autoexposure term
+			int level = 0;
+			int d = path2DConfig.autoExposureBufferDim;
+			Image_4F zeroesF( d, d );
+			while ( d >= 1 ) {
+				d /= 2; d /= 2; level++;
+				glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field Max" ) );
+				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
+			}
 		}
 	}
 
