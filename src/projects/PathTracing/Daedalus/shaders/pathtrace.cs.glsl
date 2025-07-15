@@ -2096,6 +2096,18 @@ float de( in vec3 p ) {
 vec3 SDFNormal( in vec3 position ) {
 	vec2 e = vec2( epsilon, 0.0f );
 	return normalize( vec3( de( position ) ) - vec3( de( position - e.xyy ), de( position - e.yxy ), de( position - e.yyx ) ) );
+
+// another formulation, source unknown
+//	vec3 calcNormal( in vec3 pos ){
+//		const float h = 0.0001;
+//		vec3 n = vec3(0.0);
+//		for( int i=ZERO; i<4; i++ )
+//		{
+//			vec3 e = 0.5773*(2.0*vec3((((i+3)>>1)&1),((i>>1)&1),(i&1))-1.0);
+//			n += e*scene(pos+e*h).dist;
+//		}
+//		return normalize(n);
+//	}
 }
 //=============================================================================================================================
 intersection_t raymarch( in ray_t ray ) {
