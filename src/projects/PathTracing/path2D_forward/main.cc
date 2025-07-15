@@ -183,7 +183,8 @@ public:
 			resetRequested = true;
 		}
 		*/
-		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
+		// glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
+		glUniform1f( glGetUniformLocation( shader, "t" ), 0.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
 
 		rng offset = rng( 0, 512 );
