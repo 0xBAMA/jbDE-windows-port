@@ -1813,6 +1813,64 @@ float deGatee3( vec3 p ) {
 	return deGateep( p / scale, 5 ) * scale - 0.0006;
 }
 
+  #define fold45(p)(p.y>p.x)?p.yx:p
+  float deGGED(vec3 p) {
+    float scale = 2.1, off0 = .6, off1 = .3, off2 = .83;
+    vec3 off =vec3(2.3,0.6,.1);
+    float s=1.0;
+    for(int i = 0;++i<20;) {
+      p.xy = abs(p.xy);
+      p.xy = fold45(p.xy);
+      p.y -= off0;
+      p.y = -abs(p.y);
+      p.y += off0;
+      p.x += off1;
+      p.xz = fold45(p.xz);
+      p.x -= off2;
+      p.xz = fold45(p.xz);
+      p.x += off1;
+      p -= off;
+      p *= scale;
+      p += off;
+      s *= scale;
+    }
+    return length(p)/s;
+  }
+
+#define TAUg atan(1.)*8.
+vec2 pmodg(vec2 p, float n){
+	float a=mod(atan(p.y, p.x),TAUg/n)-.5 *TAUg/n;
+	return length(p)*vec2(sin(a),cos(a));
+}
+
+float detrimental( vec3 p ){
+	for(int i=0;i<4;i++){
+		p.xy = pmodg(p.xy,10.);  p.y-=2.;
+		p.yz = pmodg(p.yz, 12.); p.z-=10.;
+	}
+	return dot(abs(p),normalize(vec3(13,1,7)))-.7;
+}
+// from loicvdb https://www.shadertoy.com/view/cdlGRl
+float ot;
+float dePortrait(vec3 c)
+{
+	vec3 z = c;
+	float dr = 1.0;
+	float r = length(z);
+	ot = 1.0;
+
+	for (int j = 0; j < 11 && r < 4.0; j++)
+	{
+		dr = dr * r * 2.0 + 1.0;
+		float t = acos(z.z / r) * 2.0;
+		float p = atan(z.y, z.x) * 2.0;
+		z = r * r * vec3(sin(t) * vec2(cos(p), sin(p)), cos(t)) + c;
+		r = length(z);
+		ot = min(abs(z.z) * 9.0, ot);
+	}
+
+	return 0.5 * log(r) * r / dr;
+}
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
