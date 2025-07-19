@@ -2685,13 +2685,25 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		result.frontfaceHit = ( dot( ray.direction, currentNormal ) < 0.0f );
 		result.normal = currentNormal;
 		result.materialID = int( spheres[ indexOfHit ].colorMaterial.w );
+		result.roughness = spheres[ indexOfHit ].materialProps.g;
+		if ( result.materialID == EMISSIVE_FRESNEL || result.materialID == EMISSIVE ) {
+			result.albedo /= 100.0f;
+		}
+		if ( result.materialID == CHECKER ) {
+			result.materialID = ( NormalizedRandomFloat() > 0.9f ) ? MIRROR : DIFFUSE;
+			if ( result.materialID == DIFFUSE ) {
+				result.albedo = vec3( nickel );
+			} else {
+				result.albedo = vec3( 0.99f );
+			}
+		}
 		if ( result.materialID == REFRACTIVE && result.frontfaceHit == false ) {
 			result.materialID = REFRACTIVE_BACKFACE; // this needs to be more generalized
 			// result.normal = -result.normal; // this is already handled, for the sphere, at least...
 		}
 		result.albedo = spheres[ indexOfHit ].colorMaterial.xyz;
 		result.IoR = spheres[ indexOfHit ].materialProps.r;
-		result.roughness = spheres[ indexOfHit ].materialProps.g;
+		// result.roughness = spheres[ indexOfHit ].materialProps.g;
 		// result.roughness = saturate( pow( perlinfbm( ray.origin + ray.direction * result.dTravel, 20.0f, 4 ), 3.0f ) * 0.2f );
 	}
 	return result;
