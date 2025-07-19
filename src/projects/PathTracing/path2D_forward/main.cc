@@ -5,6 +5,8 @@ struct path2DConfig_t {
 	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
 
 	uint32_t autoExposureBufferDim = 0;
+	uint32_t autoExposureMipLevels = 0;
+	float autoExposureBase = 1600000.0f;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -24,6 +26,8 @@ public:
 			// image prep
 			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/draw.cs.glsl" ).shaderHandle;
 			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/simulate.cs.glsl" ).shaderHandle;
+			shaders[ "Autoexposure Prep" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposurePrep.cs.glsl" ).shaderHandle;
+			shaders[ "Autoexposure" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposure.cs.glsl" ).shaderHandle;
 
 			// field max, single value
 			constexpr uint32_t countValue = 0;
@@ -67,6 +71,7 @@ public:
 				glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field Max" ) );
 				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
 			}
+			path2DConfig.autoExposureMipLevels = level;
 		}
 	}
 
@@ -75,7 +80,6 @@ public:
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
 		if ( inputHandler.getState( KEY_T ) ) {
-			cout << "Screenshot Requested" << endl;
 			screenshotRequested = true;
 		}
 	}
@@ -95,7 +99,6 @@ public:
 
 		ImGui::Begin( "Screenshot Window" );
 		if ( ImGui::Button(  "Screenshot" ) ) {
-			cout << "Screenshot Requested" << endl;
 			screenshotRequested = true;
 		}
 		ImGui::End();
@@ -106,6 +109,46 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
+		{
+			scopedTimer Start( "Autoexposure" );
+			{	// clear the texture with the max value
+				textureManager.ZeroTexture2D( "Field Max" );
+			}
+
+			{	// populate mip 0 with "proposed pixel brightness values" with no autoexposure setting
+					// potential future optimization here, do textureGathers during this step and mip 0 can be half res
+				const GLuint shader = shaders[ "Autoexposure Prep" ];
+				glUseProgram( shader );
+				textureManager.BindImageForShader( "Field Max", "fieldMax", shader, 0 );
+				textureManager.BindTexForShader( "Field X Tally", "bufferImageX", shaders[ "Draw" ], 1 );
+				textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shaders[ "Draw" ], 2 );
+				textureManager.BindTexForShader( "Field Z Tally", "bufferImageZ", shaders[ "Draw" ], 3 );
+				textureManager.BindTexForShader( "Field Count", "bufferImageCount", shaders[ "Draw" ], 4 );
+				glUniform1f( glGetUniformLocation( shader, "autoExposureBase" ), path2DConfig.autoExposureBase );
+				glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
+			}
+
+			{	// mip propagation of brightness max
+				int d = path2DConfig.autoExposureBufferDim / 2;
+				const GLuint shader = shaders[ "Autoexposure" ];
+				glUseProgram( shader );
+				for ( int n = 0; n < path2DConfig.autoExposureMipLevels - 1; n++ ) { // for num mips minus 1
+
+					// bind the appropriate levels for N and N+1 (starting with N=0... to N=...? ) double bind of texture version... yeah
+					textureManager.BindTexForShader( "Field Max", "layerN", shader, 0 );
+					textureManager.BindImageForShader( "Field Max", "layerN", shader, 0, n );
+					textureManager.BindImageForShader( "Field Max", "layerNPlus1", shader, 1, n + 1 );
+
+					// dispatch the compute shader( 1x1x1 groupsize for simplicity )
+					glDispatchCompute( d, d, 1 );
+					glMemoryBarrier( GL_ALL_BARRIER_BITS );
+					d /= 2;
+				}
+				// postcondition is that the top mip's single texel contains the field max, and we can access that during drawing to get it into a reasonable range
+			}
+		}
+
 		{ // prep accumumator texture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
@@ -114,7 +157,9 @@ public:
 			textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shaders[ "Draw" ], 3 );
 			textureManager.BindTexForShader( "Field Z Tally", "bufferImageZ", shaders[ "Draw" ], 4 );
 			textureManager.BindTexForShader( "Field Count", "bufferImageCount", shaders[ "Draw" ], 5 );
-
+			textureManager.BindImageForShader( "Field Max", "fieldMax", shaders[ "Draw" ], 6 );
+			glUniform1i( glGetUniformLocation( shaders[ "Draw" ], "autoExposureTexOffset" ), path2DConfig.autoExposureMipLevels );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "autoExposureBase" ), path2DConfig.autoExposureBase );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}

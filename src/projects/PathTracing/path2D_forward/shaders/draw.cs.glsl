@@ -11,8 +11,10 @@ uniform isampler2D bufferImageZ;
 uniform isampler2D bufferImageCount;
 
 // scale factor based on max observed brightness
-const float autoExposureAdjust = 1.0f; // todo: ssbo
-const float autoExposureBase = 1600000.0f;
+// const float autoExposureBase = 1600000.0f;
+uniform float autoExposureBase;
+uniform int autoExposureTexOffset;
+uniform sampler2D fieldMax;
 
 #include "colorspaceConversions.glsl"
 
@@ -20,6 +22,9 @@ void main () {
 	// pixel location
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 	vec2 samplePoint = vec2( loc + 0.5f ) / imageSize( accumulatorTexture ).xy;
+
+	// what is the autoexposure brightness factor? clamp on the bottom end
+	const float autoExposureAdjust = 1.0f / max( 0.01f, texelFetch( fieldMax, ivec2( 0 ), autoExposureTexOffset - 1 ).r );
 
 	// baking in the 0-255 AA factor
 	const float count = float( texture( bufferImageCount, samplePoint ).r ) / 1024.0f;
