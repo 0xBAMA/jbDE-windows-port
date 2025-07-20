@@ -19,7 +19,7 @@ void main () {
 
         // find the local maximum in the red channel texels
         const vec4 gR = textureGather( layerN, oldLoc, 0 );
-        const float gR_max = max( max( gR.x, gR.y ), max( gR.z, gR.w ) );
+        const float gR_max = max( 0.0f, max( max( gR.x, gR.y ), max( gR.z, gR.w ) ) );
 
         // and store the result for layer N + 1
         imageStore( layerNPlusOne, newLoc, vec4( gR_max ) );
