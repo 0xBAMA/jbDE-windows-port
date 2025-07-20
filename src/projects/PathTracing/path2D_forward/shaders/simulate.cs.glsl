@@ -420,11 +420,9 @@ void main () {
 		}
 		*/
 
-		/*
-		// russian roulette termination
-		if ( NormalizedRandomFloat() > transmission ) break;
-		transmission *= 1.0f / transmission; // compensation term
-		*/
+//		 russian roulette termination
+		if ( NormalizedRandomFloat() > energyTotal ) break;
+		energyTotal *= 1.0f / energyTotal; // compensation term
 
 		// attenuate transmission by the surface albedo
 		energyTotal *= result.albedo;
