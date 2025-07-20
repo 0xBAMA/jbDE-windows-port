@@ -120,10 +120,8 @@ public:
 				const GLuint shader = shaders[ "Autoexposure Prep" ];
 				glUseProgram( shader );
 				textureManager.BindImageForShader( "Field Max", "fieldMax", shader, 0 );
-				textureManager.BindTexForShader( "Field X Tally", "bufferImageX", shaders[ "Draw" ], 1 );
-				textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shaders[ "Draw" ], 2 );
-				textureManager.BindTexForShader( "Field Z Tally", "bufferImageZ", shaders[ "Draw" ], 3 );
-				textureManager.BindTexForShader( "Field Count", "bufferImageCount", shaders[ "Draw" ], 4 );
+				textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shader, 2 );
+				textureManager.BindTexForShader( "Field Count", "bufferImageCount", shader, 4 );
 				glUniform1f( glGetUniformLocation( shader, "autoExposureBase" ), path2DConfig.autoExposureBase );
 				glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
 				glMemoryBarrier( GL_ALL_BARRIER_BITS );
