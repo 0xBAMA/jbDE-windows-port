@@ -24,16 +24,24 @@ void main () {
 	vec2 samplePoint = vec2( loc + 0.5f ) / imageSize( accumulatorTexture ).xy;
 
 	// what is the autoexposure brightness factor? clamp on the bottom end
-	const float autoExposureAdjust = 1.0f / max( 0.01f, texelFetch( fieldMax, ivec2( 0 ), autoExposureTexOffset - 1 ).r );
+	const float autoExposureAdjust = 1.0f / max( 0.01f, texelFetch( fieldMax, ivec2( 0 ), autoExposureTexOffset ).r );
 
 	// baking in the 0-255 AA factor
-	const float count = float( texture( bufferImageCount, samplePoint ).r ) / 1024.0f;
+	const float count = float( texture( bufferImageCount, samplePoint ).r );
 	const vec3 col = ( count == 0.0f ) ? vec3( 0.0f ) : // no data...
 	rgb_to_srgb( xyz_to_rgb( autoExposureAdjust * vec3( // these are tally sums + number of samples for averaging
-		( float( texture( bufferImageX, samplePoint ).r ) / 1024.0f ),
-		( float( texture( bufferImageY, samplePoint ).r ) / 1024.0f ),
-		( float( texture( bufferImageZ, samplePoint ).r ) / 1024.0f )
+	( float( texture( bufferImageX, samplePoint ).r ) / 1024.0f ),
+	( float( texture( bufferImageY, samplePoint ).r ) / 1024.0f ),
+	( float( texture( bufferImageZ, samplePoint ).r ) / 1024.0f )
 	) / autoExposureBase ) );
+	/*
+	const vec3 col = ( count == 0.0f ) ? vec3( 0.0f ) : // no data...
+	rgb_to_srgb( xyz_to_rgb( autoExposureAdjust * vec3( // these are tally sums + number of samples for averaging
+	( float( texture( bufferImageX, samplePoint ).r ) / 1024.0f ),
+	( float( texture( bufferImageY, samplePoint ).r ) / 1024.0f ),
+	( float( texture( bufferImageZ, samplePoint ).r ) / 1024.0f )
+	) / count ) );
+	*/
 
 	// write the data to the image
 	imageStore( accumulatorTexture, loc, vec4( col, 1.0f ) );
