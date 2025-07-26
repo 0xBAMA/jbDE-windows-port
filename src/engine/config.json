@@ -20,9 +20,9 @@
 				"g": 0.7,
 				"r": 1.0
 			},
-			"dimensionX": 2048,
-			"dimensionY": 1024,
-			"numAgents": 1048576
+			"dimensionX": 2880,
+			"dimensionY": 1800,
+			"numAgents": 104857
 		},
 		"Physarum2.5D": {
 			"brightness": 1.0,

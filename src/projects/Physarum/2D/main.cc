@@ -137,9 +137,9 @@ public:
 		// expose controls for the physarum
 		if ( ImGui::SmallButton( "Randomize Parameters" ) ) {
 			rng senseAngle( 0.0f, float( pi ) );
-			rng senseDistance( 0.0f, 0.005f );
+			rng senseDistance( 0.0f, 0.05f );
 			rng turnAngle( 0.0f, float( pi ) );
-			rng stepSize( 0.0f, 0.005f );
+			rng stepSize( 0.0f, 0.05f );
 			rngi depositAmount( 4000, 75000 );
 			rng decayFactor( 0.75f, 1.0f );
 
@@ -205,7 +205,7 @@ public:
 		HelpMarker( "The distance from the agent position to the sensors." );
 		ImGui::SameLine();
 		ImGui::Text( "Sensor Distance:" );
-		ImGui::SliderFloat( "        ", &physarumConfig.senseDistance, 0.0f, 0.005f, "%.4f" );
+		ImGui::SliderFloat( "        ", &physarumConfig.senseDistance, 0.0f, 0.05f, "%.4f" );
 
 		ImGui::Separator();
 
@@ -219,7 +219,7 @@ public:
 		HelpMarker( "Distance that each sim agent will go in their current direction each step." );
 		ImGui::SameLine();
 		ImGui::Text( "Step Size:" );
-		ImGui::SliderFloat( "    ", &physarumConfig.stepSize, 0.0f, 0.005f, "%.4f" );
+		ImGui::SliderFloat( "    ", &physarumConfig.stepSize, 0.0f, 0.05f, "%.4f" );
 
 		ImGui::Separator();
 
