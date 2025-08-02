@@ -250,7 +250,8 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		const int iterations = 100;
+		const int iterations = 1;
+	const float t = float( SDL_GetTicks() ) / 30000.0f;
 		for ( int i = 0; i < iterations; i++ ) { // update agents, held in the SSBO
 			scopedTimer Start( "Agent Sim" );
 
@@ -261,6 +262,7 @@ public:
 			glBindImageTexture( 1, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "0" : "1" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // previous
 			glBindImageTexture( 2, textureManager.Get( string( "Pheremone Continuum Buffer " ) + string( physarumConfig.oddFrame ? "1" : "0" ) ), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI ); // current
 			glUniform1f( glGetUniformLocation( shaders[ "Diffuse and Decay" ], "decayFactor" ), physarumConfig.decayFactor );
+			glUniform1f( glGetUniformLocation( shaders[  "Diffuse and Decay" ], "time" ), t );
 			physarumConfig.oddFrame = !physarumConfig.oddFrame;
 
 			glDispatchCompute( ( physarumConfig.dimensionX + 7 ) / 8, ( physarumConfig.dimensionY + 7 ) / 8, 1 );
