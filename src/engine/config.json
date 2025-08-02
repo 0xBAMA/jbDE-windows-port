@@ -16,13 +16,13 @@
 		"Physarum2D": {
 			"brightness": 1.0,
 			"color": {
-				"b": 0.2,
-				"g": 0.7,
+				"b": 0.0,
+				"g": 0.15,
 				"r": 1.0
 			},
-			"dimensionX": 2880,
-			"dimensionY": 1800,
-			"numAgents": 104857
+			"dimensionX": 1440,
+			"dimensionY": 900,
+			"numAgents": 3000000
 		},
 		"Physarum2.5D": {
 			"brightness": 1.0,

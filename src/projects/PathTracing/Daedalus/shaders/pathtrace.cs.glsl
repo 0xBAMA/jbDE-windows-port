@@ -1896,8 +1896,8 @@ float de( in vec3 p ) {
 	// const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
 
-	{
-		const float d = max( max( deGatee3( p ), dBounds ), dBounds );
+	if ( true ) {
+		const float d = max( max( dePortrait( p ), dBounds ), dBounds );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1920,9 +1920,27 @@ float de( in vec3 p ) {
 
 			// hitSurfaceType = MIRROR;
 
+			// hitColor = mix( mix( gold, vec3( 0.99f ), -0.3f ), blood / 5.0f, ot );
+
+
+			ot = 1.0f - ot;
+			const vec3 verdigris = vec3( 22.0f / 255.0f, 67.0f / 255.0f, 28.0f / 255.0f );
+			// hitColor = mix( mix( nvidia, vec3( 0.1f, 0.3f, 0.04f ), perlinfbm( p, 3.0f, 5 ) / 2.0f + 0.5f ), nickel, ot );
+			// hitColor = mix( mix( vec3( 0.0f, 0.15f, 0.0f ), nvidia / 4.0f, perlinfbm( p, 50.0f, 5 ) ), verdigris, ot ).ggr;
+			// hitColor = mix( gold, blood, ot );
+			// hitColor = mix( verdigris, nickel, saturate( ot * 1.3f - 0.3f ) );
+			// hitColor = ot < 0.618f ? verdigris : nickel;
+			// hitColor = mix( vec3( 1.0f, 1.0f, 0.9f ), vec3( 0.7f, 0.2f, 0.3f ), ot );
 			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
 			hitColor = vec3( 0.99f );
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			// hitColor = nvidia;
+			hitRoughness = 0.1f;
+			// hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? MIRROR : ( NormalizedRandomFloat() > ot ) ? DIFFUSE : METALLIC;
+			hitSurfaceType = NormalizedRandomFloat() < ( ot + perlinfbm( p, 150.0f, 5 ) * 0.5f ) ? METALLIC : DIFFUSE;
+			if ( hitSurfaceType == METALLIC ) {
+				hitColor = nickel;
+			}
+//			hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? WOOD : DIFFUSE;
 
 
 			// hitColor = vec3( 0.99f );
@@ -1942,7 +1960,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		const float d = max( max( deGatee2( p ), dBounds ), dBounds );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1969,12 +1987,14 @@ float de( in vec3 p ) {
 		}
 	}
 
-	{
-	 	const float d = fBox( p, vec3( 100.0f, 0.02f, 0.02f ) );
+	if (true) {
+	 	const float d = fBox( p, vec3( 100.0f, 0.03f, 0.1f ) );
+
+	 	// const float d = deJeyko( p );
 	 	sceneDist = min( sceneDist, d );
 	 	if ( sceneDist == d && d < epsilon ) {
-	 		hitSurfaceType = EMISSIVE;
-	 		hitColor = vec3( 0.618f );
+	 		hitSurfaceType = EMISSIVE_FRESNEL;
+	 		hitColor = vec3( 3.618f );
 	 	}
 	 }
 
@@ -2390,12 +2410,12 @@ uint GetAlphaValueForIdx( ivec3 idx ) {
 //=============================================================================================================================
 vec3 GetColorForIdx( ivec3 idx ) {
 	// return vec3( 0.23f, 0.618f, 0.123f ).ggg;
-	// return vec3( 0.99f );
+	return vec3( 0.99f );
 	// return viridis( ( pcg3d( uvec3( idx ) ).x / 4294967296.0f ) / 5.0f + 0.6f );
 	// return vec3( pcg3d( uvec3( idx ) ) / 4294967296.0f ) + vec3( 0.8f );
 	// return mix( vec3( 0.99f ), vec3( 0.99, 0.6f, 0.1f ), pcg3d( uvec3( idx ) ).x / 4294967296.0f );
 	// return mix( vec3( 0.618f ), vec3( 0.0, 0.0f, 0.0f ), saturate( pcg3d( uvec3( idx ) ) / 4294967296.0f ) );
-	return imageLoad( DDATex, idx ).rgb / 255.0f;
+	// return imageLoad( DDATex, idx ).rgb / 255.0f;
 	// return magma( imageLoad( HeightmapTex, idx.xy ).r );
 }
 //=============================================================================================================================
