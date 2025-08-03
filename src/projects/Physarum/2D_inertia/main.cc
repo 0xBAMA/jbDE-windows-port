@@ -2,7 +2,7 @@
 #include "includes.h"
 #include "vec2.hpp"
 #include "vec3.hpp"
-#include "../../engine/engine.h"
+#include "../../../engine/engine.h"
 
 struct physarumConfig_t {
 // resolution of the substrate buffers
@@ -10,6 +10,7 @@ struct physarumConfig_t {
 
 // number of agents in play
 	uint32_t numAgents = 100000u;
+	GLuint agentSSBO = 0;
 
 // Parameters
 // Decay has to be handled at global scope, can't be part of the agent's parameterization
@@ -82,7 +83,8 @@ public:
 
 			// shader compilation
 			shaders[ "Agent" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/agent.cs.glsl" ).shaderHandle;			// agent update shader
-			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse/decay shader
+			shaders[ "CopyClear" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/copyClear.cs.glsl" ).shaderHandle;		// copy and clear shader
+			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse and decay shader
 			shaders[ "Autoexposure" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/autoexposure.cs.glsl" ).shaderHandle;	// autoexposure compute shader
 			shaders[ "Draw" ]			= computeShader( "../src/projects/Physarum/2D_inertia/shaders/draw.cs.glsl" ).shaderHandle;			// put data in the accumulator texture
 
@@ -105,7 +107,16 @@ public:
 
 				// place the agent on the substrate
 				agent.position = vec2( xD(), yD() );
+
+				// add it to the list
+				agents.push_back( agent );
 			}
+
+			// create the buffer and upload the contents
+			glGenBuffers( 1, &physarumConfig.agentSSBO );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, physarumConfig.agentSSBO );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, agents.size() * sizeof( agentRecord_t ), ( GLvoid * ) &agents[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, physarumConfig.agentSSBO );
 
 			// create uint buffer for resolving atomics
 			textureOptions_t opts;
@@ -113,15 +124,15 @@ public:
 			opts.width			= physarumConfig.dims.x;
 			opts.height			= physarumConfig.dims.y;
 			opts.textureType	= GL_TEXTURE_2D;
-			textureManager.add( "Pheremone Uint Buffer", opts );
+			textureManager.Add( "Pheremone Uint Buffer", opts );
 
 			// create 2 float buffers for blur/decay operation (read/write interface tex + scratch tex)
 				// eventually the interface tex will have a mipchain, for the autoexposure usage
 			opts.dataType		= GL_R32F;
 			opts.magFilter		= GL_LINEAR;
 			opts.minFilter		= GL_LINEAR;
-			textureManager.add( "Pheremone Float Buffer 1", opts ); // interface
-			textureManager.add( "Pheremone Float Buffer 2", opts ); // scratch
+			textureManager.Add( "Pheremone Float Buffer 1", opts ); // interface
+			textureManager.Add( "Pheremone Float Buffer 2", opts ); // scratch
 		}
 	}
 
@@ -129,7 +140,7 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		// FSM menu update
+		// FSM menu update?
 
 		// other controls
 
@@ -237,16 +248,18 @@ public:
 		// Diffuse/Decay
 			// First pass, uint texture (1) contents added to first float texture (2) contents
 				// While you're here, clear the uint texture (1) to zero for next frame
-			// Second pass, first separable blur pass, first float texture (2) horizontal blur into second float texture (3)
-			// Third pass, second separable blur pass, second float texture (3) vertical blur into first float texture (2)
-				// Decay applied when writing back to the first float texture (2)
+				glUseProgram( shaders[ "CopyClear" ] );
 
-				glUseProgram( shaders[ "Diffuse" ] );
-
-				// horizontal pass
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
-				// vertical pass
+				// ready to do the blur step
+				glUseProgram( shaders[ "Diffuse" ] );
+
+			// Second pass, first separable blur pass, first float texture (2) horizontal blur into second float texture (3)
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+			// Third pass, second separable blur pass, second float texture (3) vertical blur into first float texture (2)
+				// Decay applied when writing back to the first float texture (2)
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
 		}

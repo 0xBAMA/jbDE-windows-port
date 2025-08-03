@@ -1,57 +1,38 @@
 #version 430
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
-layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
-layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
+// horizontal and vertical occur separately
+uniform int separableBlurMode; // 0 is horizontal, 1 is vertical
+uniform float radius;
 
-uniform float time;
+// handle bindings CPU side, so we can treat them agnostically here
+// source texture
+
+// destination image
+
+#include "mathUtils.h"
+
+// worked out separable blur: https://www.shadertoy.com/view/33GXzh
+float blurWeight ( const float pos ) {
+	// divide by number of taps included here instead of in the loop... this drops a scalar, but brightness is reasonable
+	float normalizationTerm = radius * sqrt( pi ); // integral of distribution is sqrt(pi/a), a=1 because we dropped it
+	float gaussianWeight = exp( -( pos * pos ) / ( 2.0f * radius * radius ) );
+	return gaussianWeight / normalizationTerm;
+}
+
+float blurResult ( vec2 uv ) {
+	float val = 0.0f;
+	// 3 * radius based on observation that it's within some reasonable threshold of zero by that point (3 stdev)
+	for ( float offset = -3.0f * radius - 0.5f; offset < 3.0f * radius + 0.5f; offset++ ) {
+		// https://www.shadertoy.com/view/Xd33Rf note use of texel border sampling to double effective bandwidth
+		val += blurWeight( offset ) * texture( substrateTex, ( fragCoord + ( ( separableBlurMode == 1 ) ? vec2( offset, 0.0f ) : vec2( 0.0f, offset ) ) / textureSize( substrateTex, 0 ).xy ) ).r;
+
+	return val;
+}
 
 void main () {
-	// pixel location
-	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
+	// implementing horizontal and vertical modes here, need to control from CPU
 
-#if 1 // 1 for guts, 0 for more generic version
+	// only apply the "decay" during the second pass, since we want to do a mix with a clean blurred image result
 
-	// yonatan/zozuar's pulsing guts shader ported from twi.gl : https://twigl.app/?ol=true&ss=-NNIajM4aEzy75lqtAUd
-		// effect breakdown / explanation: https://www.shadertoy.com/view/dtSSDR
-	const ivec2 bufferSize = imageSize( accumulatorTexture ).xy;
-	vec2 uv = ( ( vec2( writeLoc ) + vec2( 0.5f ) ) / vec2( bufferSize ) ) * 2.0f - vec2( 1.0f );
-	vec3 col = vec3( 0.0f );
-	vec2 n = vec2( 0.0f );
-	vec2 q = vec2( 0.0f );
-	float d = dot( uv, uv );
-	float S = 12.0f;
-	float a = 0.0f;
-	mat2 m = mat2( cos( 5.0f ), sin( 5.0f ), -sin( 5.0f ), cos( 5.0f ) );
-	for ( float j = 0.0f; j < 20.0f; j++ ) {
-		uv *= m;
-		n *= m;
-		q = uv * S + time * 4.0f + sin( time * 4.0f - d * 6.0f ) * 0.8f + j + n;
-		a += dot( cos( q ) / S, vec2( 0.2f ) );
-		n -= sin( q );
-		S *= 1.2f;
-	}
-
-	col = vec3( 4.0f, 2.0f, 1.0f ) * ( a + 0.2f ) + a + a - d;
-	col = pow( col, vec3( 2.2f ) ); // normal colors
-	// col = pow( col, vec3( 2.0f ) ); // skews blue/white/etc
-
-#else
-
-	// some xor shit
-	uint x = uint( writeLoc.x ) % 256;
-	uint y = uint( writeLoc.y ) % 256;
-	uint xor = ( x ^ y );
-
-	// get some blue noise going, for additional shits
-	vec3 col = ( xor < 128 ) ?
-		( imageLoad( blueNoiseTexture, writeLoc % imageSize( blueNoiseTexture ) ).xyz / 255.0f ) :
-		vec3( xor / 255.0f );
-
-#endif
-
-	col = vec3( 0.0f );
-
-	// write the data to the image
-	imageStore( accumulatorTexture, writeLoc, vec4( col, 1.0f ) );
 }
