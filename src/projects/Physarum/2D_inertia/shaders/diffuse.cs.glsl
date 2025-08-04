@@ -32,12 +32,15 @@ float blurResult ( vec2 uv ) {
 		val += blurWeight( offset ) * texture( sourceTex, ( uv + ( ( separableBlurMode == 0 ) ?
 			vec2( offset, 0.0f ) : vec2( 0.0f, offset ) ) / textureSize( sourceTex, 0 ).xy ) ).r;
 
+	// if ( separableBlurMode == 1 ) { val *= 0.5f; }
+	if ( separableBlurMode == 1 ) { val *= 0.46f; }
 	return val;
 }
 
 void main () {
 	// implementing horizontal and vertical modes here, need to control from CPU
-
 	// only apply the "decay" during the second pass, since we want to do a mix with a clean blurred image result
 
+	vec2 p = vec2( gl_GlobalInvocationID.xy + 0.5f ) / imageSize( destTex ).xy;
+	imageStore( destTex, ivec2( gl_GlobalInvocationID.xy ), vec4( blurResult( p ) ) );
 }

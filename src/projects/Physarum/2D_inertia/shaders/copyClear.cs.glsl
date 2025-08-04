@@ -8,10 +8,15 @@ layout ( binding = 0, r32ui ) uniform uimage2D atomicImage;
 layout ( binding = 1, r32f ) uniform image2D floatImage;
 
 void main () {
+	ivec2 p = ivec2( gl_GlobalInvocationID.xy );
+
 	// load the atomic write result
+	uint atomicValue = imageLoad( atomicImage, p ).r;
 
 	// add to the value in the float buffer
+	float floatValue = imageLoad( floatImage, p ).r;
+	imageStore( floatImage, p, vec4( atomicValue + floatValue ) );
 
 	// write back a zero value to the uint buffer, to prepare for next frame
-
+	imageStore( atomicImage, p, uvec4( 0 ) );
 }
