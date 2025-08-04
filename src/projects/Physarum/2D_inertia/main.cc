@@ -54,7 +54,7 @@ struct physarumConfig_t {
 // should also have some parameterization around wrapping/edge behavior on the substrate texture
 
 // Diffuse only has one parameter, now
-	float fieldDiffuseRadius = 3.4f;
+	float fieldDiffuseRadius = 1.0f;
 
 // program state
 	bool runSim = true;
@@ -149,12 +149,12 @@ public:
 		rng yD = rng( 0.0f, float( physarumConfig.dims.y - 1 ) );
 		rng rotDist = rng( 0.0f, tau );
 
-		rng mass = rng( 5.5f, 20.0f );
-		rng drag = rng( 0.7f, 1.0f );
-		rng senseDistance = rng( 5.0f, 25.0f );
-		rng senseAngle = rng( 0.02f, tau );
-		rng turnAngle = rng( 0.02f, tau );
-		rng forceAmount	= rng( 0.3f, 2.0f );
+		rng mass = rng( 1.5f, 20.0f );
+		rng drag = rng( 0.5f, 1.0f );
+		rng senseDistance = rng( 5.0f, 20.0f );
+		rng senseAngle = rng( 0.0f, tau );
+		rng turnAngle = rng( 0.0f, tau );
+		rng forceAmount	= rng( 0.1f, 2.0f );
 		rng depositAmount	= rng( 10.0f, 1000.0f );
 
 		physarumConfig.baseAgent.mass = mass();
