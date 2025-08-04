@@ -67,7 +67,7 @@ public:
 			int d = path2DConfig.autoExposureBufferDim;
 			Image_4F zeroesF( d, d );
 			while ( d >= 1 ) {
-				d /= 2; d /= 2; level++;
+				d /= 2; level++;
 				glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field Max" ) );
 				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
 			}
