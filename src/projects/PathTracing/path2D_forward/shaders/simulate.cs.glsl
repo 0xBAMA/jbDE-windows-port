@@ -12,6 +12,7 @@ layout( r32i ) uniform iimage2D bufferImageX;
 layout( r32i ) uniform iimage2D bufferImageY;
 layout( r32i ) uniform iimage2D bufferImageZ;
 layout( r32i ) uniform iimage2D bufferImageCount;
+uniform sampler2D iCDFtex;
 
 uniform float t;
 uniform int rngSeed;
@@ -409,7 +410,8 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// selected wavelength - using full range, we can revisit this later
-	wavelength = RangeRemapValue( pow( NormalizedRandomFloat(), 1.05 ), 0.0f, 1.0f, 360.0f, 830.0f );
+//	wavelength = RangeRemapValue( pow( NormalizedRandomFloat(), 1.05 ), 0.0f, 1.0f, 360.0f, 830.0f );
+	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 0.5f ) ).r;
 
 	// pathtracing loop
 	const int maxBounces = 100;

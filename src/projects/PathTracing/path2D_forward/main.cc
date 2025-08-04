@@ -304,9 +304,11 @@ public:
 		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
 		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
 		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
+		textureManager.BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
 
 		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		glDispatchCompute( 6, 6, 3 );
+		// glDispatchCompute( 6, 6, 3 );
+		glDispatchCompute( 2, 2, 2 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
