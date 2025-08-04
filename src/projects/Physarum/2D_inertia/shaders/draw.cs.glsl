@@ -6,6 +6,8 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 
 // physarum buffer (float 1)	// will have mipchain with autoexposure information, as well. Contains prepared sim data for present
 
+uniform float time;
+
 void main () {
 
 }

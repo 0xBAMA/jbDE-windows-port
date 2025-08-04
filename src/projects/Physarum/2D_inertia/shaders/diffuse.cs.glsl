@@ -7,25 +7,30 @@ uniform float radius;
 
 // handle bindings CPU side, so we can treat them agnostically here
 // source texture
+layout ( binding = 0 ) uniform sampler2D sourceTex;
 
 // destination image
+layout ( binding = 1, r32f ) uniform image2D destTex;
 
 #include "mathUtils.h"
 
 // worked out separable blur: https://www.shadertoy.com/view/33GXzh
 float blurWeight ( const float pos ) {
-	// divide by number of taps included here instead of in the loop... this drops a scalar, but brightness is reasonable
-	float normalizationTerm = radius * sqrt( pi ); // integral of distribution is sqrt(pi/a), a=1 because we dropped it
+	// divide by number of taps included here instead of in the loop... proportional to the filter radius (ignores a scale factor... still ok?)
+	float normalizationTerm = radius * sqrtpi; // integral of distribution is sqrt(pi/a), we precompute this constant
 	float gaussianWeight = exp( -( pos * pos ) / ( 2.0f * radius * radius ) );
 	return gaussianWeight / normalizationTerm;
 }
 
 float blurResult ( vec2 uv ) {
 	float val = 0.0f;
+
 	// 3 * radius based on observation that it's within some reasonable threshold of zero by that point (3 stdev)
-	for ( float offset = -3.0f * radius - 0.5f; offset < 3.0f * radius + 0.5f; offset++ ) {
-		// https://www.shadertoy.com/view/Xd33Rf note use of texel border sampling to double effective bandwidth
-		val += blurWeight( offset ) * texture( substrateTex, ( fragCoord + ( ( separableBlurMode == 1 ) ? vec2( offset, 0.0f ) : vec2( 0.0f, offset ) ) / textureSize( substrateTex, 0 ).xy ) ).r;
+		// also, 99.8% of the integral is inside of 3 standard deviations
+	for ( float offset = -3.0f * radius - 0.5f; offset < 3.0f * radius + 0.5f; offset++ )
+	// https://www.shadertoy.com/view/Xd33Rf note use of texel border sampling to double effective bandwidth
+		val += blurWeight( offset ) * texture( sourceTex, ( uv + ( ( separableBlurMode == 0 ) ?
+			vec2( offset, 0.0f ) : vec2( 0.0f, offset ) ) / textureSize( sourceTex, 0 ).xy ) ).r;
 
 	return val;
 }

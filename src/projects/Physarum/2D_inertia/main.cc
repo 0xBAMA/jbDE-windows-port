@@ -27,7 +27,7 @@ struct physarumConfig_t {
 // should also have some parameterization around wrapping/edge behavior on the substrate texture
 
 // Diffuse only has one parameter, now
-	int fieldDiffuseRadius = 1;
+	float fieldDiffuseRadius = 5.0f;
 
 // program state
 	bool runSim = true;
@@ -83,6 +83,7 @@ public:
 
 			// shader compilation
 			shaders[ "Agent" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/agent.cs.glsl" ).shaderHandle;			// agent update shader
+			// glObjectLabel( GL_PROGRAM, state.RayClearShader, -1, string( "Ray Clear" ).c_str() );
 			shaders[ "CopyClear" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/copyClear.cs.glsl" ).shaderHandle;		// copy and clear shader
 			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse and decay shader
 			shaders[ "Autoexposure" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/autoexposure.cs.glsl" ).shaderHandle;	// autoexposure compute shader
@@ -170,7 +171,7 @@ public:
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
-			glUniform1f( glGetUniformLocation( shaders[ "Dummy Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -238,28 +239,49 @@ public:
 		// Agent Update
 			// Agents read from the first float texture (2), which retains state across updates
 			// Atomic deposits are resolved to the uint texture (1)
-
 				glUseProgram( shaders[ "Agent" ] );
-
-				// run the agent shader
-
+				textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "Agent" ], 0 );
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "floatImage", shaders[ "Agent" ], 1 );
+				const int workgroupsRoundedUp = ( physarumConfig.numAgents + 63 ) / 64;
+				glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 		// Diffuse/Decay
 			// First pass, uint texture (1) contents added to first float texture (2) contents
 				// While you're here, clear the uint texture (1) to zero for next frame
 				glUseProgram( shaders[ "CopyClear" ] );
-
+				textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "CopyClear" ], 0 );
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "floatImage", shaders[ "CopyClear" ], 1 );
+				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-
 				// ready to do the blur step
-				glUseProgram( shaders[ "Diffuse" ] );
 
 			// Second pass, first separable blur pass, first float texture (2) horizontal blur into second float texture (3)
+				glUseProgram( shaders[ "Diffuse" ] );
+
+				// bindings for textures and images
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "sourceTex", shaders[ "Diffuse" ], 0 );
+				textureManager.BindTexForShader( "Pheremone Float Buffer 1", "sourceTex", shaders[ "Diffuse" ], 0 );
+				textureManager.BindImageForShader( "Pheremone Float Buffer 2", "destTex", shaders[ "Diffuse" ], 1 );
+
+				// setup for horizontal pass
+				glUniform1i( glGetUniformLocation( shaders[ "Diffuse" ], "separableBlurMode" ), 0 );
+				glUniform1f( glGetUniformLocation( shaders[ "Diffuse" ], "radius" ), physarumConfig.fieldDiffuseRadius );
+				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 			// Third pass, second separable blur pass, second float texture (3) vertical blur into first float texture (2)
 				// Decay applied when writing back to the first float texture (2)
+
+				// bindings for textures and images
+				textureManager.BindImageForShader( "Pheremone Float Buffer 2", "sourceTex", shaders[ "Diffuse" ], 0 );
+				textureManager.BindTexForShader( "Pheremone Float Buffer 2", "sourceTex", shaders[ "Diffuse" ], 0 );
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "destTex", shaders[ "Diffuse" ], 1 );
+
+				// setup for vertical pass
+				glUniform1i( glGetUniformLocation( shaders[ "Diffuse" ], "separableBlurMode" ), 1 );
+				glUniform1f( glGetUniformLocation( shaders[ "Diffuse" ], "radius" ), physarumConfig.fieldDiffuseRadius );
+				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
 		}
