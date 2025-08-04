@@ -26,6 +26,7 @@ uint PCGHash() {
 #define PI_DEFINED
 const float pi = 3.14159265358979323846f;
 const float tau = 2.0f * pi;
+const float sqrtpi = 1.7724538509f;
 #endif
 
 #ifndef saturate
