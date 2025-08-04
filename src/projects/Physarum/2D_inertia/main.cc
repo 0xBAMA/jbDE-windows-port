@@ -83,11 +83,15 @@ public:
 
 			// shader compilation
 			shaders[ "Agent" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/agent.cs.glsl" ).shaderHandle;			// agent update shader
-			// glObjectLabel( GL_PROGRAM, state.RayClearShader, -1, string( "Ray Clear" ).c_str() );
+			glObjectLabel( GL_PROGRAM, shaders[ "Agent" ], -1, string( "Agent" ).c_str() );
 			shaders[ "CopyClear" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/copyClear.cs.glsl" ).shaderHandle;		// copy and clear shader
+			glObjectLabel( GL_PROGRAM, shaders[ "CopyClear" ], -1, string( "CopyClear" ).c_str() );
 			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse and decay shader
+			glObjectLabel( GL_PROGRAM, shaders[ "Diffuse" ], -1, string( "Diffuse" ).c_str() );
 			shaders[ "Autoexposure" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/autoexposure.cs.glsl" ).shaderHandle;	// autoexposure compute shader
+			glObjectLabel( GL_PROGRAM, shaders[ "Autoexposure" ], -1, string( "Autoexposure" ).c_str() );
 			shaders[ "Draw" ]			= computeShader( "../src/projects/Physarum/2D_inertia/shaders/draw.cs.glsl" ).shaderHandle;			// put data in the accumulator texture
+			glObjectLabel( GL_PROGRAM, shaders[ "Draw" ], -1, string( "Draw" ).c_str() );
 
 			// populating the SSBO of records
 			vector< agentRecord_t > agents;
