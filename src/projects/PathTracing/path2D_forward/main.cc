@@ -72,6 +72,72 @@ public:
 				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
 			}
 			path2DConfig.autoExposureMipLevels = level;
+
+			// loading the emission spectra LUTs
+			Image_4F pdfLUT( "../src/projects/PathTracing/path2D_forward/LUT/Preprocessed/HPSodium.png" );
+			Image_1F cdfLUT( 450, 1 );
+
+			// consolidate into 1D float representation of the PDF
+			std::vector< float > pdf;
+			// at the same time, we can compute the corresponding CDF for the PDF LUT
+			std::vector< float > cdf;
+
+			float cumSum = 0.0f;
+			for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+				float sum = 0.0f;
+				for ( int y = 0; y < pdfLUT.Height(); y++ ) {
+				// invert because lut uses dark for positive indication... maybe fix that
+					sum += ( 1.0f - pdfLUT.GetAtXY( x, y )[ red ] ) / 256.0f;
+				}
+
+				// increment cumulative sum and update the PDF... maybe don't need the PDF
+				cumSum += sum;
+				cdf.push_back( cumSum );
+				pdf.push_back( sum );
+			}
+
+			// normalize the CDF values by the final value during CDF sweep
+			std::vector< vec2 > CDFpoints;
+			for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+				cdf[ x ] /= cumSum;
+				cdfLUT.SetAtXY( x, 0, color_1F( { cdf[ x ] } ) );
+
+			// compute the inverse CDF with the aid of a series of 2d points along the curve
+				// adjust baseline for our desired range -> 380nm to 830nm, we have 450nm of data
+				CDFpoints.emplace_back( x + 380, cdf[ x ] );
+			}
+			// cdfLUT.Save( "testCDF.png" );
+
+			Image_1F inverseCDF( 1024, 1 );
+			for ( int x = 0; x < 1024; x++ ) {
+				// each pixel along this strip needs a value of the inverse CDF
+					// this is the intersection with the line defined by the set of segments in the array CDFpoints
+
+				float normalizedPosition = ( x + 0.5f ) / 1024.0f;
+				vec2 under, over;
+				for ( int p = 0; p < CDFpoints.size(); p++ ) {
+					if ( p == ( CDFpoints.size() - 1 ) ) {
+						inverseCDF.SetAtXY( x, 0, color_1F( { CDFpoints[ p ].x } ) );
+					} else if ( CDFpoints[ p ].y >= normalizedPosition ) {
+						under = CDFpoints[ p - 1 ];
+						over = CDFpoints[ p ];
+						inverseCDF.SetAtXY( x, 0,
+							color_1F( { RangeRemap( normalizedPosition, under.y, over.y, under.x, over.x ) } ) );
+						break;
+					}
+				}
+			}
+
+			// we now have the solution for the LUT
+			opts.width = 1024;
+			opts.height = 1;
+			opts.dataType = GL_R32F;
+			opts.minFilter = GL_LINEAR;
+			opts.magFilter = GL_LINEAR;
+			opts.textureType = GL_TEXTURE_2D;
+			opts.pixelDataType = GL_FLOAT;
+			opts.initialData = inverseCDF.GetImageDataBasePtr();
+			textureManager.Add( "iCDF", opts );
 		}
 	}
 
