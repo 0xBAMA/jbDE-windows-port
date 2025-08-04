@@ -4,13 +4,40 @@
 #include "vec3.hpp"
 #include "../../../engine/engine.h"
 
+// 10 floats
+// each agent now carries the parameters with it, plus the state:
+	// Parameters:
+		// Mass
+		// Sense Distance
+		// Sense Angle
+		// Turn Angle
+		// Step Size/Force Amount
+		// Deposit Amount
+	// State:
+		// Position (vec2)
+		// Velocity (vec2)
+
+struct agentRecord_t {
+	float mass			= 30.0f;
+	float pad;
+	float drag			= 1.0f;
+	float senseDistance	= 5.0f;
+	float senseAngle	= 0.3f;
+	float turnAngle		= 0.9f;
+	float forceAmount	= 0.3f;
+	float depositAmount	= 10.0f;
+	vec2 position		= vec2( 0.0f );
+	vec2 velocity		= vec2( 0.0f );
+};
+
 struct physarumConfig_t {
 // resolution of the substrate buffers
 	ivec2 dims = ivec2( 2880 / 2, 1800 / 2 );
 
 // number of agents in play
-	uint32_t numAgents = 100000u;
+	uint32_t numAgents = 50000000u;
 	GLuint agentSSBO = 0;
+	agentRecord_t baseAgent;
 
 // Parameters
 // Decay has to be handled at global scope, can't be part of the agent's parameterization
@@ -27,11 +54,11 @@ struct physarumConfig_t {
 // should also have some parameterization around wrapping/edge behavior on the substrate texture
 
 // Diffuse only has one parameter, now
-	float fieldDiffuseRadius = 5.0f;
+	float fieldDiffuseRadius = 3.4f;
 
 // program state
 	bool runSim = true;
-	int numIterationsPerFrame = 3;
+	int numIterationsPerFrame = 1;
 
 // moving to impulse-based update will require some kind of clamping...
 	int agentSpeedClampMethod = 0;
@@ -43,30 +70,6 @@ struct physarumConfig_t {
 // Drawing parameters
 	int falloffMode = 0; // exp or linear falloff
 	bool autoExposure = false; // enable autoexposure
-};
-
-// 10 floats
-// each agent now carries the parameters with it, plus the state:
-	// Parameters:
-		// Mass
-		// Sense Distance
-		// Sense Angle
-		// Turn Angle
-		// Step Size/Force Amount
-		// Deposit Amount
-	// State:
-		// Position (vec2)
-		// Velocity (vec2)
-
-struct agentRecord_t {
-	float mass			= 1.0f;
-	float senseDistance	= 1.0f;
-	float senseAngle	= 1.0f;
-	float turnAngle		= 1.0f;
-	float forceAmount	= 1.0f;
-	float depositAmount	= 1.0f;
-	vec2 position		= vec2( 0.0f );
-	vec2 velocity		= vec2( 0.0f );
 };
 
 class PhysarumInertia final : public engineBase {
@@ -83,45 +86,20 @@ public:
 
 			// shader compilation
 			shaders[ "Agent" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/agent.cs.glsl" ).shaderHandle;			// agent update shader
-			glObjectLabel( GL_PROGRAM, shaders[ "Agent" ], -1, string( "Agent" ).c_str() );
 			shaders[ "CopyClear" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/copyClear.cs.glsl" ).shaderHandle;		// copy and clear shader
-			glObjectLabel( GL_PROGRAM, shaders[ "CopyClear" ], -1, string( "CopyClear" ).c_str() );
 			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse and decay shader
-			glObjectLabel( GL_PROGRAM, shaders[ "Diffuse" ], -1, string( "Diffuse" ).c_str() );
 			shaders[ "Autoexposure" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/autoexposure.cs.glsl" ).shaderHandle;	// autoexposure compute shader
-			glObjectLabel( GL_PROGRAM, shaders[ "Autoexposure" ], -1, string( "Autoexposure" ).c_str() );
 			shaders[ "Draw" ]			= computeShader( "../src/projects/Physarum/2D_inertia/shaders/draw.cs.glsl" ).shaderHandle;			// put data in the accumulator texture
+
+			// shader labels
+			glObjectLabel( GL_PROGRAM, shaders[ "Agent" ], -1, string( "Agent" ).c_str() );
+			glObjectLabel( GL_PROGRAM, shaders[ "CopyClear" ], -1, string( "CopyClear" ).c_str() );
+			glObjectLabel( GL_PROGRAM, shaders[ "Diffuse" ], -1, string( "Diffuse" ).c_str() );
+			glObjectLabel( GL_PROGRAM, shaders[ "Autoexposure" ], -1, string( "Autoexposure" ).c_str() );
 			glObjectLabel( GL_PROGRAM, shaders[ "Draw" ], -1, string( "Draw" ).c_str() );
 
-			// populating the SSBO of records
-			vector< agentRecord_t > agents;
-
-			rngN offset = rngN( 0.0f, 0.01f );
-			rng xD = rng( 0.0f, float( physarumConfig.dims.x - 1 ) );
-			rng yD = rng( 0.0f, float( physarumConfig.dims.y - 1 ) );
-			for ( int i = 0; i < physarumConfig.numAgents; i++ ) {
-				agentRecord_t agent;
-
-				// apply small jitter to simulation parameters
-				agent.mass += offset();
-				agent.senseDistance += offset();
-				agent.senseAngle += offset();
-				agent.turnAngle += offset();
-				agent.forceAmount += offset();
-				agent.depositAmount += offset();
-
-				// place the agent on the substrate
-				agent.position = vec2( xD(), yD() );
-
-				// add it to the list
-				agents.push_back( agent );
-			}
-
-			// create the buffer and upload the contents
-			glGenBuffers( 1, &physarumConfig.agentSSBO );
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, physarumConfig.agentSSBO );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, agents.size() * sizeof( agentRecord_t ), ( GLvoid * ) &agents[ 0 ], GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, physarumConfig.agentSSBO );
+			//
+			PopulateSSBORandom();
 
 			// create uint buffer for resolving atomics
 			textureOptions_t opts;
@@ -139,7 +117,68 @@ public:
 			opts.wrap			= GL_REPEAT;
 			textureManager.Add( "Pheremone Float Buffer 1", opts ); // interface
 			textureManager.Add( "Pheremone Float Buffer 2", opts ); // scratch
+
+			// disable vignette
+			tonemap.enableVignette = false;
 		}
+	}
+
+	void PopulateSSBORandom () {
+		// populating the SSBO of records
+		static vector< agentRecord_t > agents;
+		if ( physarumConfig.agentSSBO == 0 ) // first time
+			agents.resize( physarumConfig.numAgents );
+
+		rngN offset = rngN( 1.0f, 0.01f );
+		rng xD = rng( 0.0f, float( physarumConfig.dims.x - 1 ) );
+		rng yD = rng( 0.0f, float( physarumConfig.dims.y - 1 ) );
+		rng rotDist = rng( 0.0f, tau );
+
+		rng mass = rng( 5.5f, 20.0f );
+		rng drag = rng( 0.7f, 1.0f );
+		rng senseDistance = rng( 5.0f, 25.0f );
+		rng senseAngle = rng( 0.02f, tau );
+		rng turnAngle = rng( 0.02f, tau );
+		rng forceAmount	= rng( 0.3f, 2.0f );
+		rng depositAmount	= rng( 10.0f, 1000.0f );
+
+		physarumConfig.baseAgent.mass = mass();
+		physarumConfig.baseAgent.drag = drag();
+		physarumConfig.baseAgent.senseDistance = senseDistance();
+		physarumConfig.baseAgent.senseAngle = senseAngle();
+		physarumConfig.baseAgent.turnAngle = turnAngle();
+		physarumConfig.baseAgent.forceAmount = forceAmount();
+		physarumConfig.baseAgent.depositAmount = depositAmount();
+
+		for ( int i = 0; i < physarumConfig.numAgents; i++ ) {
+			agentRecord_t agent = physarumConfig.baseAgent;
+
+			// apply small jitter to simulation parameters
+			agent.mass *= offset();
+			agent.drag *= offset();
+			agent.senseDistance *= offset();
+			agent.senseAngle *= offset();
+			agent.turnAngle *= offset();
+			agent.forceAmount *= offset();
+			agent.depositAmount *= offset();
+
+			// place the agent on the substrate
+			agent.position = vec2( xD(), yD() );
+
+			// agent needs an initial velocity (random unit vector)
+			float rot = rotDist();
+			agent.velocity = 0.1f * vec2( cos( rot ), sin( rot ) );
+
+			// add it to the list
+			agents[ i ] = agent;
+		}
+
+		// create the buffer and upload the contents
+		if ( !physarumConfig.agentSSBO )
+			glGenBuffers( 1, &physarumConfig.agentSSBO );
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, physarumConfig.agentSSBO );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, agents.size() * sizeof( agentRecord_t ), ( GLvoid * ) &agents[ 0 ], GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, physarumConfig.agentSSBO );
 	}
 
 	void HandleCustomEvents () {
@@ -149,7 +188,14 @@ public:
 		// FSM menu update?
 
 		// other controls
+		if ( inputHandler.getState4( KEY_R ) == KEYSTATE_FALLING ) {
+			// populate buffer
+			PopulateSSBORandom();
 
+			// clear substrate
+			textureManager.ZeroTexture2D( "Pheremone Float Buffer 1" );
+			textureManager.ZeroTexture2D( "Pheremone Float Buffer 2" );
+		}
 	}
 
 	void ImguiPass () {
@@ -177,6 +223,7 @@ public:
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			textureManager.BindTexForShader( "Pheremone Float Buffer 1", "pheremoneBuffer", shaders[ "Draw" ], 2 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -237,6 +284,8 @@ public:
 		// culture into the simulation with a brush at your mouse location. This will be further down the line. Maybe even
 		// zoom way in and show the individual agents and how they move around on the preview.
 
+		rngi wangSeeder = rngi( 0, 10000000 );
+
 		if ( physarumConfig.runSim ) {
 			// loop over number of iterations per frame
 			for ( int i = 0; i < physarumConfig.numIterationsPerFrame; i++ ) {
@@ -246,9 +295,11 @@ public:
 			// Atomic deposits are resolved to the uint texture (1)
 				glUseProgram( shaders[ "Agent" ] );
 				textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "Agent" ], 0 );
-				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "floatImage", shaders[ "Agent" ], 1 );
+				textureManager.BindTexForShader( "Pheremone Float Buffer 1", "floatTex", shaders[ "Agent" ], 1 );
+				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "wangSeed" ), wangSeeder() );
+				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "numAgents" ), physarumConfig.numAgents );
 				const int workgroupsRoundedUp = ( physarumConfig.numAgents + 63 ) / 64;
-				glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+				glDispatchCompute( 1, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 		// Diffuse/Decay
@@ -265,7 +316,6 @@ public:
 				glUseProgram( shaders[ "Diffuse" ] );
 
 				// bindings for textures and images
-				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "sourceTex", shaders[ "Diffuse" ], 0 );
 				textureManager.BindTexForShader( "Pheremone Float Buffer 1", "sourceTex", shaders[ "Diffuse" ], 0 );
 				textureManager.BindImageForShader( "Pheremone Float Buffer 2", "destTex", shaders[ "Diffuse" ], 1 );
 
@@ -279,7 +329,6 @@ public:
 				// Decay applied when writing back to the first float texture (2)
 
 				// bindings for textures and images
-				textureManager.BindImageForShader( "Pheremone Float Buffer 2", "sourceTex", shaders[ "Diffuse" ], 0 );
 				textureManager.BindTexForShader( "Pheremone Float Buffer 2", "sourceTex", shaders[ "Diffuse" ], 0 );
 				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "destTex", shaders[ "Diffuse" ], 1 );
 
