@@ -8,21 +8,21 @@ layout( binding = 1, r32f ) uniform image2D layerNPlusOne;	// the smaller image,
 uniform ivec2 dims;
 
 void main () {
-    // pixel location on layer N + 1... we are dispatching for texels in layer N + 1
-    const ivec2 newLoc = ivec2( gl_GlobalInvocationID.xy );
+	// pixel location on layer N + 1... we are dispatching for texels in layer N + 1
+	const ivec2 newLoc = ivec2( gl_GlobalInvocationID.xy );
 
-    // half res...
-    const ivec2 oldLoc = newLoc * 2;
+	// half res...
+	const ivec2 oldLoc = newLoc * 2;
 
-    // bounds check
-    if ( oldLoc.x < dims.x && oldLoc.y < dims.y ) {
+	// bounds check
+	if ( oldLoc.x < dims.x && oldLoc.y < dims.y ) {
 
-        // find the local maximum in the red channel texels
-        const vec4 gR = textureGather( layerN, oldLoc, 0 );
-        const float gR_max = max( 0.0f, max( max( gR.x, gR.y ), max( gR.z, gR.w ) ) );
+		// find the local maximum in the red channel texels
+		const vec4 gR = textureGather( layerN, oldLoc, 0 );
+		const float gR_max = max( 0.0f, max( max( gR.x, gR.y ), max( gR.z, gR.w ) ) );
 
-        // and store the result for layer N + 1
-        imageStore( layerNPlusOne, newLoc, vec4( gR_max ) );
+		// and store the result for layer N + 1
+		imageStore( layerNPlusOne, newLoc, vec4( gR_max ) );
 
-    }
+	}
 }
