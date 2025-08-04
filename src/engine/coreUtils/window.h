@@ -63,6 +63,7 @@ public:
 		// defaults to OpenGL 4.3
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, config->OpenGLVersionMajor );
 		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, config->OpenGLVersionMinor );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
 
 		GLcontext = SDL_GL_CreateContext( window );
 		SDL_GL_MakeCurrent( window, GLcontext );
