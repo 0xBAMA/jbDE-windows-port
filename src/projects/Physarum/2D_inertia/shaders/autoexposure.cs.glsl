@@ -4,9 +4,28 @@ layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 // physarum buffer (float 1) - mip 0 is populated by the sim, and we propagate max value up the mipchain to texel (0,0) in mip N
 	// once the process completes, you can sample this max value during the draw shader, to inform color scaling
 
+//layout( binding = 0, rgba32f ) uniform image2D layerN;			// the larger image, being downsampled
+uniform sampler2D layerN; // redoing as a sampler, so that we can do a texture gather
+layout( binding = 1, r32f ) uniform image2D layerNPlusOne;	// the smaller image, being written to
+
+uniform ivec2 dims;
+
 void main () {
-	// load the four pixels in mip N
+	// pixel location on layer N + 1... we are dispatching for texels in layer N + 1
+	const ivec2 newLoc = ivec2( gl_GlobalInvocationID.xy );
 
-	// store the maximum value back in mip N+1
+	// half res...
+	const ivec2 oldLoc = newLoc * 2;
 
+	// bounds check
+	if ( oldLoc.x < dims.x && oldLoc.y < dims.y ) {
+
+		// find the local maximum in the red channel texels
+		const vec4 gR = textureGather( layerN, oldLoc, 0 );
+		const float gR_max = max( 0.0f, max( max( gR.x, gR.y ), max( gR.z, gR.w ) ) );
+
+		// and store the result for layer N + 1
+		imageStore( layerNPlusOne, newLoc, vec4( gR_max ) );
+
+	}
 }

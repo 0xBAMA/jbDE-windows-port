@@ -69,7 +69,8 @@ struct physarumConfig_t {
 
 // Drawing parameters
 	int falloffMode = 0; // exp or linear falloff
-	bool autoExposure = false; // enable autoexposure
+	bool autoExposure = true; // enable autoexposure
+	int autoExposureNumLevels = 0;
 };
 
 class PhysarumInertia final : public engineBase {
@@ -117,6 +118,20 @@ public:
 			opts.wrap			= GL_REPEAT;
 			textureManager.Add( "Pheremone Float Buffer 1", opts ); // interface
 			textureManager.Add( "Pheremone Float Buffer 2", opts ); // scratch
+
+			// create the mip levels explicitly... we want to be able to sample the texel (0,0) of the highest mip of the texture for the autoexposure term
+			int w = physarumConfig.dims.x;
+			int h = physarumConfig.dims.y;
+			Image_4F zeroesF( w, h );
+
+			int level = 0;
+			while ( h >= 1 ) {
+				// we half on both dimensions at once... don't have enough levels available for splitting resolution alternately on x and y at each step
+				h /= 2; w /= 2; level++;
+				glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Pheremone Float Buffer 1" ) );
+				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, w, h, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
+			}
+			physarumConfig.autoExposureNumLevels = level;
 
 			// disable vignette
 			tonemap.enableVignette = false;
@@ -223,6 +238,7 @@ public:
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1i( glGetUniformLocation( shaders[ "Draw" ], "autoExposureLevel" ), physarumConfig.autoExposure ? physarumConfig.autoExposureNumLevels - 1 : -1 );
 			textureManager.BindTexForShader( "Pheremone Float Buffer 1", "pheremoneBuffer", shaders[ "Draw" ], 2 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
@@ -340,8 +356,25 @@ public:
 			}
 		}
 
-		if ( physarumConfig.autoExposure ) { // run the autoexposure update
-			// todo
+		static int frame = 0;
+		if ( physarumConfig.autoExposure && frame++ % 60 == 0 ) { // run the autoexposure update ~1Hz
+			int w = physarumConfig.dims.x / 2;
+			int h = physarumConfig.dims.y / 2;
+
+			const GLuint shader = shaders[ "Autoexposure" ];
+			glUseProgram( shader );
+			glUniform2i( glGetUniformLocation( shader, "dims" ), physarumConfig.dims.x, physarumConfig.dims.y );
+			for ( int n = 0; n < physarumConfig.autoExposureNumLevels - 1; n++ ) { // for num mips minus 1
+
+				// bind the appropriate levels for N and N+1 (starting with N=0... to N=...? )
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "layerN", shader, 0, n );
+				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "layerNPlus1", shader, 1, n + 1 );
+
+				// dispatch the compute shader( 1x1x1 groupsize for simplicity )
+				glDispatchCompute( w, h, 1 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				w /= 2; h /= 2;
+			}
 		}
 	}
 

@@ -8,9 +8,16 @@ layout( binding = 2 ) uniform sampler2D pheremoneBuffer;
 // physarum buffer (float 1)	// will have mipchain with autoexposure information, as well. Contains prepared sim data for present
 
 uniform float time;
+uniform int autoExposureLevel;
 
 void main () {
 	vec2 position = vec2( gl_GlobalInvocationID.xy );
-	vec4 color = vec4( texture( pheremoneBuffer, ( position + vec2( 0.5f ) ) / imageSize( accumulatorTexture ).xy ).rrr / 50000.0f, 1.0f );
+	vec4 color;
+	if ( autoExposureLevel != -1 ) {
+		color = vec4( texture( pheremoneBuffer, ( position + vec2( 0.5f ) ) / imageSize( accumulatorTexture ).xy ).rrr / texelFetch( pheremoneBuffer, ivec2( 0 ), autoExposureLevel ).r, 1.0f );
+	} else {
+		color = vec4( texture( pheremoneBuffer, ( position + vec2( 0.5f ) ) / imageSize( accumulatorTexture ).xy ).rrr / 10000.0f, 1.0f );
+	}
+
 	imageStore( accumulatorTexture, ivec2( position ), color );
 }
