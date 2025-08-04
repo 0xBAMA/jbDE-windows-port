@@ -136,6 +136,7 @@ public:
 			opts.dataType		= GL_R32F;
 			opts.magFilter		= GL_LINEAR;
 			opts.minFilter		= GL_LINEAR;
+			opts.wrap			= GL_REPEAT;
 			textureManager.Add( "Pheremone Float Buffer 1", opts ); // interface
 			textureManager.Add( "Pheremone Float Buffer 2", opts ); // scratch
 		}
