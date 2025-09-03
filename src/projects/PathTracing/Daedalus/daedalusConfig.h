@@ -208,6 +208,10 @@ struct daedalusConfig_t {
 			// tbd, that could be a nice(r) way to handle this
 	}
 
+	// wip gizmo stuff
+	mat4 translateMatrix;
+	mat4 modelMatrix;
+
 	// size of output
 	uint32_t outputWidth;
 	uint32_t outputHeight;

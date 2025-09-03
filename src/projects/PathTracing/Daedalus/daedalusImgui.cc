@@ -13,8 +13,8 @@ void Daedalus::ShowDaedalusConfigWindow() {
 	ImGui::gizmo3D( "##gizmo1", PanDolly, qRot /*, size,  mode */ );
 	// PanDolly returns/changes (x,y,z) values, depending on Pan(x,y,0)/Dolly(0,0,z) movements
 	// if you need a "translation" matrix with Pan/Dolly values
-	glm::mat4 translateMatrix( glm::translate( glm::mat4( 1.0f ), PanDolly ) );
-	glm::mat4 modelMatrix = mat4_cast( qRot );
+	daedalusConfig.translateMatrix = mat4( glm::translate( glm::mat4( 1.0f ), PanDolly ) ); // need to combine this with the viewer basis vectors to get the correct movement
+	daedalusConfig.modelMatrix = mat4_cast( qRot );
 
 	// need to now do something with this info...
 

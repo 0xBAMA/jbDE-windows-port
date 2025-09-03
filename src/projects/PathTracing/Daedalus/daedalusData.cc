@@ -123,6 +123,8 @@ void Daedalus::SendBasePathtraceUniforms() {
 	glUniform1f( glGetUniformLocation( shader, "raymarchMaxDistance" ), daedalusConfig.render.scene.raymarchMaxDistance );
 	glUniform1f( glGetUniformLocation( shader, "marbleRadius" ), daedalusConfig.render.scene.marbleRadius );
 
+	glUniformMatrix4fv( glGetUniformLocation( shader, "transform_imguizmo" ), 1, false, glm::value_ptr( daedalusConfig.modelMatrix ) );
+
 	glUniform1i( glGetUniformLocation( shader, "ddaSpheresEnable" ), daedalusConfig.render.scene.ddaSpheresEnable );
 	glUniform3fv( glGetUniformLocation( shader, "ddaSpheresBoundSize" ), 1, glm::value_ptr( daedalusConfig.render.scene.ddaSpheresBoundSize ) );
 	glUniform1i( glGetUniformLocation( shader, "ddaSpheresResolution" ), daedalusConfig.render.scene.ddaSpheresResolution );
