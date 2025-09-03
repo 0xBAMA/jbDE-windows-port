@@ -250,7 +250,7 @@ struct entity {
 		// scaling the bbox - somewhat specialized... smaller ships are taller, is the plan for handling occlusion
 		for ( auto& p : points.points ) {
 			// apply scaling, small offset to avoid z fighting
-			p = ( glm::scale( vec3( scale.x, scale.y, clamp( 1.0f / ( ( scale.x + scale.y + 0.001f * atlasIndex ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
+			p = ( glm::scale( vec3( scale.x, scale.y, std::clamp( 1.0f / ( ( scale.x + scale.y + 0.001f * atlasIndex ) / 2.0f ), 0.001f, 1000.0f ) ) ) * vec4( p, 1.0f ) ).xyz();
 
 			// apply rotation
 			p = ( glm::angleAxis( -shipHeading, vec3( 0.0f, 0.0f, 1.0f ) ) * vec4( p, 1.0f ) ).xyz();
@@ -269,7 +269,7 @@ struct entity {
 		ZoneScoped;
 
 		// get deltaT, clamp to a reasonable range
-		const float deltaT = clamp( inputHandler->millisecondsSinceLastUpdate(), 1.0f, 100.0f );
+		const float deltaT = std::clamp( inputHandler->millisecondsSinceLastUpdate(), 1.0f, 100.0f );
 
 		switch ( type ) {
 		case PLAYER:
@@ -304,8 +304,8 @@ struct entity {
 		shipHeading += amount;
 
 		// clamping/wrapping angle
-		if ( shipHeading < 0.0f ) { shipHeading += tau; }
-		if ( shipHeading > tau ) { shipHeading -= tau; }
+		if ( shipHeading < 0.0f ) { shipHeading += jbDE::tau; }
+		if ( shipHeading > jbDE::tau ) { shipHeading -= jbDE::tau; }
 	}
 
 	void accelerate ( const float &amount ) {
@@ -402,7 +402,7 @@ public:
 		const int numAsteroids = countGenerator() * 2 + 5;
 
 		// RNG distributions
-		rng friendPosition ( 0.45f, 0.55f ), rotation ( 0.0f, tau );
+		rng friendPosition ( 0.45f, 0.55f ), rotation ( 0.0f, jbDE::tau );
 		rngi foeEdgeSelector ( 0, 3 );
 		rng foeEdgePosition ( 0.0f, 1.0f );
 		rng asteroidPosition ( 0.0f, 1.0f );
@@ -493,6 +493,7 @@ public:
 		ZoneScoped;
 		uint32_t pushIndex = 0;
 		uint32_t numTriangles = 0;
+		uint32_t entityIndex = 0;
 		for ( auto& e : entityList ) {
 			bboxData bbox = e.getBBoxPoints();
 
@@ -507,18 +508,19 @@ public:
 
 					// put it into the arrays...
 					triangleDataNoTexcoords[ pushIndex ] = p;
-					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xyz, 0.0f );
+					triangleDataWithTexcoords[ pushIndex ] = vec4( bbox.texcoords[ idx + j ].xyz, entityIndex );
 					pushIndex++;
 				}
 				numTriangles++;
 			}
+			entityIndex++;
 		}
 		return numTriangles;
 	}
 
 	void BuildBVH ( tinybvh::BVH8_CWBVH &bvh, tinybvh::bvhvec4 *data, uint32_t triangleCount ) {
 		ZoneScoped;
-		bvh.BuildHQ( data, triangleCount );
+		bvh.Build( data, triangleCount );
 	}
 
 	void BufferUpdate ( GLuint bufferName, uint32_t bufferNumber, uint32_t bufferSize, const GLvoid *data ) {

@@ -32,8 +32,7 @@ layout( binding = 3 ) uniform sampler2D atlasTexture;
 // this needs to go into the custom leaf test, for alpha testing
 vec4 sampleSelectedTexture ( int texIndex, vec2 uv ) {
 	// load the parameters to sample the atlas texture...
-	// atlasEntry myAtlasEntry = atlasEntries[ texIndex ];
-	atlasEntry myAtlasEntry = atlasEntries[ 0 ];
+	 atlasEntry myAtlasEntry = atlasEntries[ texIndex ];
 
 	// get a sample from the atlas texture, based on the specified UV
 	vec2 atlasSize = vec2( textureSize( atlasTexture, 0 ).xy );
@@ -76,7 +75,7 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 	vec2 sampleLocation = t0.xy * uv.x + t1.xy * uv.y + t2.xy * ( 1.0f - uv.x - uv.y );
 
 	// and then perform the sample
-	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.z ), sampleLocation ) );
+	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.w ), sampleLocation ) );
 	// vec4 textureSample = vec4( 1.0f, sampleLocation, 1.0f );
 	// textureSample.a = 1.0f;
 	// textureSample.bg = uv;
