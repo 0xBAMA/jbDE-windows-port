@@ -69,16 +69,16 @@ bool leafTestFunc ( vec3 origin, vec3 direction, inout uint index, inout float t
 
 	// we need to interpolate the texcoord from the vertex data...
 	const uint baseIndex = 3 * index;
-	vec4 t0 = triangleData[ baseIndex + 0 ];
-	vec4 t1 = triangleData[ baseIndex + 1 ];
-	vec4 t2 = triangleData[ baseIndex + 2 ];
+	vec4 t0 = triangleData[ baseIndex + 1 ];
+	vec4 t1 = triangleData[ baseIndex + 2 ];
+	vec4 t2 = triangleData[ baseIndex + 0 ];
 	// using the barycentrics
 	vec2 sampleLocation = t0.xy * uv.x + t1.xy * uv.y + t2.xy * ( 1.0f - uv.x - uv.y );
 
 	// and then perform the sample
 	vec4 textureSample = vec4( sampleSelectedTexture( int( t0.z ), sampleLocation ) );
 	// vec4 textureSample = vec4( 1.0f, sampleLocation, 1.0f );
-	textureSample.a = 1.0f;
+	// textureSample.a = 1.0f;
 	// textureSample.bg = uv;
 
 	/*
