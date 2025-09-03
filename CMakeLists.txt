@@ -62,7 +62,8 @@ add_library( imgui STATIC
 	src/utils/ImGUI/imGuIZMO.quat/imguizmo_quat/imguizmo_quat.cpp
 	src/utils/ImGUI/imGuIZMO.quat/imguizmo_quat/imGuIZMOquat.cpp
 )
-target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/src/utils/)
+target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/ )
+target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/src/utils/ )
 target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/SDL3.2.4/include )
 target_link_libraries( imgui PRIVATE sdl3 gl )
 
@@ -142,6 +143,7 @@ target_link_libraries(
 	TinyOBJLoader
 	LodePNG
 )
+target_include_directories( ENGINE_LIBS INTERFACE ${PROJECT_SOURCE_DIR}/thirdparty/ )
 
 # somebody's stepping on this
 set( CMAKE_BUILD_TYPE RELEASE )
