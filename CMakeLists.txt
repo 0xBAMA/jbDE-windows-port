@@ -59,7 +59,10 @@ add_library( imgui STATIC
 	src/utils/ImGUI/imgui_tables.cpp
 	src/utils/ImGUI/TextEditor/TextEditor.cc
 	src/utils/ImGUI/TextEditor/LanguageDefinitions.cc
+	src/utils/ImGUI/imGuIZMO.quat/imguizmo_quat/imguizmo_quat.cpp
+	src/utils/ImGUI/imGuIZMO.quat/imguizmo_quat/imGuIZMOquat.cpp
 )
+target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/src/utils/)
 target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/SDL3.2.4/include )
 target_link_libraries( imgui PRIVATE sdl3 gl )
 

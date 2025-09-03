@@ -1875,6 +1875,7 @@ float dePortrait(vec3 c)
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
 //=============================================================================================================================
+uniform mat4 transform_imguizmo;
 float de( in vec3 p ) {
 	const vec3 pOriginal = p;
 	float sceneDist = 1000.0f;
@@ -1897,6 +1898,9 @@ float de( in vec3 p ) {
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
 
 	if ( true ) {
+		// apply transform
+		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
+
 		const float d = max( max( dePortrait( p ), dBounds ), dBounds );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );

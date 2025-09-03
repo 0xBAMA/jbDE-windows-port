@@ -110,6 +110,7 @@ namespace std {
 #include <SDL3/SDL_opengl.h>
 
 // GUI library (dear ImGUI)
+#include <ImGUI/imGuIZMO.quat/imguizmo_quat/imGuIZMOquat.h>
 #include <ImGUI/TextEditor/TextEditor.h>
 #include <ImGUI/imgui.h>
 #include <ImGUI/imgui_impl_sdl3.h>

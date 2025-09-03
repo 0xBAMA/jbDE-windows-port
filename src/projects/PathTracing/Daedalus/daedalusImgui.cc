@@ -2,8 +2,29 @@
 
 void Daedalus::ShowDaedalusConfigWindow() {
 	ZoneScoped;
-	ImGui::Begin( "Daedalus", NULL );
 
+	ImGui::Begin( "gizmo test window" );
+
+	// declare static or global variable or member class (quat -> rotation)
+	static quat qRot = quat(1.0f, 0.0f, 0.0f, 0.0f );
+	// declare static or global variable or member class (vec3 -> Pan/Dolly)
+	static glm::vec3 PanDolly( 0.0f );
+	// Call new function available from v.3.0 imGuIZMO.quat
+	ImGui::gizmo3D( "##gizmo1", PanDolly, qRot /*, size,  mode */ );
+	// PanDolly returns/changes (x,y,z) values, depending on Pan(x,y,0)/Dolly(0,0,z) movements
+	// if you need a "translation" matrix with Pan/Dolly values
+	glm::mat4 translateMatrix( glm::translate( glm::mat4( 1.0f ), PanDolly ) );
+	glm::mat4 modelMatrix = mat4_cast( qRot );
+
+	// need to now do something with this info...
+
+	ImGui::End();
+
+
+
+	//regular control window
+
+	ImGui::Begin( "Daedalus", NULL );
 	ImGui::Text( "Daedalus" );
 	ImGui::Checkbox( "Run Renderer", &daedalusConfig.render.render );
 	ImGui::SeparatorText( " Performance " );
