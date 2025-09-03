@@ -1871,6 +1871,37 @@ float dePortrait(vec3 c)
 
 	return 0.5 * log(r) * r / dr;
 }
+
+float deHalls2(vec3 pos){
+	vec3 tpos=pos;
+	tpos.xz=abs(.5-mod(tpos.xz,1.));
+	vec4 p=vec4(tpos,1.);
+	float y=max(0.,.35-abs(pos.y-3.35))/.35;
+	for (int i=0; i<7; i++) {
+		p.xyz = abs(p.xyz)-vec3(-0.02,1.98,-0.02);
+		p=p*(2.0+0.*y)/clamp(dot(p.xyz,p.xyz),.4,1.)-vec4(0.5,1.,0.4,0.);
+		p.xz*=mat2(-0.416,-0.91,0.91,-0.416);
+	}
+	return (length(max(abs(p.xyz)-vec3(0.1,5.0,0.1),vec3(0.0)))-0.05)/p.w;
+}
+
+float deLaceHall( vec3 p ){
+	float s=3.;
+	for(int i = 0; i < 4; i++) {
+		p=mod(p-1.,2.)-1.;
+		float r=1.2/dot(p,p);
+		p*=r; s*=r;
+	}
+	p = abs(p)-0.8;
+	if (p.x < p.z) p.xz = p.zx;
+	if (p.y < p.z) p.yz = p.zy;
+	if (p.x < p.y) p.xy = p.yx;
+	return length(cross(p,normalize(vec3(0,1,1))))/s-.001;
+}
+
+float deHalls(vec3 p){
+	return min(.65-length(fract(p+.5)-.5),p.y+0.05f);
+}
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -1893,15 +1924,18 @@ float de( in vec3 p ) {
 	// }
 
 	const vec3 bboxDim = vec3( 3.0f, 3.0f, 6.0f );
-	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
-	// const float dBounds = sdBox( p, bboxDim );
+//	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
+	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
+	vec3 displacement = matWood( p * 1.8f );
+	vec3 displacement2 = matWood( p * 3.8f );
 
-	if ( true ) {
+	if ( false ) {
+
 		// apply transform
 		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 
-		const float d = max( max( dePortrait( p ), dBounds ), dBounds );
+		const float d = max( max( dePortrait( p / 3.0f ) * 3.0f + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1927,7 +1961,7 @@ float de( in vec3 p ) {
 			// hitColor = mix( mix( gold, vec3( 0.99f ), -0.3f ), blood / 5.0f, ot );
 
 
-			ot = 1.0f - ot;
+//			ot = 1.0f - ot;
 			const vec3 verdigris = vec3( 22.0f / 255.0f, 67.0f / 255.0f, 28.0f / 255.0f );
 			// hitColor = mix( mix( nvidia, vec3( 0.1f, 0.3f, 0.04f ), perlinfbm( p, 3.0f, 5 ) / 2.0f + 0.5f ), nickel, ot );
 			// hitColor = mix( mix( vec3( 0.0f, 0.15f, 0.0f ), nvidia / 4.0f, perlinfbm( p, 50.0f, 5 ) ), verdigris, ot ).ggr;
@@ -1940,9 +1974,14 @@ float de( in vec3 p ) {
 			// hitColor = nvidia;
 			hitRoughness = 0.1f;
 			// hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? MIRROR : ( NormalizedRandomFloat() > ot ) ? DIFFUSE : METALLIC;
-			hitSurfaceType = NormalizedRandomFloat() < ( ot + perlinfbm( p, 150.0f, 5 ) * 0.5f ) ? METALLIC : DIFFUSE;
+			// hitSurfaceType = NormalizedRandomFloat() < ( ot + perlinfbm( p, 150.0f, 5 ) * 0.5f ) ? METALLIC : DIFFUSE;
+			hitSurfaceType = NormalizedRandomFloat() < ( 0.9f ) ? METALLIC : MIRROR;
 			if ( hitSurfaceType == METALLIC ) {
-				hitColor = nickel;
+				// hitColor = nickel;
+				// hitColor = mix( carrot, GetLuma( displacement2 ), ot );
+				// hitColor = mix( nickel, iron, GetLuma( displacement2 ).r );
+				hitColor = mix( honey, vec3( 0.99f ), GetLuma( displacement2 ).r );
+//				hitColor = displacement2;
 			}
 //			hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? WOOD : DIFFUSE;
 
@@ -1964,16 +2003,22 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
-		const float d = max( max( deGatee2( p ), dBounds ), dBounds );
+	if ( true ) {
+		// const float d = max( max( deGatee2( p ), dBounds ), dBounds );
+		const float scale = 0.8f;
+		const float d = max( max( deLaceHall( p / scale ) * scale - displacement.r * 0.04f * displacement2.r, dBounds ), dBounds );
+//		const float d = max( max( deLaceHall( p / scale ) * scale, dBounds ), dBounds );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-			hitColor = ( hitSurfaceType == DIFFUSE ) ? vec3( 0.01618f ) : vec3( 0.99f );
-			// hitColor = blood;
+//			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+//			hitColor = ( hitSurfaceType == DIFFUSE ) ? vec3( 0.01618f ) : vec3( 0.99f );
+//			hitSurfaceType = MIRROR;
+//			hitColor = blood * 0.1f;
 
-			// hitSurfaceType = DIFFUSE;
-			// hitColor = nvidia * 0.1f;
+			 hitSurfaceType = DIFFUSE;
+			 hitColor = 0.3f * nvidia * displacement.rrr;
+//			hitColor = mix( nvidia, blood, displacement.r * 3.0f ) * 0.2f;
+//			hitColor = displacement.r < 0.01f ? honey : vec3( 0.99f );
 
 			// hitColor = mix( nickel, brass, 0.2f );
 			// hitColor = brass;
@@ -1991,7 +2036,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if (true) {
+	if ( false ) {
 	 	const float d = fBox( p, vec3( 100.0f, 0.03f, 0.1f ) );
 
 	 	// const float d = deJeyko( p );
