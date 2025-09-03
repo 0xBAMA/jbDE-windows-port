@@ -27,8 +27,8 @@ public:
 
 			// load the image we want to draw, create a texture
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/circuitBoard.png" );
-			Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
-			// Image_4F testImage( "../src/projects/LumaMesh/testImages/crinkle.png" );
+			// Image_4F testImage( "../src/projects/LumaMesh/testImages/waves.png" );
+			Image_4F testImage( "../src/projects/LumaMesh/testImages/crinkle.png" );
 			// Image_4F testImage( "../src/projects/LumaMesh/testImages/arch.png" );
 			testImage.SRGBtoRGB();
 			testImage.Swizzle( "rgbl" ); // compute luma term into alpha value
