@@ -7,3 +7,6 @@
 [submodule "src/utils/noise/FastNoise2"]
 	path = src/utils/noise/FastNoise2
 	url = https://github.com/Auburn/FastNoise2.git
+[submodule "src/utils/imGuIZMO.quat"]
+	path = src/utils/imGuIZMO.quat
+	url = https://github.com/BrutPitt/imGuIZMO.quat.git
