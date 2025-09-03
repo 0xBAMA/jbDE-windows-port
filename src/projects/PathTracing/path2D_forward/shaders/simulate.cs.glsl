@@ -139,6 +139,18 @@ float rectangle ( vec2 samplePosition, vec2 halfSize ) {
 	return outsideDistance + insideDistance;
 }
 
+float dekali (vec3 pos){
+	vec3 tpos=pos;
+	tpos.xz=abs(.5-mod(tpos.xz,1.));
+	vec4 p=vec4(tpos,1.);
+	float y=max(0.,.35-abs(pos.y-3.35))/.35;
+	for (int i=0; i<7; i++) {
+		p.xyz = abs(p.xyz)-vec3(-0.02,1.98,-0.02);
+		p=p*(2.0+0.*y)/clamp(dot(p.xyz,p.xyz),.4,1.)-vec4(0.5,1.,0.4,0.);
+		p.xz*=mat2(-0.416,-0.91,0.91,-0.416);
+	}
+	return (length(max(abs(p.xyz)-vec3(0.1,5.0,0.1),vec3(0.0)))-0.05)/p.w;
+}
 float de ( vec2 p ) {
 	float sceneDist = 100000.0f;
 	const vec2 pOriginal = p;
@@ -158,12 +170,21 @@ float de ( vec2 p ) {
 		}
 	}
 
-//	p = Rotate2D( 0.3f ) * pOriginal;
+	{
+		const float d = ( invert ? -1.0f : 1.0f ) * ( dekali( vec3( Rotate2D( 0.3f ) * 100.0f * p.xy, 0.3f ) ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = SELLMEIER_FUSEDSILICA;
+			hitAlbedo = 0.99f;
+		}
+	}
+
+	p = Rotate2D( 0.3f ) * pOriginal;
 	vec2 gridIndex;
 	gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
 	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 16.0f );
 
-	{ // an example object (refractive)
+	if ( true ) { // an example object (refractive)
 //		 bool checker = checkerBoard( 1.0f, vec3( gridIndex / 1.0f + vec2( 0.1f ), 0.5f ) );
 		 bool checker = false;
 		uint seedCache = seed;
@@ -174,10 +195,10 @@ float de ( vec2 p ) {
 		const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy / 3.0f, 0.0f ) ) + vec3( 1.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 50.0f + 20.0f * noise.x );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, -vec2( noise.xy ) * 30.0f ) - 40.0f );
-//		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 50.0f );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 50.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 30.0f * noise.y, 15.0f * noise.z ) ) ) );
 //		 const float d = ( invert ? -1.0f : 1.0f ) * ( ( rectangle( Rotate2D( noise.z + 3.0f ) * p, vec2( 48.0f, 15.0f ) ) ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 40.0f * noise.y, 25.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 40.0f * noise.y, 25.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
 		seed = seedCache;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -359,51 +380,12 @@ void main () {
 	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + 6969 * gl_GlobalInvocationID.y + 619 * gl_GlobalInvocationID.z;
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 
-	// need to pick a light source, point on the light source, plus emission spectra, plus direction
-
-	// hacky, but I want something to compare against the backwards impl at least temporarily
-	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
-	/*
-	switch ( clamp( int( NormalizedRandomFloat() * 2.99f ), 0, 2 ) ) {
-		case 0: rayOrigin = vec2( -200.0f, -200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
-		case 1: rayOrigin = vec2( -400.0f, 0.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
-		case 2: rayOrigin = vec2( -200.0f, 200.0f ) + 20.0f * CircleOffset(); rayDirection = normalize( CircleOffset() ); break;
-		default: break;
-	}
-	*/
+// need to pick a light source, point on the light source, plus emission spectra, plus direction
 
 	// pinwheel
-	const float count = 4;
-	// rayDirection = Rotate2D( 3.0f + 0.8f * 6.28f * ( int( count * NormalizedRandomFloat() ) ) / count + 0.3f ) * vec2( 0.0f, 1.0f );
-	// rayDirection = Rotate2D( 6.28f * ( NormalizedRandomFloat() + 0.5f ) ) * vec2( 0.0f, 1.0f );
+	vec2 rayOrigin, rayDirection;
 	rayDirection = vec2( 0.0f, 1.0f );
-//	rayDirection = Rotate2D( ( pi / 3.0f ) * pow( NormalizedRandomFloat(), 3.0f ) - 0.1f ) * vec2( 0.0f, 1.0f );
-//	rayOrigin = mix( vec2( 0.0f, -1100.0f ), vec2( 1000.0f, -1300.0f ), NormalizedRandomFloat() );
-//	 rayDirection = ( NormalizedRandomFloat() < 0.1f ) ? Rotate2D( 0.25f * ( NormalizedRandomFloat() - 0.5f ) ) * vec2( 0.0f, 1.0f ) : vec2( 0.0f, 1.0f );
-
-	// rayDirection = Rotate2D( 0.02f * ( NormalizedRandomFloat() - 0.5f ) ) * vec2( 0.0f, 1.0f );
-//	rayDirection = Rotate2D( 0.3f ) * vec2( 0.0f, 1.0f );
 	rayOrigin = vec2( 2000.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-	// rayOrigin = mix( vec2( -1000.0f, -1600.0f ), vec2( 1000.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-
-	// rayOrigin = vec2( -400.0f, 100.0f + 30.0f * ( NormalizedRandomFloat() - 0.5f ) );
-	// rayDirection = normalize( vec2( 1.0f, 0.01f * ( NormalizedRandomFloat() - 0.5f ) ) );
-	//	 if ( NormalizedRandomFloat() < 0.3f ) { // beams
-		// rayDirection = normalize( vec2( 0.001f * ( NormalizedRandomFloat() - 0.5f ), 1.0f ) );
-		// rayOrigin = vec2( RangeRemapValue( int( NormalizedRandomFloat() * count ) / count, 0.0f, 1.0f, -2000.0f + t, 600.f + t ) + 75.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-
-	// } else if ( NormalizedRandomFloat() < 0.4f ) { // ambient omnidirectional point
-//		 rayOrigin = vec2( 20.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-//		 rayDirection = normalize( UniformSampleHexagon() * vec2( 1.0f ) );
-//		 if (  rayDirection.y < 0.0f ) {
-//			 rayDirection.y *= -1.0f;
-//		 }
-//	 } else { // overhead light
-		// rayOrigin = vec2( 10.0f * ( NormalizedRandomFloat() - 0.5f ) + int( ( NormalizedRandomFloat() - 0.5f ) * 69.0f ) * 30.0f, -1800.0f );
-//		 rayOrigin = vec2( 1.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
-//		 rayDirection = Rotate2D( 0.9f ) * normalize( vec2( 0.01f * ( NormalizedRandomFloat() - 0.5f ), 1.0f ) );
-		// rayDirection = normalize( vec2( int( count * ( NormalizedRandomFloat() - 0.5f ) ) / count, 1.0f ) );
-//	}
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;

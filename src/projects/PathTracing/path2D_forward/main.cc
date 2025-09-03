@@ -73,59 +73,49 @@ public:
 			}
 			path2DConfig.autoExposureMipLevels = level;
 
+
+			// Image_4F pdfLUT( "../src/projects/PathTracing/path2D_forward/LUT/Preprocessed/Uniform.png" );
+			// Image_4F pdfLUT( "../src/projects/PathTracing/path2D_forward/LUT/Preprocessed/Incandescent.png" );
+
+
 			// loading the emission spectra LUTs
-			Image_4F pdfLUT( "../src/projects/PathTracing/path2D_forward/LUT/Preprocessed/HPSodium.png" );
-			Image_1F cdfLUT( 450, 1 );
+			Image_4F pdfLUT( "../src/projects/PathTracing/path2D_forward/LUT/Preprocessed/Flourescent.png" );
 
-			// consolidate into 1D float representation of the PDF
-			std::vector< float > pdf;
-			// at the same time, we can compute the corresponding CDF for the PDF LUT
+			// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
 			std::vector< float > cdf;
-
 			float cumSum = 0.0f;
 			for ( int x = 0; x < pdfLUT.Width(); x++ ) {
 				float sum = 0.0f;
 				for ( int y = 0; y < pdfLUT.Height(); y++ ) {
 				// invert because lut uses dark for positive indication... maybe fix that
-					sum += ( 1.0f - pdfLUT.GetAtXY( x, y )[ red ] ) / 256.0f;
+					sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
 				}
-
-				// increment cumulative sum and update the PDF... maybe don't need the PDF
+				// increment cumulative sum and CDF
 				cumSum += sum;
 				cdf.push_back( cumSum );
-				pdf.push_back( sum );
 			}
 
 			// normalize the CDF values by the final value during CDF sweep
 			std::vector< vec2 > CDFpoints;
 			for ( int x = 0; x < pdfLUT.Width(); x++ ) {
-				cdf[ x ] /= cumSum;
-				cdfLUT.SetAtXY( x, 0, color_1F( { cdf[ x ] } ) );
-
 			// compute the inverse CDF with the aid of a series of 2d points along the curve
 				// adjust baseline for our desired range -> 380nm to 830nm, we have 450nm of data
-				CDFpoints.emplace_back( x + 380, cdf[ x ] );
+				CDFpoints.emplace_back( x + 380, cdf[ x ] / cumSum );
 			}
-			// cdfLUT.Save( "testCDF.png" );
 
 			Image_1F inverseCDF( 1024, 1 );
 			for ( int x = 0; x < 1024; x++ ) {
 				// each pixel along this strip needs a value of the inverse CDF
 					// this is the intersection with the line defined by the set of segments in the array CDFpoints
-
 				float normalizedPosition = ( x + 0.5f ) / 1024.0f;
-				vec2 under, over;
-				for ( int p = 0; p < CDFpoints.size(); p++ ) {
+				for ( int p = 0; p < CDFpoints.size(); p++ )
 					if ( p == ( CDFpoints.size() - 1 ) ) {
 						inverseCDF.SetAtXY( x, 0, color_1F( { CDFpoints[ p ].x } ) );
 					} else if ( CDFpoints[ p ].y >= normalizedPosition ) {
-						under = CDFpoints[ p - 1 ];
-						over = CDFpoints[ p ];
-						inverseCDF.SetAtXY( x, 0,
-							color_1F( { RangeRemap( normalizedPosition, under.y, over.y, under.x, over.x ) } ) );
+						inverseCDF.SetAtXY( x, 0, color_1F( { RangeRemap( normalizedPosition,
+								CDFpoints[ p - 1 ].y, CDFpoints[ p ].y, CDFpoints[ p - 1 ].x, CDFpoints[ p ].x ) } ) );
 						break;
 					}
-				}
 			}
 
 			// we now have the solution for the LUT
