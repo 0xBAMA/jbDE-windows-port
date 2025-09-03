@@ -117,7 +117,7 @@ inline vec3 GetColorForTemperature ( float temperature ) {
 
 // unknown origin, blue to red fade through green
 inline vec3 HeatMapColorRamp ( float input ) {
-	input *= pi / 2.0f;
+	input *= jbDE::pi / 2.0f;
 	return vec3( sin( input ), sin( input * 2.0f ), cos( input ) );
 }
 

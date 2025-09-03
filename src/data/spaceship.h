@@ -12,7 +12,7 @@ struct bbox {
 
 	const int getSmallestAxis() const {
 		glm::ivec3 ranges = maxs - mins;
-		int minRange = min( min( ranges.x, ranges.y ), ranges.z );
+		int minRange = glm::min( glm::min( ranges.x, ranges.y ), ranges.z );
 		if ( ranges.x == minRange ) {
 			return 0;
 		} else if ( ranges.y == minRange ) {

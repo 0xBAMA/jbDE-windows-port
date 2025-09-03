@@ -353,7 +353,7 @@ public:
 			glGetIntegerv( GL_MAX_TEXTURE_SIZE, &val );
 			cout << endl << endl << "\t\tMax Texture Size Reports: " << val << endl;
 
-			cout << "\t\t  So Max Texture MIP Level Should Be " << log2( val ) << endl;
+			cout << "\t\t  So Max Texture MIP Level Should Be " << log2( float( val ) ) << endl;
 
 			glGetIntegerv( GL_MAX_3D_TEXTURE_SIZE, &val );
 			cout << "\t\tMax 3D Texture Size Reports: " << val << endl;

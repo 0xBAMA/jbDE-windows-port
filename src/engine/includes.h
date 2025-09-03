@@ -44,13 +44,16 @@ using std::unordered_map;
 using std::to_string;
 constexpr char newline = '\n';
 
-// where to look for the config.json
-//const string engineDir( "../../src/engine/" );
-const string engineDir( "../src/engine/" );
+namespace jbDE {
+	// where to look for the config.json
+	//const string engineDir( "../../src/engine/" );
+	const string engineDir( "../src/engine/" );
 
-// pi definition - definitely sufficient precision
-constexpr double pi = 3.14159265358979323846;
-constexpr double tau = 2.0 * pi;
+	// pi definition - definitely sufficient precision
+	constexpr double pi = 3.14159265358979323846;
+	constexpr double tau = 2.0 * pi;
+}
+
 
 //====== OpenGL / SDL =========================================================
 // GLM - vector math library GLM

@@ -492,14 +492,14 @@ public:
 
 	// resize the mesh to fit in a unit cube, centered at the origin
 	void expandBBox ( vec3 &mins, vec3 &maxs, vec3 p ) {
-		mins.x = min( mins.x, p.x );
-		maxs.x = max( maxs.x, p.x );
+		mins.x = glm::min( mins.x, p.x );
+		maxs.x = glm::max( maxs.x, p.x );
 
-		mins.y = min( mins.y, p.y );
-		maxs.y = max( maxs.y, p.y );
+		mins.y = glm::min( mins.y, p.y );
+		maxs.y = glm::max( maxs.y, p.y );
 
-		mins.z = min( mins.z, p.z );
-		maxs.z = max( maxs.z, p.z );
+		mins.z = glm::min( mins.z, p.z );
+		maxs.z = glm::max( maxs.z, p.z );
 	}
 	void UnitCubeRefit( bool verbose = false ) {
 		vec3 mins = vec3(  1e9f );
@@ -515,7 +515,7 @@ public:
 		// figure out scaling
 		vec3 spans = maxs - mins;
 		vec3 center = ( mins + maxs ) / 2.0f;
-		float largestDimension = max( max( spans.x, spans.y ), spans.z ) * 0.51f;
+		float largestDimension = glm::max( glm::max( spans.x, spans.y ), spans.z ) * 0.51f;
 
 		// run through again, butting the bbox min up against the origin + scaling appropriately to just fit inside -1..1
 		for ( size_t i = 0; i < triangles.size(); i++ ) {

@@ -107,27 +107,27 @@ public:
 
 	void SetViewBack () {
 		InitBasis();
-		RotateY( pi );
+		RotateY( jbDE::pi );
 	}
 
 	void SetViewRight () {
 		InitBasis();
-		RotateY( pi / 2.0 );
+		RotateY( jbDE::pi / 2.0 );
 	}
 
 	void SetViewLeft () {
 		InitBasis();
-		RotateY( -pi / 2.0 );
+		RotateY( -jbDE::pi / 2.0 );
 	}
 
 	void SetViewUp () {
 		InitBasis();
-		RotateX( -pi / 2.0 );
+		RotateX( -jbDE::pi / 2.0 );
 	}
 
 	void SetViewDown () {
 		InitBasis();
-		RotateX( pi / 2.0 );
+		RotateX( jbDE::pi / 2.0 );
 	}
 
 	bool show;

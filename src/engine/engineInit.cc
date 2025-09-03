@@ -15,7 +15,7 @@ void engineBase::LoadConfig () {
 		Block Start( "Configuring Application" );
 
 		// load the config json, populate config struct - this will probably have more data, eventually
-		json j; ifstream i( engineDir + "config.json" ); i >> j; i.close();
+		json j; ifstream i( jbDE::engineDir + "config.json" ); i >> j; i.close();
 		config.windowTitle				= j[ "system" ][ "windowTitle" ];
 		config.width					= j[ "system" ][ "screenWidth" ];
 		config.height					= j[ "system" ][ "screenHeight" ];
@@ -58,7 +58,7 @@ void engineBase::LoadConfig () {
 
 void engineBase::TonemapDefaults () {
 	// color grading stuff
-	json j; ifstream i( engineDir + "config.json" ); i >> j; i.close();
+	json j; ifstream i( jbDE::engineDir + "config.json" ); i >> j; i.close();
 	tonemap.showTonemapWindow		= j[ "system" ][ "colorGrade" ][ "showTonemapWindow" ];
 	tonemap.tonemapMode				= j[ "system" ][ "colorGrade" ][ "tonemapMode" ];
 	tonemap.gamma					= j[ "system" ][ "colorGrade" ][ "gamma" ];
@@ -84,7 +84,7 @@ void engineBase::CreateWindowAndContext () {
 	}
 
 	{
-		string StringWithVersionNumber = string( "Setting Up OpenGL " ) + string( to_string( window.config->OpenGLVersionMajor ) ) + string( "." ) + string( to_string( window.config->OpenGLVersionMinor ) ) + string( " Context" );
+		string StringWithVersionNumber = string( "Setting Up OpenGL " ) + string( to_string( static_cast< int >( window.config->OpenGLVersionMajor ) ) ) + string( "." ) + string( to_string( static_cast< int >( window.config->OpenGLVersionMinor ) ) ) + string( " Context" );
 		Block Start( StringWithVersionNumber );
 		window.OpenGLSetup();
 	}
@@ -379,7 +379,7 @@ void engineBase::TerminalSetup () {
 
 			int32_t longestTextureName = 0;
 			for ( auto& tex : textureManager.textures ) {
-				longestTextureName = min( max( int32_t( tex.label.length() + 2 ), longestTextureName ), 60 ); // pad 1 space either end, clamp at 60 chars
+				longestTextureName = std::min( std::max( int32_t( tex.label.length() + 2 ), longestTextureName ), 60 ); // pad 1 space either end, clamp at 60 chars
 			}
 
 			terminal.addLineBreak();
@@ -543,7 +543,7 @@ void engineBase::ShaderCompile () {
 	{
 		Block Start( "Compiling Shaders" );
 
-		const string basePath( engineDir + "shaders/" );
+		const string basePath( jbDE::engineDir + "shaders/" );
 
 		// tonemapping shader - this will need some refinement as time goes on
 		std::system( "dir" );
