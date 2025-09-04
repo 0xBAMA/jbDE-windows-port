@@ -119,6 +119,10 @@ struct daedalusConfig_t {
 
 		// ===============================
 
+		// initialize with identity matrix
+		modelMatrix = glm::mat4( 1.0f );
+		panDolly = vec3( 0.0f );
+
 		// this will need to come in from elsewhere, eventually - for now, hardcoded screen res
 		outputWidth = 2560;
 		outputHeight = 1440;
@@ -209,7 +213,7 @@ struct daedalusConfig_t {
 	}
 
 	// wip gizmo stuff
-	mat4 translateMatrix;
+	vec3 panDolly;
 	mat4 modelMatrix;
 
 	// size of output
@@ -239,3 +243,22 @@ struct daedalusConfig_t {
 	// class holding the random number generators
 	rngen_t rng;
 };
+
+/*
+
+void stateSerialize ( daedalusConfig_t * config, string filename ) {
+	YAML::Node outputConfig;
+
+	// supply the values for the output from the current values on the config struct passed in
+		// this needs to include the full (include-processed, to bake that in) source of the shader, so that we have fully transferrable state along with the
+
+	// outputConfig
+}
+
+void stateDeserialize ( daedalusConfig_t * config, string filename ) {
+	YAML::Node inputConfig = YAML::LoadFile( filename );
+
+	// take the values from the input file, put them onto the config struct passed in
+}
+
+*/

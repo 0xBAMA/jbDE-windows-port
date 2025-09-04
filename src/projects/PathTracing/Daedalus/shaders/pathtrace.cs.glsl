@@ -1930,7 +1930,7 @@ float de( in vec3 p ) {
 	vec3 displacement = matWood( p * 1.8f );
 	vec3 displacement2 = matWood( p * 3.8f );
 
-	if ( false ) {
+	if ( true ) {
 
 		// apply transform
 		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;

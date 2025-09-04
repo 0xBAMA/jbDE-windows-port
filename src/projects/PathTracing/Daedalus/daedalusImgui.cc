@@ -8,12 +8,10 @@ void Daedalus::ShowDaedalusConfigWindow() {
 	// declare static or global variable or member class (quat -> rotation)
 	static quat qRot = quat(1.0f, 0.0f, 0.0f, 0.0f );
 	// declare static or global variable or member class (vec3 -> Pan/Dolly)
-	static glm::vec3 PanDolly( 0.0f );
 	// Call new function available from v.3.0 imGuIZMO.quat
-	ImGui::gizmo3D( "##gizmo1", PanDolly, qRot /*, size,  mode */ );
+	ImGui::gizmo3D( "##gizmo1", daedalusConfig.panDolly, qRot /*, size,  mode */ );
 	// PanDolly returns/changes (x,y,z) values, depending on Pan(x,y,0)/Dolly(0,0,z) movements
 	// if you need a "translation" matrix with Pan/Dolly values
-	daedalusConfig.translateMatrix = mat4( glm::translate( glm::mat4( 1.0f ), PanDolly ) ); // need to combine this with the viewer basis vectors to get the correct movement
 	daedalusConfig.modelMatrix = mat4_cast( qRot );
 
 	// need to now do something with this info...

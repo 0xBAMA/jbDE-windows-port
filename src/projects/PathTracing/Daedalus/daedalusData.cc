@@ -123,7 +123,16 @@ void Daedalus::SendBasePathtraceUniforms() {
 	glUniform1f( glGetUniformLocation( shader, "raymarchMaxDistance" ), daedalusConfig.render.scene.raymarchMaxDistance );
 	glUniform1f( glGetUniformLocation( shader, "marbleRadius" ), daedalusConfig.render.scene.marbleRadius );
 
-	glUniformMatrix4fv( glGetUniformLocation( shader, "transform_imguizmo" ), 1, false, glm::value_ptr( daedalusConfig.modelMatrix ) );
+	// process the contents of the panning matrix (translateMatrix), by using the viewer basis vectors to give us tautologically defined relative left and right in worldspace (plus forward or back)
+		// and then reset it, so we can consider this a delta value, and it will update with the current state of the
+
+	static mat4 scratchMat;
+	// construct from PanDolly
+	scratchMat = daedalusConfig.modelMatrix;
+	scratchMat = glm::translate( scratchMat, daedalusConfig.panDolly.x * daedalusConfig.render.basisX );
+	scratchMat = glm::translate( scratchMat, daedalusConfig.panDolly.y * daedalusConfig.render.basisY );
+	scratchMat = glm::translate( scratchMat, daedalusConfig.panDolly.z * daedalusConfig.render.basisZ );
+	glUniformMatrix4fv( glGetUniformLocation( shader, "transform_imguizmo" ), 1, false, glm::value_ptr( scratchMat ) );
 
 	glUniform1i( glGetUniformLocation( shader, "ddaSpheresEnable" ), daedalusConfig.render.scene.ddaSpheresEnable );
 	glUniform3fv( glGetUniformLocation( shader, "ddaSpheresBoundSize" ), 1, glm::value_ptr( daedalusConfig.render.scene.ddaSpheresBoundSize ) );
@@ -246,7 +255,7 @@ void Daedalus::PrepSphereBufferRandom() {
 	// simple implementation, randomizing all parameters
 	rng c = rng(  0.3f, 1.0f );
 	rngN o = rngN( 0.0f, 0.125f );
-	rng r = rng( 0.2f, 1.5f );
+	rng r = rng( 0.1f, 0.1618f );
 	rng IoR = rng( 1.0f / 1.1f, 1.0f / 1.5f );
 	rng Roughness = rng( 0.0f, 0.5f );
 
