@@ -1980,7 +1980,11 @@ float de( in vec3 p ) {
 				// hitColor = nickel;
 				// hitColor = mix( carrot, GetLuma( displacement2 ), ot );
 				// hitColor = mix( nickel, iron, GetLuma( displacement2 ).r );
-				hitColor = mix( honey, vec3( 0.99f ), GetLuma( displacement2 ).r );
+				hitColor = mix( nvidia, vec3( 0.0f ), ot );
+				if ( GetLuma( displacement2 ).r > 0.3f ) {
+					hitSurfaceType = DIFFUSE;
+					hitColor = mix( carrot, vec3( 1.0f ), GetLuma( displacement2 ).rrr * 1.2f ) * GetLuma( displacement2 ) * 0.3f;
+				}
 //				hitColor = displacement2;
 			}
 //			hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? WOOD : DIFFUSE;
@@ -2003,20 +2007,30 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
+	p = pOriginal;
+
+	if ( false ) {
 		// const float d = max( max( deGatee2( p ), dBounds ), dBounds );
 		const float scale = 0.8f;
 		const float d = max( max( deLaceHall( p / scale ) * scale - displacement.r * 0.04f * displacement2.r, dBounds ), dBounds );
 //		const float d = max( max( deLaceHall( p / scale ) * scale, dBounds ), dBounds );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-//			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-//			hitColor = ( hitSurfaceType == DIFFUSE ) ? vec3( 0.01618f ) : vec3( 0.99f );
+
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+			hitColor = ( hitSurfaceType == DIFFUSE ) ? vec3( 0.01618f ) : vec3( 0.99f );
+
 //			hitSurfaceType = MIRROR;
 //			hitColor = blood * 0.1f;
 
-			 hitSurfaceType = DIFFUSE;
-			 hitColor = 0.3f * nvidia * displacement.rrr;
+			// hitColor = 0.3f * nvidia * displacement.rrr;
+			// hitColor = displacement.rrr * nvidia;
+
+			if ( displacement.r * displacement2.r > 0.25f ) {
+				hitSurfaceType = EMISSIVE_FRESNEL;
+				// hitColor = mix( blood, aqua, 1.4f * GetLuma( displacement ) ) * GetLuma( displacement2 );
+				hitColor = honey;
+			}
 //			hitColor = mix( nvidia, blood, displacement.r * 3.0f ) * 0.2f;
 //			hitColor = displacement.r < 0.01f ? honey : vec3( 0.99f );
 
