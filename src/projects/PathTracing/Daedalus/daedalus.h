@@ -279,6 +279,7 @@ public:
 	void ResetAccumulators();
 	void ResizeAccumulators( uint32_t x, uint32_t y );
 	void Screenshot( string label, bool srgbConvert = true, bool fullDepth = false );
+	void Screenshot_named( string filename, string label, bool srgbConvert = true, bool fullDepth = false );
 	void ApplyFilter( int mode, int count );
 
 	void ShowDaedalusConfigWindow();

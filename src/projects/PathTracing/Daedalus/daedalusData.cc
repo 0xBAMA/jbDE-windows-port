@@ -54,6 +54,21 @@ void Daedalus::Screenshot( string label, bool srgbConvert, bool fullDepth ) {
 	screenshot.Save( filename, fullDepth ? Image_4F::backend::TINYEXR : Image_4F::backend::LODEPNG );
 }
 
+void Daedalus::Screenshot_Named( string filename, string label, bool srgbConvert, bool fullDepth ) {
+	const GLuint tex = textureManager.Get( label );
+	uvec2 dims = textureManager.GetDimensions( label );
+	std::vector< float > imageBytesToSave;
+	imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+	glBindTexture( GL_TEXTURE_2D, tex );
+	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+	Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+	if ( srgbConvert == true ) {
+		screenshot.RGBtoSRGB();
+	}
+	filename = filename + string( fullDepth ? ".exr" : ".png" );
+	screenshot.Save( filename, fullDepth ? Image_4F::backend::TINYEXR : Image_4F::backend::LODEPNG );
+}
+
 void Daedalus::ApplyFilter( int mode, int count ) {
 	rngi pick = rngi( 0, 3 );
 	GLuint shader;
