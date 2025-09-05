@@ -171,8 +171,8 @@ struct daedalusConfig_t {
 		render.basisZ = vec3( -0.994f, -0.107f, -0.033f );
 
 		// thin lens config
-		render.thinLensEnable = false;
-		render.thinLensFocusDistance = 10.0f;
+		render.thinLensEnable = true;
+		render.thinLensFocusDistance = 0.6366f;
 		render.thinLensJitterRadiusInner = 0.0005f;
 		render.thinLensJitterRadiusOuter = 0.0008f;
 		render.bokehMode = 18;
