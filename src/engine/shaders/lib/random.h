@@ -236,6 +236,12 @@ vec2 Star7 () {
 	return randStar( 7.0f, NormalizedRandomFloat(), NormalizedRandomFloat() );
 }
 
+// from https://www.shadertoy.com/view/3fSyWG
+vec2 rnd_disc_cauchy() {
+	vec2 h = vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) * vec2( 6.28318530718f, pi / 2.0f );
+	h.y = tan( h.y );
+	return h.y * vec2( sin( h.x ), cos( h.x ) );
+}
 
 // ======================================================================================================================
 #define BOKEHSHAPE_NONE				0
@@ -256,6 +262,7 @@ vec2 Star7 () {
 #define BOKEHSHAPE_UNIFORM_5STAR	15
 #define BOKEHSHAPE_UNIFORM_6STAR	16
 #define BOKEHSHAPE_UNIFORM_7STAR	17
+#define BOKEHSHAPE_CAUCHY_DISK		18
 // ======================================================================================================================
 
 vec2 GetBokehOffset ( int mode ) {
@@ -279,6 +286,7 @@ vec2 GetBokehOffset ( int mode ) {
 		case BOKEHSHAPE_UNIFORM_5STAR:		return Star5(); break;						// star patterns
 		case BOKEHSHAPE_UNIFORM_6STAR:		return Star6(); break;
 		case BOKEHSHAPE_UNIFORM_7STAR:		return Star7(); break;
+		case BOKEHSHAPE_CAUCHY_DISK:		return rnd_disc_cauchy(); break;
 
 		default: return vec2( 0.0f ); break;											// no offset
 	}
