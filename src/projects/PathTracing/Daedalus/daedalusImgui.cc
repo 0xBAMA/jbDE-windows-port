@@ -6,13 +6,13 @@ void Daedalus::ShowDaedalusConfigWindow() {
 	ImGui::Begin( "gizmo test window" );
 
 	// declare static or global variable or member class (quat -> rotation)
-	static quat qRot = quat(1.0f, 0.0f, 0.0f, 0.0f );
+	static quat qRot = quat( 1.0f, 0.0f, 0.0f, 0.0f );
 	// declare static or global variable or member class (vec3 -> Pan/Dolly)
 	// Call new function available from v.3.0 imGuIZMO.quat
 	ImGui::gizmo3D( "##gizmo1", daedalusConfig.panDolly, qRot /*, size,  mode */ );
 	// PanDolly returns/changes (x,y,z) values, depending on Pan(x,y,0)/Dolly(0,0,z) movements
 	// if you need a "translation" matrix with Pan/Dolly values
-	daedalusConfig.modelMatrix = mat4_cast( qRot );
+	// daedalusConfig.modelMatrix = mat4_cast( qRot );
 
 	// need to now do something with this info...
 
@@ -229,7 +229,7 @@ void Daedalus::ShowDaedalusConfigWindow() {
 			ImGui::SliderFloat( "Focus Distance", &daedalusConfig.render.thinLensFocusDistance, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 			ImGui::SliderFloat( "Jitter Radius ( Inner )", &daedalusConfig.render.thinLensJitterRadiusInner, 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 			ImGui::SliderFloat( "Jitter Radius ( Outer )", &daedalusConfig.render.thinLensJitterRadiusOuter, 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
-			const char * bokehModeNames[] = { "NONE", "EDGE BIASED DISK", "UNIFORM DISK", "REJECTION SAMPLED HEXAGON", "UNIFORM SAMPLED HEXAGON", "UNIFORM HEART", "THREE BLADE ROSETTE", "FIVE BLADE ROSETTE", "RING", "PENTAGON", "SEPTAGON", "OCTAGON", "NONAGON", "DECAGON", "11-GON", "5 SIDED STAR", "6 SIDED STAR", "7 SIDED STAR" };
+			const char * bokehModeNames[] = { "NONE", "EDGE BIASED DISK", "UNIFORM DISK", "REJECTION SAMPLED HEXAGON", "UNIFORM SAMPLED HEXAGON", "UNIFORM HEART", "THREE BLADE ROSETTE", "FIVE BLADE ROSETTE", "RING", "PENTAGON", "SEPTAGON", "OCTAGON", "NONAGON", "DECAGON", "11-GON", "5 SIDED STAR", "6 SIDED STAR", "7 SIDED STAR", "CAUCHY DISK" };
 			ImGui::Combo( "Bokeh Mode", &daedalusConfig.render.bokehMode, bokehModeNames, IM_ARRAYSIZE( bokehModeNames ) );
 
 			ImGui::Separator();

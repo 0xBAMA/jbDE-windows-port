@@ -350,6 +350,21 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
+		static int frame = 0;
+		if ( daedalusConfig.tiles.SampleCount() == 1000 ) {
+			// take a screenshot
+			Screenshot_named( fixedWidthNumberString( frame ), "Tonemapped" , true, false );
+
+			// advance the animation
+			const float increment = -jbDE::pi / 360.0f;
+			const vec3 axis = vec3( 0.0f, 0.0f, 1.0f );
+			daedalusConfig.modelMatrix = glm::rotate( daedalusConfig.modelMatrix, increment, axis );
+
+			// reset
+			ResetAccumulators();
+
+		}
+
 		if ( daedalusConfig.filterEveryFrame ) {
 			ApplyFilter( daedalusConfig.filterSelector, 1 );
 		}

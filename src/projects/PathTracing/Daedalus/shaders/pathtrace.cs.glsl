@@ -1927,15 +1927,20 @@ float de( in vec3 p ) {
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
+
+
+	p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 	vec3 displacement = matWood( p * 1.8f );
 	vec3 displacement2 = matWood( p * 3.8f );
 
 	if ( true ) {
 
 		// apply transform
-		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
+//		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 
-		const float d = max( max( dePortrait( p / 3.0f ) * 3.0f + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
+		const float scale = 1.0f;
+
+		const float d = max( max( dePortrait( p / scale ) * scale + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -1980,7 +1985,8 @@ float de( in vec3 p ) {
 				// hitColor = nickel;
 				// hitColor = mix( carrot, GetLuma( displacement2 ), ot );
 				// hitColor = mix( nickel, iron, GetLuma( displacement2 ).r );
-				hitColor = mix( nvidia, vec3( 0.0f ), ot );
+				// hitColor = mix( nvidia / 3.0f, mix( vec3( 1.0f ), honey, GetLuma( displacement ) ), pow( ot, 1.5f ) );
+				hitColor = mix( vec3( 0.0f ), mix( vec3( 1.0f ), carrot, GetLuma( displacement ) * 2.0f ), pow( ot, 1.5f ) );
 				if ( GetLuma( displacement2 ).r > 0.3f ) {
 					hitSurfaceType = DIFFUSE;
 					hitColor = mix( carrot, vec3( 1.0f ), GetLuma( displacement2 ).rrr * 1.2f ) * GetLuma( displacement2 ) * 0.3f;

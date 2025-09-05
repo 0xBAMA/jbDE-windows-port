@@ -128,8 +128,8 @@ struct daedalusConfig_t {
 		outputHeight = 1440;
 
 		// configuring the accumulator
-		targetWidth = 1920;
-		targetHeight = 1080;
+		targetWidth = 1280;
+		targetHeight = 720;
 		tileSize = 256;
 
 		// initialize the tile dispenser
@@ -160,17 +160,22 @@ struct daedalusConfig_t {
 		render.epsilon = 0.0001f;
 		render.maxDistance = 100.0f;
 
-		render.viewerPosition = vec3( 0.0f );
-		render.basisX = vec3( 1.0f, 0.0f, 0.0f );
-		render.basisY = vec3( 0.0f, 1.0f, 0.0f );
-		render.basisZ = vec3( 0.0f, 0.0f, 1.0f );
+		// render.viewerPosition = vec3( 0.0f );
+		// render.basisX = vec3( 1.0f, 0.0f, 0.0f );
+		// render.basisY = vec3( 0.0f, 1.0f, 0.0f );
+		// render.basisZ = vec3( 0.0f, 0.0f, 1.0f );
+
+		render.viewerPosition = vec3( 0.984f, 0.332f, -0.583f );
+		render.basisX = vec3( 0.11f, -0.876f, -0.469f );
+		render.basisY = vec3( 0.021f, -0.469f, 0.833f );
+		render.basisZ = vec3( -0.994f, -0.107f, -0.033f );
 
 		// thin lens config
 		render.thinLensEnable = false;
 		render.thinLensFocusDistance = 10.0f;
-		render.thinLensJitterRadiusInner = 0.01f;
-		render.thinLensJitterRadiusOuter = 0.1f;
-		render.bokehMode = 14;
+		render.thinLensJitterRadiusInner = 0.0005f;
+		render.thinLensJitterRadiusOuter = 0.0008f;
+		render.bokehMode = 18;
 		render.cameraType = 0;
 		render.voraldoCameraScalar = 1.0f;
 		render.cameraOriginJitter = true;
@@ -191,18 +196,18 @@ struct daedalusConfig_t {
 		render.scene.maskedPlaneEnable = false;
 
 		// explicit primitive list
-		render.scene.explicitListEnable = true;
+		render.scene.explicitListEnable = false;
 		render.scene.numExplicitPrimitives = 1;
 
 		// sky config
 		render.scene.skyDims = uvec2( 4096, 2048 );
 		render.scene.skyNeedsUpdate = false;
-		render.scene.skyMode = 0;
+		render.scene.skyMode = 3;
 		render.scene.skyConstantColor1 = vec3( 1.0f );
 		render.scene.skyConstantColor2 = vec3( 0.0f );
-		render.scene.sunThresh = 100;
+		render.scene.sunThresh = 164;
 		render.scene.skyInvert = false;
-		render.scene.skyBrightnessScalar = 1.0f;
+		render.scene.skyBrightnessScalar = 2.146f;
 		render.scene.skyTime = 5.0f;
 		render.scene.skyClamp = 5.0f;
 
