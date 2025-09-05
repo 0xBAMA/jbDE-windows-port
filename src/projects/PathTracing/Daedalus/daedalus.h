@@ -279,7 +279,7 @@ public:
 	void ResetAccumulators();
 	void ResizeAccumulators( uint32_t x, uint32_t y );
 	void Screenshot( string label, bool srgbConvert = true, bool fullDepth = false );
-	void Screenshot_named( string filename, string label, bool srgbConvert = true, bool fullDepth = false );
+	void Screenshot_Named( string filename, string label, bool srgbConvert = true, bool fullDepth = false );
 	void ApplyFilter( int mode, int count );
 
 	void ShowDaedalusConfigWindow();
@@ -353,7 +353,7 @@ public:
 		static int frame = 0;
 		if ( daedalusConfig.tiles.SampleCount() == 1000 ) {
 			// take a screenshot
-			Screenshot_named( fixedWidthNumberString( frame ), "Tonemapped" , true, false );
+			Screenshot_Named( fixedWidthNumberString( frame ), "Tonemapped" , true, false );
 
 			// advance the animation
 			const float increment = -jbDE::pi / 360.0f;

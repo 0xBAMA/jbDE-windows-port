@@ -184,7 +184,7 @@ struct daedalusConfig_t {
 		// SDF raymarch geo
 		render.scene.raymarchEnable = true;
 		render.scene.raymarchMaxDistance = render.maxDistance; // do I want to keep both? not sure
-		render.scene.raymarchMaxSteps = 100;
+		render.scene.raymarchMaxSteps = 420;
 		render.scene.raymarchUnderstep = 0.9f;
 		render.scene.marbleRadius = 8.0f;
 
