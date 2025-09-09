@@ -342,11 +342,11 @@ void main () {
 	// need to pick a light source, point on the light source, plus emission spectra, plus direction
 
 	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
-	const float count = 5;
 
-	const int pickedLight = int( NormalizedRandomFloat() * 12.99f );
+	// we have 13 entries in the LUT texture
+	const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % 13;
 
-	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight + 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight + 1.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
 	rayDirection = normalize( vec2( -0.001f * rnd_disc_cauchy().x, 1.0f ) );
 
@@ -355,10 +355,10 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// selected wavelength - y picks which light it is
-	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( ( ( pickedLight + 3 ) % 13 ) + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
-	const int maxBounces = 100;
+	const int maxBounces = 64;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
