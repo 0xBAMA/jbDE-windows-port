@@ -92,7 +92,7 @@ float hitAlbedo = 0.0f;
 
 // raymarch parameters
 const float epsilon = 0.1f;
-const float maxDistance = 4000.0f;
+const float maxDistance = 6000.0f;
 const int maxSteps = 200;
 
 // getting the wavelength-dependent IoR for materials
@@ -186,7 +186,7 @@ float de ( vec2 p ) {
 			rectangle( pOriginal - vec2( 2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = DIFFUSE;
+			hitSurfaceType = NormalizedRandomFloat() < 0.1f ? DIFFUSE : MIRROR;
 			hitAlbedo = 0.3f;
 		}
 	}
@@ -348,7 +348,7 @@ void main () {
 
 	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight + 1.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-	rayDirection = normalize( vec2( -0.001f * rnd_disc_cauchy().x, 1.0f ) );
+	rayDirection = normalize( vec2( -0.001f * rnd_disc_cauchy().x + 3.0f, -1.0f ) );
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
