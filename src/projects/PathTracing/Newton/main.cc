@@ -56,6 +56,10 @@ public:
 			textureManager.Add( "Field Z Tally", opts );
 			textureManager.Add( "Field Count", opts );
 
+			// framebuffer needs a depth buffer
+			opts.dataType = GL_DEPTH_COMPONENT16;
+			textureManager.Add( "Dummy Depth", opts );
+
 		// additional buffer used for autoexposure
 			// round up the dimensions
 			path2DConfig.autoExposureBufferDim = nextPowerOfTwo( std::max( path2DConfig.dims.x, path2DConfig.dims.y ) );
@@ -66,6 +70,21 @@ public:
 			opts.minFilter		= GL_NEAREST;
 			opts.magFilter		= GL_NEAREST;
 			textureManager.Add( "Field Max", opts );
+
+			// == Framebuffer Objects =============
+			glGenFramebuffers( 1, &path2DConfig.framebuffer );
+			const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 }; // 2x 32-bit primitive ID/instance ID, 2x half float encoded normals
+
+			glBindFramebuffer( GL_FRAMEBUFFER, path2DConfig.framebuffer );
+			glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureManager.Get( "Dummy Depth" ), 0 );
+			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureManager.Get( "Field X Tally" ), 0 );
+			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, textureManager.Get( "Field Y Tally" ), 0 );
+			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, textureManager.Get( "Field Z Tally" ), 0 );
+			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, textureManager.Get( "Field Count" ), 0 );
+			glDrawBuffers( 4, bufs );
+			if ( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE ) {
+				cout << "framebuffer creation successful" << endl;
+			}
 
 			// create the mip levels explicitly... we want to be able to sample the texel (0,0) of the highest mip of the texture for the autoexposure term
 			int level = 0;
