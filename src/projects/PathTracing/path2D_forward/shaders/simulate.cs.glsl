@@ -147,6 +147,7 @@ float de ( vec2 p ) {
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
+	/*
 	{ // an example object (refractive)
 		pModPolar( p.xy, 17.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( max( distance( p, vec2( 90.0f, 0.0f ) ) - 100.0f, distance( p, vec2( 110.0f, 0.0f ) ) - 150.0f ) );
@@ -157,8 +158,8 @@ float de ( vec2 p ) {
 			hitAlbedo = 0.99f;
 		}
 	}
+	*/
 
-	/*
 	p = Rotate2D( 0.3f ) * pOriginal;
 	vec2 gridIndex;
 	gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
@@ -175,7 +176,6 @@ float de ( vec2 p ) {
 			 hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
 		}
 	}
-	*/
 
 	// walls at the edges of the screen for the rays to bounce off of
 	if ( true ) {
@@ -343,7 +343,10 @@ void main () {
 
 	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
 	const float count = 5;
-	rayOrigin = vec2( 200.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+
+	const int pickedLight = int( NormalizedRandomFloat() * 12.99f );
+
+	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight + 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
 	rayDirection = normalize( vec2( -0.001f * rnd_disc_cauchy().x, 1.0f ) );
 
@@ -351,8 +354,8 @@ void main () {
 	float transmission = 1.0f;
 	float energyTotal = 1.0f;
 
-	// selected wavelength - using full range, we can revisit this later
-	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 0.5f ) ).r;
+	// selected wavelength - y picks which light it is
+	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
 	const int maxBounces = 100;
