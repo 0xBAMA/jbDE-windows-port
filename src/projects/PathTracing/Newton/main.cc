@@ -1,163 +1,118 @@
-#include "../../../engine/engine.h"
+#include "../../engine/engine.h"
 
-struct path2DConfig_t {
-	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
+int bitfieldExtract ( int a, int b, int c ) {
+	int mask = ~( 0xffffffff << c );
+	if ( b > 0 )
+		return ( a >> ( b - 1 ) ) & mask;
+	else
+		return a & mask;
+}
 
-	uint32_t autoExposureBufferDim = 0;
-	uint32_t autoExposureMipLevels = 0;
-	float autoExposureBase = 1600000.0f;
-
-	// OpenGL resources
-	GLuint framebuffer = 0;
-	GLuint rayBuffer = 0;
-
-	// wavefront config
-	uint32_t numBounces = 64;
-	uint32_t batchSize = 4096;
-};
-
-class path2D final : public engineBase { // sample derived from base engine class
+class engineDemo final : public engineBase { // sample derived from base engine class
 public:
-	path2D () { Init(); OnInit(); PostInit(); }
-	~path2D () { Quit(); }
-
-	path2DConfig_t path2DConfig;
-	bool screenshotRequested = false;
-	int screenshotIndex = -1;
+	engineDemo () { Init(); OnInit(); PostInit(); }
+	~engineDemo () { Quit(); }
 
 	void OnInit () {
 		ZoneScoped;
 		{
 			Block Start( "Additional User Init" );
 
-			// image prep
-			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/draw.cs.glsl" ).shaderHandle;
-			shaders[ "Simulate" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/simulate.cs.glsl" ).shaderHandle;
-			shaders[ "Autoexposure Prep" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposurePrep.cs.glsl" ).shaderHandle;
-			shaders[ "Autoexposure" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposure.cs.glsl" ).shaderHandle;
+			// something to put some basic data in the accumulator texture
+			shaders[ "Dummy Draw" ] = computeShader( "../src/projects/EngineDemo/shaders/dummyDraw.cs.glsl" ).shaderHandle;
 
-			// need to allocate memory for the ray states - 128 bytes per ray state
-			std::vector< float > rayBuffer;
-			const size_t numBytes = 128 * path2DConfig.batchSize * path2DConfig.numBounces;
-			rayBuffer.resize( ( numBytes + 3 ) / 4, 0 );
+		// very interesting - can call stuff from the command line
+		// std::system( "./scripts/build.sh" ); // <- this works as expected, to run the build script
 
-			glGenBuffers( 1, &path2DConfig.rayBuffer );
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.rayBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, numBytes, ( GLvoid * ) &rayBuffer[ 0 ], GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.rayBuffer );
+			// imagemagick? standalone image processing stuff in another jbDE child app? there's a huge amount of potential here
+				// could write temporary json file, call something that would parse it and apply operations to an image? could be cool
+				// something like bin/imageProcess <json path>, and have that json specify source file, a list of ops, and destination path
 
-			// buffer image
-			textureOptions_t opts;
-			opts.dataType		= GL_R32I;
-			opts.width			= path2DConfig.dims.x;
-			opts.height			= path2DConfig.dims.y;
-			opts.minFilter		= GL_NEAREST;
-			opts.magFilter		= GL_NEAREST;
-			opts.textureType	= GL_TEXTURE_2D;
-			opts.wrap			= GL_CLAMP_TO_BORDER;
-			// parallel averaging via atomic adds in the line drawing function
-			textureManager.Add( "Field X Tally", opts );
-			textureManager.Add( "Field Y Tally", opts );
-			textureManager.Add( "Field Z Tally", opts );
-			textureManager.Add( "Field Count", opts );
+			// =============================================================================================================
 
-			// framebuffer needs a depth buffer
-			opts.dataType = GL_DEPTH_COMPONENT16;
-			textureManager.Add( "Dummy Depth", opts );
+			int num = 0xFFDD1100;
+			cout << "starting with a number " << num << newline;
+			cout << bitfieldExtract( num, 0, 8 ) << newline;
+			cout << bitfieldExtract( num, 8, 8 ) << newline;
+			cout << bitfieldExtract( num, 16, 8 ) << newline;
+			cout << bitfieldExtract( num, 24, 8 ) << newline;
+			cout << endl;
 
-		// additional buffer used for autoexposure
-			// round up the dimensions
-			path2DConfig.autoExposureBufferDim = nextPowerOfTwo( std::max( path2DConfig.dims.x, path2DConfig.dims.y ) );
+		// // messing with data moshing
+		// 	Image_4F testImage;
+		// 	testImage.Load( "test.png" );
 
-			opts.width			= path2DConfig.autoExposureBufferDim;
-			opts.height			= path2DConfig.autoExposureBufferDim;
-			opts.dataType		= GL_R32F;
-			opts.minFilter		= GL_NEAREST;
-			opts.magFilter		= GL_NEAREST;
-			textureManager.Add( "Field Max", opts );
+		// 	rngi pick = rngi( 0, 45 );
 
-			// == Framebuffer Objects =============
-			glGenFramebuffers( 1, &path2DConfig.framebuffer );
-			const GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 }; // 2x 32-bit primitive ID/instance ID, 2x half float encoded normals
+		// 	for ( size_t i = 0; i < testImage.GetData()->size(); i++ ) {
+		// 		switch ( pick() ) {
+		// 			case 1:
+		// 				testImage.GetData()->insert( testImage.GetData()->begin() + i, 1, 0 );
+		// 				testImage.GetData()->insert( testImage.GetData()->begin() + i, 1, 0 );
+		// 				testImage.GetData()->insert( testImage.GetData()->begin() + i, 1, 0 );
+		// 				break;
+		// 			case 2:
+		// 				testImage.GetData()->erase( testImage.GetData()->begin() + i );
+		// 				testImage.GetData()->erase( testImage.GetData()->begin() + i );
+		// 				testImage.GetData()->erase( testImage.GetData()->begin() + i );
+		// 				break;
+		// 			case 3:
+		// 				( *testImage.GetData() )[ i ] *= rand();
+		// 				( *testImage.GetData() )[ i + 1 ] *= rand();
+		// 				( *testImage.GetData() )[ i + 2 ] *= rand();
+		// 				break;
+		// 			default:
+		// 				break;
+		// 		}
+		// 	}
 
-			glBindFramebuffer( GL_FRAMEBUFFER, path2DConfig.framebuffer );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, textureManager.Get( "Dummy Depth" ), 0 );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureManager.Get( "Field X Tally" ), 0 );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, textureManager.Get( "Field Y Tally" ), 0 );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, textureManager.Get( "Field Z Tally" ), 0 );
-			glFramebufferTexture( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, textureManager.Get( "Field Count" ), 0 );
-			glDrawBuffers( 4, bufs );
-			if ( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE ) {
-				cout << "framebuffer creation successful" << endl;
-			}
+		// 	testImage.GetData()->resize( testImage.Width() * testImage.Height() * 4 );
+		// 	testImage.Save( "out.png" );
 
-			// create the mip levels explicitly... we want to be able to sample the texel (0,0) of the highest mip of the texture for the autoexposure term
-			int level = 0;
-			int d = path2DConfig.autoExposureBufferDim;
-			Image_4F zeroesF( d, d );
-			while ( d >= 1 ) {
-				d /= 2; level++;
-				glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Field Max" ) );
-				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
-			}
-			path2DConfig.autoExposureMipLevels = level;
+			// =============================================================================================================
 
-			// setup the importance sampled emission spectra stuff
-			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
-				"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
-			Image_1F inverseCDF( 1024, LUTFilenames.size() );
+			// // extract the image's bytes out
+			// std::vector< unsigned char > bytes;
+			// for ( uint y = 0; y < testImage.Height(); y++ ) {
+			// 	for ( uint x = 0; x < testImage.Width(); x++ ) {
 
-			for ( int i = 0; i < LUTFilenames.size(); i++ ) {
-				Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
+			// 		color_4F color = testImage.GetAtXY( x, y );
+			// 		float sourceData[ 4 ];
+			// 		sourceData[ 0 ] = color[ red ];
+			// 		sourceData[ 1 ] = color[ green ];
+			// 		sourceData[ 2 ] = color[ blue ];
+			// 		sourceData[ 3 ] = color[ alpha ];
 
-				// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
-				std::vector< float > cdf;
-				float cumSum = 0.0f;
-				for ( int x = 0; x < pdfLUT.Width(); x++ ) {
-					float sum = 0.0f;
-					for ( int y = 0; y < pdfLUT.Height(); y++ ) {
-						// invert because lut uses dark for positive indication... maybe fix that
-						sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
-					}
-					// increment cumulative sum and CDF
-					cumSum += sum;
-					cdf.push_back( cumSum );
-				}
+			// 		for ( int i = 0; i < 4; i++ ) {
 
-				// normalize the CDF values by the final value during CDF sweep
-				std::vector< vec2 > CDFpoints;
-				for ( int x = 0; x < pdfLUT.Width(); x++ ) {
-					// compute the inverse CDF with the aid of a series of 2d points along the curve
-					// adjust baseline for our desired range -> 380nm to 830nm, we have 450nm of data
-					CDFpoints.emplace_back( x + 380, cdf[ x ] / cumSum );
-				}
+						// probably mess with this again, but with a low chance for random bit flips
+							// needs nan checking, etc
 
-				for ( int x = 0; x < 1024; x++ ) {
-					// each pixel along this strip needs a value of the inverse CDF
-					// this is the intersection with the line defined by the set of segments in the array CDFpoints
-					float normalizedPosition = ( x + 0.5f ) / 1024.0f;
-					for ( int p = 0; p < CDFpoints.size(); p++ )
-						if ( p == ( CDFpoints.size() - 1 ) ) {
-							inverseCDF.SetAtXY( x, i, color_1F( { CDFpoints[ p ].x } ) );
-						} else if ( CDFpoints[ p ].y >= normalizedPosition ) {
-							inverseCDF.SetAtXY( x, i, color_1F( { RangeRemap( normalizedPosition,
-									CDFpoints[ p - 1 ].y, CDFpoints[ p ].y, CDFpoints[ p - 1 ].x, CDFpoints[ p ].x ) } ) );
-							break;
-						}
-				}
-			}
+			// 			bytes.push_back( *(( uint8_t* ) &sourceData[ i ] + 0 ) );
+			// 			bytes.push_back( *(( uint8_t* ) &sourceData[ i ] + 1 ) );
+			// 			bytes.push_back( *(( uint8_t* ) &sourceData[ i ] + 2 ) );
+			// 			bytes.push_back( *(( uint8_t* ) &sourceData[ i ] + 3 ) );
+			// 		}
+			// 	}
+			// }
 
-			// we now have the solution for the LUT
-			opts.width = 1024;
-			opts.height = LUTFilenames.size();
-			opts.dataType = GL_R32F;
-			opts.minFilter = GL_LINEAR;
-			opts.magFilter = GL_LINEAR;
-			opts.textureType = GL_TEXTURE_2D;
-			opts.pixelDataType = GL_FLOAT;
-			opts.initialData = inverseCDF.GetImageDataBasePtr();
-			textureManager.Add( "iCDF", opts );
+			// // shuffle the bytes
+			// std::random_shuffle( bytes.begin() + 1500000, bytes.end() - 1500000 );
+
+			// // put the bytes back into the array
+			// for ( uint i = 0; i < bytes.size(); i += 4 ) {
+			// 	uint8_t data[ 4 ] = { bytes[ i ], bytes[ i + 1 ], bytes[ i + 2 ], bytes[ i + 3 ] };
+			// 	testImage.GetImageDataBasePtr()[ i / 4 ] = std::clamp( *( float* )&data[ 0 ], 0.0f, 1.0f );
+			// }
+
+			// // save the image back out
+			// testImage.Save( "out.png" );
+
+
+		// report platform specific sized long floats
+			// ( quad must be at least as precise as double, double as precise as float - only guarantee in the spec )
+			// cout << "float: " << sizeof( float ) << " double: " << sizeof( double ) << " quad: " << sizeof( long double ) << endl << endl;
+
 		}
 	}
 
@@ -165,9 +120,7 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		if ( inputHandler.getState( KEY_T ) ) {
-			screenshotRequested = true;
-		}
+
 	}
 
 	void ImguiPass () {
@@ -183,67 +136,24 @@ public:
 			profilerWindow.Render(); // GPU graph is presented on top, CPU on bottom
 		}
 
-		ImGui::Begin( "Screenshot Window" );
-		if ( ImGui::Button(  "Screenshot" ) ) {
-			screenshotRequested = true;
-		}
-		ImGui::End();
-
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
+
+		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
+	}
+
+	void DrawAPIGeometry () {
+		ZoneScoped; scopedTimer Start( "API Geometry" );
+		// draw some shit - need to add a hello triangle to this, so I have an easier starting point for raster stuff
 	}
 
 	void ComputePasses () {
 		ZoneScoped;
 
-		{
-			scopedTimer Start( "Autoexposure" );
-			{	// clear the texture with the max value
-				textureManager.ZeroTexture2D( "Field Max" );
-			}
-
-			{	// populate mip 0 with "proposed pixel brightness values" with no autoexposure setting
-					// potential future optimization here, do textureGathers during this step and mip 0 can be half res
-				const GLuint shader = shaders[ "Autoexposure Prep" ];
-				glUseProgram( shader );
-				textureManager.BindImageForShader( "Field Max", "fieldMax", shader, 0 );
-				textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shader, 2 );
-				textureManager.BindTexForShader( "Field Count", "bufferImageCount", shader, 4 );
-				glUniform1f( glGetUniformLocation( shader, "autoExposureBase" ), path2DConfig.autoExposureBase );
-				glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-				glMemoryBarrier( GL_ALL_BARRIER_BITS );
-			}
-
-			{	// mip propagation of brightness max
-				int d = path2DConfig.autoExposureBufferDim / 2;
-				const GLuint shader = shaders[ "Autoexposure" ];
-				glUseProgram( shader );
-				for ( int n = 0; n < path2DConfig.autoExposureMipLevels - 1; n++ ) { // for num mips minus 1
-
-					// bind the appropriate levels for N and N+1 (starting with N=0... to N=...? ) double bind of texture version... yeah
-					textureManager.BindTexForShader( "Field Max", "layerN", shader, 0 );
-					textureManager.BindImageForShader( "Field Max", "layerN", shader, 0, n );
-					textureManager.BindImageForShader( "Field Max", "layerNPlus1", shader, 1, n + 1 );
-
-					// dispatch the compute shader( 1x1x1 groupsize for simplicity )
-					glDispatchCompute( d, d, 1 );
-					glMemoryBarrier( GL_ALL_BARRIER_BITS );
-					d /= 2;
-				}
-				// postcondition is that the top mip's single texel contains the field max, and we can access that during drawing to get it into a reasonable range
-			}
-		}
-
-		{ // prep accumumator texture
+		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			glUseProgram( shaders[ "Draw" ] );
-			textureManager.BindTexForShader( "Field X Tally", "bufferImageX", shaders[ "Draw" ], 2 );
-			textureManager.BindTexForShader( "Field Y Tally", "bufferImageY", shaders[ "Draw" ], 3 );
-			textureManager.BindTexForShader( "Field Z Tally", "bufferImageZ", shaders[ "Draw" ], 4 );
-			textureManager.BindTexForShader( "Field Count", "bufferImageCount", shaders[ "Draw" ], 5 );
-			textureManager.BindImageForShader( "Field Max", "fieldMax", shaders[ "Draw" ], 6 );
-			glUniform1i( glGetUniformLocation( shaders[ "Draw" ], "autoExposureTexOffset" ), path2DConfig.autoExposureMipLevels );
-			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "autoExposureBase" ), path2DConfig.autoExposureBase );
+			glUseProgram( shaders[ "Dummy Draw" ] );
+			glUniform1f( glGetUniformLocation( shaders[ "Dummy Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -257,84 +167,41 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		if ( screenshotRequested == true ) {
-			screenshotRequested = false;
-			cout << "Attempting Screenshot" << endl;
-			const GLuint tex = textureManager.Get( "Display Texture" );
-			uvec2 dims = textureManager.GetDimensions( "Display Texture" );
-			std::vector< float > imageBytesToSave;
-			imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
-			glBindTexture( GL_TEXTURE_2D, tex );
-			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
-			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
-			screenshot.RGBtoSRGB();
-			screenshot.FlipVertical();
-			const string filename = ( ( screenshotIndex != -1 ) ? ( string( "frames/" ) + fixedWidthNumberString( screenshotIndex, 4 ) ) :
-				string( "Path2D_Forward-" ) + timeDateString() ) + string( ".png" );
-			screenshot.Save( filename, Image_4F::backend::LODEPNG );
-		}
+		// shader to apply dithering
+			// ...
+
+		// other postprocessing
+			// ...
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
+			textRenderer.Clear();
 			textRenderer.Update( ImGui::GetIO().DeltaTime );
+
+			// show terminal, if active - check happens inside
+			textRenderer.drawTerminal( terminal );
+
+			// put the result on the display
 			textRenderer.Draw( textureManager.Get( "Display Texture" ) );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
+
+		{ // show trident with current orientation
+			// scopedTimer Start( "Trident" );
+			// trident.Update( textureManager.Get( "Display Texture" ) );
+			// glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 	}
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-
-		// run the shader to run some rays
-		static rngi wangSeeder = rngi( 0, 1000000 );
-		const GLuint shader = shaders[ "Simulate" ];
-		glUseProgram( shader );
-
-		/*
-		static int t = 1711;
-		static int samples = 0;
-		static bool resetRequested = false;
-		if ( resetRequested ) {
-			resetRequested = false;
-			textureManager.ZeroTexture2D( "Field X Tally" );
-			textureManager.ZeroTexture2D( "Field Y Tally" );
-			textureManager.ZeroTexture2D( "Field Z Tally" );
-			textureManager.ZeroTexture2D( "Field Count" );
-		}
-		if ( samples++ == 200 ) {
-			samples = 0;
-			t--;
-			if ( t == 1690 ) {
-				pQuit = true;
-			}
-			screenshotRequested = true;
-			screenshotIndex = t;
-			resetRequested = true;
-		}
-		*/
-		// glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
-		glUniform1f( glGetUniformLocation( shader, "t" ), 0.0f );
-		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
-
-		rng offset = rng( 0, 512 );
-		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), offset(), offset() );
-
-		textureManager.BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
-		textureManager.BindImageForShader( "Field X Tally", "bufferImageX", shader, 2 );
-		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
-		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
-		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
-		textureManager.BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
-
-		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		// glDispatchCompute( 6, 6, 3 );
-		glDispatchCompute( 2, 2, 2 );
-		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		// application-specific update code
 	}
 
 	void OnRender () {
 		ZoneScoped;
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
+		DrawAPIGeometry();			// draw any API geometry desired
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
 		{
@@ -349,8 +216,14 @@ public:
 	bool MainLoop () { // this is what's called from the loop in main
 		ZoneScoped;
 
-		// event handling
+		// get new data into the input handler
 		inputHandler.update();
+
+		// pass any signals into the terminal (active check happens inside)
+		terminal.update( inputHandler );
+
+		// event handling
+		HandleTridentEvents();
 		HandleCustomEvents();
 		HandleQuitEvents();
 
@@ -364,8 +237,10 @@ public:
 	}
 };
 
+// #pragma comment( linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup" )
+
 int main ( int argc, char *argv[] ) {
-	path2D engineInstance;
+	engineDemo engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }

@@ -517,13 +517,14 @@ void main () {
 
 	// we have 13 entries in the LUT texture
 	const int numLights = textureSize( iCDFtex, 0 ).y;
-	const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % numLights;
+	// const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % numLights;
+	const int pickedLight = 1;
 
 //	rayOrigin = vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 	// rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + Rotate2D( pickedLight * 0.3f ) * vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
-	rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + vec2( 1.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+	rayOrigin = vec2( 1000.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-	 rayDirection = vec2( -0.001f * rnd_disc_cauchy().x + 1.0f, 1.0f );
+	 rayDirection = vec2( -0.001f * rnd_disc_cauchy().x - 1.0f, 1.0f );
 
 //	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight, 0.0f ) + clamp( 0.1f * rnd_disc_cauchy(), vec2( -10.0f ), vec2( 10.0f ) );
 //	rayDirection = normalize( CircleOffset() );
@@ -533,8 +534,7 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// selected wavelength - y picks which light it is
-	// wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
-	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight % 6 + 4.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
 //	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 2.5f / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
