@@ -1902,6 +1902,175 @@ float deLaceHall( vec3 p ){
 float deHalls(vec3 p){
 	return min(.65-length(fract(p+.5)-.5),p.y+0.05f);
 }
+
+
+// below from https://www.shadertoy.com/view/WllfzB
+float noisedean(vec3 p) {
+	const vec3 s = vec3(7.0, 157.0, 113.0);
+	vec3 ip = floor(p);
+	vec4 h = vec4(0.0, s.yz, s.y + s.z) + dot(ip, s);
+	p -= ip;
+
+	h = mix(fract(sin(h) * 43758.5453), fract(sin(h + s.x) * 43758.5453), p.x);
+
+	h.xy = mix(h.xz, h.yw, p.y);
+	return mix(h.x, h.y, p.z);
+}
+
+vec2 opRep(vec2 p, vec2 c) {
+	return mod(p + 0.5 * c, c) - 0.5 * c;
+}
+
+float opRep(inout float p, float size, float c1, float c2) {
+	float w2 = size * 0.5;
+	float pp = p - w2;
+	float idx = clamp(floor(pp / size), c1, c2);
+	p = pp - size * idx - w2;
+	return fract(idx * 12532.56);
+}
+
+float opRep(inout vec2 p, vec2 size, vec2 c1, vec2 c2) {
+	vec2 w2 = size * 0.5;
+	vec2 pp = p - w2;
+	vec2 idx = clamp(floor(pp / size), c1, c2);
+	p = pp - size * idx - w2;
+	return dot(fract(idx * 12532.56), vec2(421.0, 965.0));
+}
+
+vec4 min4(vec4 a, vec4 b) { return a.x < b.x ? a : b; }
+
+/*
+float sdBox(vec3 p, vec3 b) {
+	vec3 q = abs(p) - b;
+	return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+*/
+
+float sdCappedCylinder(vec3 p, float h, float r) {
+	vec2 d = abs(vec2(length(p.xy), p.z)) - vec2(h, r);
+	return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+vec3 getRayDir(vec3 ro, vec3 lookAt, vec2 uv) {
+	vec3 forward = normalize(lookAt - ro);
+	vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), forward));
+	vec3 up = cross(forward, right);
+	return normalize(forward + right * uv.x + up * uv.y);
+}
+
+// Call to create a concrete-like 3D texture.
+//
+// p:   [in]  point in 3D space.
+// mat: [out] material rgb
+// id:  [in]  arbitary ID used as a rnd seed.
+// dist:[in]  distance from ray origin (Used to fade out surface displacement, avoiding rendering artifacts).
+// returns: surface noise value to apply to a SDF function.
+float getConcreteMaterial(vec3 p, out vec3 mat, float id, float dist) {
+	// Set rnd seed from id.
+	vec3 tp = p + vec3(0.32, 0.40, 1.2) * mod(id, 10.0);
+
+	// Mix a couple of shades of grey.
+	float baseColor = smoothstep(0.0, 0.5, noisedean(tp));
+	mat = mix(vec3(0.18, 0.17, 0.17), vec3(0.20, 0.19, 0.19), baseColor);
+
+	// Surface roughness.
+	dist = 1.0 - smoothstep(0.0, 1.0, dist / 14.0);
+	float rough = noisedean(tp * 60.0) * 0.005 // Base
+	+ step(0.2, noisedean(tp * 26.666)) * 0.0033; // Pits/dents.
+	mat += rough * 24.0;
+
+	// Fade surface roughness(/deflection) out with distance to prevent screen noise.
+	return rough * dist;
+}
+
+// A rectangular concrete 'wall panel', with a small hole in each corner.
+//
+// p: point in 3D space.
+// r: dimensions (halved)
+// id: arbitary ID used as a rnd seed.
+// dist: distance from ray origin (Used to fade out surface displacement, avoiding rendering artifacts).
+// returns (distance, material rgb)
+vec4 sdConcretePanel(vec3 p, vec3 r, float id, float dist) {
+	// Tilt each panel a small amount.
+	mat2 tilt = rot((fract(sin(id) * 43758.5453) - 0.5) * 0.03);
+	p.xz *= tilt;
+	p.yz *= tilt;
+
+	float d = sdBox(p, r - 0.04) - 0.04;
+
+	// Mounting holes.
+	vec3 pp = p;
+	pp.xy = abs(p.xy) - r.xy * 0.8;
+	float hole = sdCappedCylinder(pp + vec3(0.0, 0.0, r.z * 1.5), r.x * 0.03, r.z * 1.0);
+	d = max(d, -hole);
+
+	// Apply material.
+	vec3 mat;
+	d -= getConcreteMaterial(p, mat, id, dist);
+	return vec4(d, mat);
+}
+
+// Concrete paving slab.
+//
+// p: point in 3D space.
+// r: dimensions (halved)
+// id: arbitary ID used as a rnd seed.
+// dist: distance from ray origin (Used to fade out surface displacement, avoiding rendering artifacts).
+// returns (distance, material rgb)
+vec4 sdSlab(vec3 p, vec3 r, float id, float dist) {
+	// Tilt each slab a small amount.
+	mat2 tilt = rot((fract(sin(id) * 43758.5453) - 0.5) * 0.1);
+	p.xz *= tilt;
+	p.yz *= tilt;
+
+	float d = sdBox(p, r - 0.03) - 0.03;
+
+	// Apply material.
+	vec3 mat;
+	d -= getConcreteMaterial(p, mat, id, dist);
+	return vec4(d, mat);
+}
+
+// Map the scene using SDF functions.
+vec4 concretemap(vec3 p) {
+	vec3 r = vec3(1.0, 2.0, 0.05);
+
+	vec4 d = vec4(1e10);
+
+	float dist = 1.0f;
+
+	// Left wall.
+	vec3 pp = p;
+	pp.xz *= rot(3.141 / 2.0);
+	pp.z -= 5.0;
+	float id = opRep(pp.xy, r.xy * 2.0, vec2(-15.0, -2.0), vec2(10.0, 1.0));
+	d = min4(d, sdConcretePanel(pp, r, id, dist));
+
+	// Far wall.
+	pp = p;
+	id = opRep(pp.xy, r.xy * 2.0, vec2(-5.0, -2.0), vec2(5.0, 1.0));
+	d = min4(d, sdConcretePanel(pp - vec3(0.0, 0.0, 33.0), r, id, dist));
+
+	// Columns.
+	pp = p - vec3(8.0, 0.0, 0.0);
+	id = opRep(pp.z, 5.0, -4.0, 3.0);
+	d = min4(d, sdSlab(pp, vec3(2.0, 8.0, 1.0), 1.0, dist));
+
+	// Floor.
+	pp = p;
+	pp.yz *= rot(3.141 / 2.0);
+	pp.z -= 5.0;
+	r = vec3(1.0, 1.0, 0.2);
+	id = opRep(pp.xy, r.xy * 2.0, vec2(-15.0, -15.0), vec2(16.0, 16.0));
+	d = min4(d, sdSlab(pp, r, id, dist));
+
+	// Ceiling.
+	d = min4(d, sdSlab(p - vec3(1.0, 10.0, 0.0), vec3(10.0, 3.0, 50.0), 1.0, dist));
+
+	return d;
+}
+
+
 // below from https://www.shadertoy.com/view/ltSfRW
 vec2 hash2( vec2 p )
 {
@@ -1965,6 +2134,7 @@ vec3 voronoi( in vec2 x )
 
 	return vec3( length(mr), id, md );
 }
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -1996,7 +2166,7 @@ float de( in vec3 p ) {
 	vec3 displacement = matWood( p * 1.8f );
 	vec3 displacement2 = matWood( p * 3.8f );
 
-	if ( true ) {
+	if ( false ) {
 
 		// apply transform
 //		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
@@ -2119,8 +2289,20 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
-	 	const float d = fBox( p, vec3( 100.0f, 0.03f, 0.1f ) );
+	{
+		 const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
+//		const vec4 d = concretemap( p );
+		sceneDist = min( sceneDist, d.x );
+		if ( sceneDist == d.x && d.x < epsilon ) {
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			hitRoughness = 0.3f;
+			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( d.yzw, nickel, vec3( 0.75f ) );
+		}
+	}
+
+	if ( true ) {
+		pModInterval1( p.z, 5.0f, -5.0f, 5.0f );
+	 	const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 7.5f, 0.03f, 0.5f ) );
 
 	 	// const float d = deJeyko( p );
 	 	sceneDist = min( sceneDist, d );
