@@ -7,12 +7,14 @@ struct path2DConfig_t {
 	uint32_t autoExposureMipLevels = 0;
 	float autoExposureBase = 1600000.0f;
 
-	uint32_t numBounces = 64;
-
 	// OpenGL resources
 	GLuint framebuffer = 0;
 	GLuint rayBuffer = 0;
 	GLuint maxBuffer = 0;
+
+	// wavefront config
+	uint32_t numBounces = 64;
+	uint32_t batchSize = 4096;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -35,8 +37,15 @@ public:
 			shaders[ "Autoexposure Prep" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposurePrep.cs.glsl" ).shaderHandle;
 			shaders[ "Autoexposure" ] = computeShader( "../src/projects/PathTracing/path2D_forward/shaders/autoexposure.cs.glsl" ).shaderHandle;
 
-			// need to allocate memory for the ray states
+			// need to allocate memory for the ray states - 128 bytes per ray state
+			std::vector< float > rayBuffer;
+			const size_t numBytes = 128 * path2DConfig.batchSize * path2DConfig.numBounces;
+			rayBuffer.resize( ( numBytes + 3 ) / 4, 0 );
 
+			glGenBuffers( 1, &path2DConfig.rayBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.rayBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, numBytes, ( GLvoid * ) &rayBuffer[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.rayBuffer );
 
 			// field max, single value
 			constexpr uint32_t countValue = 0;
