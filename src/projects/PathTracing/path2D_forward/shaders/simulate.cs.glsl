@@ -139,6 +139,166 @@ float rectangle ( vec2 samplePosition, vec2 halfSize ) {
 	return outsideDistance + insideDistance;
 }
 
+// from belmu - https://www.shadertoy.com/view/WfSXRV
+struct LensElement {
+	float radius;    // Radius of the circle primitive (if negative, element is concave)
+	float thickness; // Distance to next element
+	float aperture;  // Aperture diameter of the element
+	bool  isAir;
+};
+
+const LensElement doubleGauss[] = LensElement[](
+LensElement( 085.50, 11.6, 76.0, false),
+LensElement( 408.33, 01.5, 76.0, true ),
+LensElement( 040.35, 17.0, 66.0, false),
+LensElement( 156.05, 03.5, 66.0, false),
+LensElement( 025.05, 13.7, 44.0, true ),
+LensElement( 000.00, 08.3, 42.6, true ),
+LensElement(-036.80, 03.5, 44.0, false),
+LensElement( 055.00, 23.0, 52.0, false),
+LensElement(-051.50, 01.0, 52.0, true ),
+LensElement( 123.50, 17.0, 52.0, false),
+LensElement(-204.96, 00.0, 52.0, true )
+);
+
+const LensElement cookeTriplet[] = LensElement[](
+LensElement( 032.25, 06.0, 50.0, false),
+LensElement( 188.25, 08.1, 50.0, true ),
+LensElement(-144.50, 01.0, 40.0, false),
+LensElement( 028.72, 17.9, 40.0, true ),
+LensElement( 139.60, 02.5, 30.0, false),
+LensElement(-088.00, 00.0, 30.0, true )
+);
+
+const LensElement tessar[] = LensElement[](
+LensElement( 042.970, 09.800, 38.4, false),
+LensElement(-115.330, 02.100, 38.4, false),
+LensElement( 306.840, 04.160, 38.4, true ),
+LensElement( 000.000, 04.000, 30.0, true ),
+LensElement(-059.060, 01.870, 34.6, false),
+LensElement( 040.930, 10.640, 34.6, true ),
+LensElement( 183.920, 07.050, 33.0, false),
+LensElement(-048.910, 79.831, 33.0, true )
+);
+
+const LensElement fisheye[] = LensElement[](
+LensElement( 302.249 * 0.3, 008.335 * 0.3, 303.4 * 0.3, false),
+LensElement( 113.931 * 0.3, 074.136 * 0.3, 206.8 * 0.3, true ),
+LensElement( 752.019 * 0.3, 010.654 * 0.3, 178.0 * 0.3, false),
+LensElement( 083.349 * 0.3, 111.549 * 0.3, 134.2 * 0.3, true ),
+LensElement( 095.882 * 0.3, 020.054 * 0.3, 090.2 * 0.3, false),
+LensElement( 438.677 * 0.3, 053.895 * 0.3, 081.4 * 0.3, true ),
+LensElement( 000.000 * 0.3, 014.163 * 0.3, 060.8 * 0.3, true ),
+LensElement( 294.541 * 0.3, 021.934 * 0.3, 059.6 * 0.3, false),
+LensElement(-052.265 * 0.3, 009.714 * 0.3, 058.4 * 0.3, false),
+LensElement(-142.884 * 0.3, 000.627 * 0.3, 059.6 * 0.3, true ),
+LensElement(-223.726 * 0.3, 009.400 * 0.3, 059.6 * 0.3, false),
+LensElement(-150.404 * 0.3, 000.000 * 0.3, 065.2 * 0.3, true )
+);
+
+const LensElement petzval[] = LensElement[](
+LensElement( 055.9, 05.2, 16.0, false),
+LensElement(-043.7, 00.8, 16.0, false),
+LensElement( 460.4, 33.6, 16.0, true ),
+LensElement( 110.6, 01.5, 16.0, false),
+LensElement( 038.9, 03.3, 16.0, true ),
+LensElement( 048.0, 03.6, 16.0, false),
+LensElement(-157.8, 30.0, 16.0, true )
+);
+
+
+// CHOOSE LENS SYSTEM HERE
+
+const LensElement lensSystem[] = doubleGauss;
+
+// ^^^^^^^^^^^^^^^^^^^^^^^
+
+vec3 randomColor(float seed) {
+	seed += 65.0;
+
+	float x = fract(sin(seed * 12.9898) * 43758.5453);
+	float y = fract(sin(seed * 78.233)  * 127.1);
+	float z = fract(sin(seed * 39.3467) * 311.7);
+
+	return vec3(x, y, z);
+}
+
+float sdCircle(vec2 position, vec2 center, float radius) {
+	return distance(position, center) - radius;
+}
+
+float sdBox(vec2 position, vec2 center, vec2 size) {
+	vec2 d = abs(position - center) - size;
+	return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+float signNonZero(float x) {
+	return x > 0.0 ? 1.0 : -1.0;
+}
+
+// The sagitta of a circular arc is the distance from the midpoint of the arc to the midpoint of its chord
+float sagitta(float radius, float aperture) {
+	if (radius == 0.0) return 0.0;
+	float r = abs(radius);
+	float h = aperture * 0.5;
+	return r - sqrt(r * r - h * h);
+}
+
+// Lens element SDF, we subtract the front surface to a box, then intersect the result with the rear surface
+float sdLensElement(LensElement lens1, LensElement lens2, vec2 uv, float opticalAxisX) {
+	float center1 = opticalAxisX + lens1.radius;
+	float center2 = opticalAxisX + lens1.thickness + lens2.radius;
+
+	float sag1 = sagitta(lens1.radius, lens1.aperture);
+	float sag2 = sagitta(lens2.radius, lens2.aperture);
+
+	float totalWidth = sag1 + lens1.thickness + sag2;
+
+	vec2  stockSize = vec2(totalWidth, max(lens1.aperture, lens2.aperture));
+	float stock     = sdBox(uv, vec2(opticalAxisX + lens1.thickness * 0.5, 0.0), stockSize * 0.5);
+
+	float interface1 = sdCircle(uv, vec2(center1, 0.0), abs(lens1.radius)) *  signNonZero(lens1.radius);
+	float interface2 = sdCircle(uv, vec2(center2, 0.0), abs(lens2.radius)) * -signNonZero(lens2.radius);
+
+	return max(max(interface1, interface2), stock);
+}
+
+int lensSystemResult = 0;
+
+float deLensSystem ( vec2 uv ) {
+	lensSystemResult = NOHIT;
+	float opticalAxisX = 0.0;
+	float minDist = 100000.0f;
+	for (int i = 0; i < lensSystem.length() - 1; i++) {
+		LensElement lens1 = lensSystem[i];
+		LensElement lens2 = lensSystem[i + 1];
+
+		float element = sdLensElement(lens1, lens2, uv, opticalAxisX);
+		minDist = min( minDist, ( invert ? -1.0f : 1.0f ) * element );
+
+		if ( abs( element ) < epsilon ) {
+			lensSystemResult = SELLMEIER_BOROSILICATE_BK7 + i % 2;
+			break;
+		}
+
+		/*
+		if ( element < 0.0 ) {
+			if ( lens1.isAir ) {
+				// fragColor.rgb = vec3(0.0, 0.0, 0.0);
+			} else {
+				// fragColor.rgb = randomColor(float(i));
+
+				break;
+			}
+		}
+		*/
+
+		opticalAxisX += lens1.thickness;
+	}
+
+	return minDist;
+}
+
 float de ( vec2 p ) {
 	float sceneDist = 100000.0f;
 	const vec2 pOriginal = p;
@@ -146,6 +306,17 @@ float de ( vec2 p ) {
 	hitAlbedo = 0.0f;
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
+
+	/*
+	{
+		float scale = 30.0f;
+		const float d = deLensSystem( p / scale ) * scale;
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = lensSystemResult;
+		}
+	}
+	*/
 
 	/*
 	{ // an example object (refractive)
