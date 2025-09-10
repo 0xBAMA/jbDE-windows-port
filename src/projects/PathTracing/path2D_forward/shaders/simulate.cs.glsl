@@ -333,13 +333,14 @@ float de ( vec2 p ) {
 
 	p = Rotate2D( 0.3f ) * pOriginal;
 	vec2 gridIndex;
-	gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
-	gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 16.0f );
+	gridIndex.x = pModInterval1( p.x, 200.0f, -100.0f, 100.0f );
+	gridIndex.y = pModInterval1( p.y, 200.0f, -6.0f, 16.0f );
 	{ // an example object (refractive)
 		uint seedCache = seed;
 		seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
 		const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy / 3.0f, 0.0f ) ) + vec3( 1.0f );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 40.0f * noise.y, 25.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 80.0f * noise.y, 50.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 50.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
 		seed = seedCache;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -357,7 +358,7 @@ float de ( vec2 p ) {
 			rectangle( pOriginal - vec2( 2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = NormalizedRandomFloat() < 0.1f ? DIFFUSE : MIRROR;
+			hitSurfaceType = MIRROR;
 			hitAlbedo = 0.3f;
 		}
 	}
@@ -515,18 +516,26 @@ void main () {
 	vec2 rayOrigin, rayDirection; // emission spectra will not match, oh well, I can run it again with some tweaks
 
 	// we have 13 entries in the LUT texture
-	const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % 13;
+	const int numLights = textureSize( iCDFtex, 0 ).y;
+	const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % numLights;
 
-	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight + 1.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+//	rayOrigin = vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+	// rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + Rotate2D( pickedLight * 0.3f ) * vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
+	rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-	rayDirection = normalize( vec2( -0.001f * rnd_disc_cauchy().x + 3.0f, -1.0f ) );
+	rayDirection = vec2( -0.001f * rnd_disc_cauchy().x, 1.0f );
+
+//	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight, 0.0f ) + clamp( 0.1f * rnd_disc_cauchy(), vec2( -10.0f ), vec2( 10.0f ) );
+//	rayDirection = normalize( CircleOffset() );
 
 	// transmission and energy totals... energy starts at a maximum and attenuates, when we start from the light source
 	float transmission = 1.0f;
 	float energyTotal = 1.0f;
 
 	// selected wavelength - y picks which light it is
-	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( ( ( pickedLight + 3 ) % 13 ) + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	// wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight % 6 + 4.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+//	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 2.5f / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
 	const int maxBounces = 64;
