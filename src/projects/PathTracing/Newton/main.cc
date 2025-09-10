@@ -10,7 +10,6 @@ struct path2DConfig_t {
 	// OpenGL resources
 	GLuint framebuffer = 0;
 	GLuint rayBuffer = 0;
-	GLuint maxBuffer = 0;
 
 	// wavefront config
 	uint32_t numBounces = 64;
@@ -46,13 +45,6 @@ public:
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.rayBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, numBytes, ( GLvoid * ) &rayBuffer[ 0 ], GL_DYNAMIC_COPY );
 			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.rayBuffer );
-
-			// field max, single value
-			constexpr uint32_t countValue = 0;
-			glGenBuffers( 1, &path2DConfig.maxBuffer );
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, path2DConfig.maxBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, 1, ( GLvoid * ) &countValue, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, path2DConfig.maxBuffer );
 
 			// buffer image
 			textureOptions_t opts;
