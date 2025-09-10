@@ -75,8 +75,8 @@ public:
 
 			// setup the importance sampled emission spectra stuff
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			std::vector< string > LUTFilenames = { "AmberLED", "Candle", "Flourescent", "Halogen", "HPMercury", "HPSodium",
-				"LPSodium", "Incandescent", "MetalHalide", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
+			std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
+				"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
 			Image_1F inverseCDF( 1024, LUTFilenames.size() );
 
 			for ( int i = 0; i < LUTFilenames.size(); i++ ) {

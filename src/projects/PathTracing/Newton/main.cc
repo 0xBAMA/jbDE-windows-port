@@ -1,7 +1,6 @@
 #include "../../../engine/engine.h"
 
 struct path2DConfig_t {
-	GLuint maxBuffer = 0;
 	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
 
 	uint32_t autoExposureBufferDim = 0;
@@ -9,6 +8,11 @@ struct path2DConfig_t {
 	float autoExposureBase = 1600000.0f;
 
 	uint32_t numBounces = 64;
+
+	// OpenGL resources
+	GLuint framebuffer = 0;
+	GLuint rayBuffer = 0;
+	GLuint maxBuffer = 0;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -99,8 +103,8 @@ public:
 
 			// setup the importance sampled emission spectra stuff
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			std::vector< string > LUTFilenames = { "AmberLED", "Candle", "Flourescent", "Halogen", "HPMercury", "HPSodium",
-				"LPSodium", "Incandescent", "MetalHalide", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
+			std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
+				"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
 			Image_1F inverseCDF( 1024, LUTFilenames.size() );
 
 			for ( int i = 0; i < LUTFilenames.size(); i++ ) {
