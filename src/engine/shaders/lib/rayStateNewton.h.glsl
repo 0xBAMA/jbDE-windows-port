@@ -53,6 +53,6 @@ void StateReset ( inout rayState_t rayState ) {
 	rayState.data1 = rayState.data2 = rayState.data3 = rayState.data4 = vec4( 0.0f );
 
 	// need saner defaults...
-	SetTransmission( rayState, vec3( 1.0f ) );
+	SetTransmission( rayState, 1.0f );
 	SetHitDistance( rayState, 1e6f );
 }
