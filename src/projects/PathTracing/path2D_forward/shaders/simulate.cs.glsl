@@ -299,6 +299,33 @@ float deLensSystem ( vec2 uv ) {
 	return minDist;
 }
 
+float sdParabola( in vec2 pos, in float wi, in float he ) {
+	// "width" and "height" of a parabola segment
+	pos.x = abs(pos.x);
+
+	float ik = wi*wi/he;
+	float p = ik*(he-pos.y-0.5*ik)/3.0;
+	float q = pos.x*ik*ik*0.25;
+	float h = q*q - p*p*p;
+
+	float x;
+	if( h>0.0 ) // 1 root
+	{
+		float r = sqrt(h);
+		x = pow(q+r,1.0/3.0) + pow(abs(q-r),1.0/3.0)*sign(p);
+	}
+	else        // 3 roots
+	{
+		float r = sqrt(p);
+		x = 2.0*r*cos(acos(q/(p*r))/3.0); // see https://www.shadertoy.com/view/WltSD7 for an implementation of cos(acos(x)/3) without trigonometrics
+	}
+
+	x = min(x,wi);
+
+	return length(pos-vec2(x,he-x*x/ik)) *
+	sign(ik*(pos.y-he)+pos.x*pos.x);
+}
+
 float de ( vec2 p ) {
 	float sceneDist = 100000.0f;
 	const vec2 pOriginal = p;
@@ -307,45 +334,51 @@ float de ( vec2 p ) {
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
-	/*
 	{
-		float scale = 30.0f;
-		const float d = deLensSystem( p / scale ) * scale;
+		const float d = abs( sdParabola( p - vec2( 0.0f, 400.0f ), 1600.0f, 1000.0f ) ) - 15.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = lensSystemResult;
+			hitSurfaceType = MIRROR;
+			hitAlbedo = 1.0f;
 		}
 	}
-	*/
+	{
+		const float d = abs( sdParabola( vec2( 1.0f, -1.0f ) * p - vec2( 0.0f, 400.0f ), 1200.0f, 400.0f ) ) - 15.0f;
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = MIRROR;
+			hitAlbedo = 1.0f;
+		}
+	}
 
-	/*
 	{ // an example object (refractive)
 		pModPolar( p.xy, 17.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( max( distance( p, vec2( 90.0f, 0.0f ) ) - 100.0f, distance( p, vec2( 110.0f, 0.0f ) ) - 150.0f ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 800.0f, 0.0f ) ) - 150.0f );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 500.0f, 0.0f ) ) - 80.0f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
 			hitAlbedo = 0.99f;
 		}
 	}
-	*/
 
-	p = Rotate2D( 0.3f ) * pOriginal;
-	vec2 gridIndex;
-	gridIndex.x = pModInterval1( p.x, 200.0f, -100.0f, 100.0f );
-	gridIndex.y = pModInterval1( p.y, 200.0f, -6.0f, 16.0f );
-	{ // an example object (refractive)
-		uint seedCache = seed;
-		seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
-		const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy / 3.0f, 0.0f ) ) + vec3( 1.0f );
-		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 80.0f * noise.y, 50.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 50.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
-		seed = seedCache;
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			 hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
-			 hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
+	if ( false ) {
+		p = Rotate2D( 0.3f ) * pOriginal;
+		vec2 gridIndex;
+		gridIndex.x = pModInterval1( p.x, 200.0f, -100.0f, 100.0f );
+		gridIndex.y = pModInterval1( p.y, 200.0f, -6.0f, 16.0f );
+		{ // an example object (refractive)
+			uint seedCache = seed;
+			seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
+			const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy / 3.0f, 0.0f ) ) + vec3( 1.0f );
+			// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 80.0f * noise.y, 50.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
+			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 50.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
+			seed = seedCache;
+			sceneDist = min( sceneDist, d );
+			if ( sceneDist == d && d < epsilon ) {
+				 hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				 hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
+			}
 		}
 	}
 
@@ -518,13 +551,13 @@ void main () {
 	// we have 13 entries in the LUT texture
 	const int numLights = textureSize( iCDFtex, 0 ).y;
 	// const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % numLights;
-	const int pickedLight = 1;
+	const int pickedLight = 17;
 
 //	rayOrigin = vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 	// rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + Rotate2D( pickedLight * 0.3f ) * vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
-	rayOrigin = vec2( 1000.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+	rayOrigin = vec2( -1600 + 250.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-	 rayDirection = vec2( -0.001f * rnd_disc_cauchy().x - 1.0f, 1.0f );
+	 rayDirection = normalize( vec2( -0.0f * rnd_disc_cauchy().x + 0.4f, 3.0f ) );
 
 //	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight, 0.0f ) + clamp( 0.1f * rnd_disc_cauchy(), vec2( -10.0f ), vec2( 10.0f ) );
 //	rayDirection = normalize( CircleOffset() );
