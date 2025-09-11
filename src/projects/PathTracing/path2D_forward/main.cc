@@ -5,7 +5,7 @@ struct path2DConfig_t {
 
 	uint32_t autoExposureBufferDim = 0;
 	uint32_t autoExposureMipLevels = 0;
-	float autoExposureBase = 1600000.0f;
+	float autoExposureBase = 10000000.0f;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -290,8 +290,7 @@ public:
 		textureManager.BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
 
 		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		// glDispatchCompute( 6, 6, 3 );
-		glDispatchCompute( 2, 2, 2 );
+		glDispatchCompute( 16, 16, 3 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
