@@ -392,7 +392,7 @@ float de ( vec2 p ) {
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = MIRROR;
-			hitAlbedo = 0.3f;
+			hitAlbedo = 0.0f;
 		}
 	}
 
@@ -469,9 +469,9 @@ float Reflectance ( const float cosTheta, const float IoR ) {
 void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
 	// do the atomic increments for this sample
 	ivec3 increment = ivec3(
-		int( 1024 * XYZColor.r ),
-		int( 1024 * XYZColor.g ),
-		int( 1024 * XYZColor.b )
+		int( 16 * XYZColor.r ),
+		int( 16 * XYZColor.g ),
+		int( 16 * XYZColor.b )
 	);
 	// maintaining sum + count by doing atomic writes along the ray
 	ivec2 p = ivec2( x, y );
@@ -538,6 +538,22 @@ void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
 		}
 	}
 	*/
+}
+
+// do something with this at some point
+float BlackBody ( float t, float w_nm ) {
+	float h = 6.6e-34; // Planck constant
+	float k = 1.4e-23; // Boltzmann constant
+	float c = 3e8;// Speed of light
+
+	float w = w_nm / 1e9;
+
+	// Planck's law https://en.wikipedia.org/wiki/Planck%27s_law
+
+	float w5 = w*w*w*w*w;
+	float o = 2.*h*(c*c) / (w5 * (exp(h*c/(w*k*t)) - 1.0));
+
+	return o;
 }
 
 void main () {

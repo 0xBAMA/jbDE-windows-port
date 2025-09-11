@@ -30,9 +30,9 @@ void main () {
 	const float count = float( texture( bufferImageCount, samplePoint ).r );
 	const vec3 col = ( count == 0.0f ) ? vec3( 0.0f ) : // no data...
 	rgb_to_srgb( xyz_to_rgb( autoExposureAdjust * vec3( // these are tally sums + number of samples for averaging
-	( float( texture( bufferImageX, samplePoint ).r ) / 1024.0f ),
-	( float( texture( bufferImageY, samplePoint ).r ) / 1024.0f ),
-	( float( texture( bufferImageZ, samplePoint ).r ) / 1024.0f )
+	( float( texture( bufferImageX, samplePoint ).r ) / 16.0f ),
+	( float( texture( bufferImageY, samplePoint ).r ) / 16.0f ),
+	( float( texture( bufferImageZ, samplePoint ).r ) / 16.0f )
 	) / autoExposureBase ) );
 	/*
 	const vec3 col = ( count == 0.0f ) ? vec3( 0.0f ) : // no data...
