@@ -1,9 +1,10 @@
-#include "../../engine/engine.h"
+#include "../../../engine/engine.h"
+#include "shaders/lib/shaderWrapper.h"
 
-class engineDemo final : public engineBase { // sample derived from base engine class
+class Newton final : public engineBase { // sample derived from base engine class
 public:
-	engineDemo () { Init(); OnInit(); PostInit(); }
-	~engineDemo () { Quit(); }
+	Newton () { Init(); OnInit(); PostInit(); }
+	~Newton () { Quit(); }
 
 	void OnInit () {
 		ZoneScoped;
@@ -11,8 +12,15 @@ public:
 			Block Start( "Additional User Init" );
 
 			// something to put some basic data in the accumulator texture
-			shaders[ "Draw" ] = computeShader( "../src/projects/PathTracing/Newton/shaders/draw.cs.glsl" ).shaderHandle;
+			const string basePath = "../src/projects/PathTracing/Newton/shaders/";
+			shaders[ "Draw" ]	= computeShader( basePath + "draw.cs.glsl" ).shaderHandle;
+			shaders[ "Trace" ]	= computeShader( basePath + "trace.cs.glsl" ).shaderHandle;
 
+			// emission spectra LUT texture
+
+			// buffer for ray states (N rays * M bounces * 64 byte struct)
+
+			// film plane buffer
 
 		}
 	}
@@ -78,7 +86,10 @@ public:
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-		// application-specific update code
+
+		// run some rays
+
+		// run the autoexposure stuff
 
 	}
 
@@ -123,7 +134,7 @@ public:
 // #pragma comment( linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup" )
 
 int main ( int argc, char *argv[] ) {
-	engineDemo engineInstance;
+	Newton engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }

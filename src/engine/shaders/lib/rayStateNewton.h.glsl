@@ -1,11 +1,13 @@
 // rayState_t setup for Newton
 //=============================================================================================================================
 // material types
-#define NONE		0
-#define EMISSIVE	1
-#define MIRROR		2
-#define DIFFUSE		3
-#define VOLUME		4
+#define NOHIT						0
+#define DIFFUSE						1
+#define METALLIC					2
+#define MIRROR						3
+#define REFRACTIVE					4
+// specific glass definitions here... tbd
+
 //=============================================================================================================================
 // total 64 bytes
 struct rayState_t {
