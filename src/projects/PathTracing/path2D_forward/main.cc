@@ -132,12 +132,26 @@ public:
 		}
 	}
 
+	void Reset () {
+		ZoneScoped;
+		path2DConfig.pathsRun = 0;
+		textureManager.ZeroTexture2D( "Field X Tally" );
+		textureManager.ZeroTexture2D( "Field Y Tally" );
+		textureManager.ZeroTexture2D( "Field Z Tally" );
+		textureManager.ZeroTexture2D( "Field Count" );
+		glMemoryBarrier( GL_ALL_BARRIER_BITS );
+	}
+
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
 		if ( inputHandler.getState( KEY_T ) ) {
 			screenshotRequested = true;
+		}
+
+		if ( inputHandler.getState( KEY_R ) ) {
+			Reset();
 		}
 	}
 
