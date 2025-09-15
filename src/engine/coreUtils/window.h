@@ -48,6 +48,7 @@ public:
 		config->windowFlags |= SDL_WINDOW_OPENGL;
 		config->windowFlags |= SDL_WINDOW_HIDDEN;
 		config->windowFlags |= SDL_WINDOW_FULLSCREEN;
+		config->windowFlags |= SDL_WINDOW_BORDERLESS;
 
 		SDL_ShowCursor();
 

@@ -2185,8 +2185,10 @@ float de( in vec3 p ) {
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
 	p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
-	vec3 displacement = matWood( p * 1.8f );
-	vec3 displacement2 = matWood( p * 3.8f );
+	const vec3 displacement = matWood( p * 1.8f );
+	const vec3 displacement2 = matWood( p * 3.8f );
+	const float noise1 = perlinfbm( p, 10.0f, 5 ) - 0.3f;
+	const float noise2 = sqrt( saturate( perlinfbm( p, 1.5f, 5 ) + 0.4f ) );
 
 
 	{
@@ -2223,7 +2225,7 @@ float de( in vec3 p ) {
 		// apply transform
 //		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 
-		const float scale = 1.0f;
+		const float scale = 0.5f;
 
 		 const float d = max( max( dePortrait( p / scale ) * scale + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
 
@@ -2261,23 +2263,19 @@ float de( in vec3 p ) {
 			// hitColor = ot < 0.618f ? verdigris : nickel;
 			// hitColor = mix( vec3( 1.0f, 1.0f, 0.9f ), vec3( 0.7f, 0.2f, 0.3f ), ot );
 			// hitColor = mix( gold, vec3( 0.99f ), -0.3f ); // hypergold
-			hitColor = vec3( 0.99f );
-			// hitColor = nvidia;
+			 hitColor = vec3( 0.99f );
+			// hitColor = nvidia * GetLuma( displacement2 );
 			hitRoughness = 0.1f;
 			// hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? MIRROR : ( NormalizedRandomFloat() > ot ) ? DIFFUSE : METALLIC;
 			// hitSurfaceType = NormalizedRandomFloat() < ( ot + perlinfbm( p, 150.0f, 5 ) * 0.5f ) ? METALLIC : DIFFUSE;
-			hitSurfaceType = NormalizedRandomFloat() < ( 0.9f ) ? METALLIC : MIRROR;
+			hitSurfaceType = NormalizedRandomFloat() > ( noise1 ) ? METALLIC : DIFFUSE;
 			if ( hitSurfaceType == METALLIC ) {
+				hitColor = nvidia * 2.0f * displacement.r;
+				if ( GetLuma( displacement2 ).r > 0.35f )
+					hitColor = vec3( gold ), hitSurfaceType = MIRROR;
 				// hitColor = nickel;
 				// hitColor = mix( carrot, GetLuma( displacement2 ), ot );
-				// hitColor = mix( nickel, iron, GetLuma( displacement2 ).r );
-				// hitColor = mix( nvidia / 3.0f, mix( vec3( 1.0f ), honey, GetLuma( displacement ) ), pow( ot, 1.5f ) );
-				hitColor = mix( vec3( 0.0f ), mix( vec3( 1.0f ), carrot, GetLuma( displacement ) * 2.0f ), pow( ot, 1.5f ) );
-				if ( GetLuma( displacement2 ).r > 0.3f ) {
-					hitSurfaceType = DIFFUSE;
-					hitColor = mix( carrot, vec3( 1.0f ), GetLuma( displacement2 ).rrr * 1.2f ) * GetLuma( displacement2 ) * 0.3f;
-				}
-//				hitColor = displacement2;
+				// hitColor = mix( vec3( 0.0f ), mix( vec3( 1.0f ), carrot, GetLuma( displacement ) * 2.0f ), pow( ot, 1.5f ) );
 			}
 //			hitSurfaceType = NormalizedRandomFloat() < ( ot ) ? WOOD : DIFFUSE;
 
