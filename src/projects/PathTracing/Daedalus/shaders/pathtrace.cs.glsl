@@ -358,7 +358,7 @@ vec3 SkyColor( ray_t ray ) {
 #define REFRACTIVE_BACKFACE			100
 //=============================================================================================================================
 float Reflectance ( const float cosTheta, const float IoR ) {
-#if 0
+#if 1
 	// Use Schlick's approximation for reflectance
 	float r0 = ( 1.0f - IoR ) / ( 1.0f + IoR );
 	r0 = r0 * r0;
@@ -436,7 +436,7 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 
 		case EMISSIVE_FRESNEL: {
 		    ray.direction = randomVectorDiffuse;
-            finalColor += throughput * intersection.albedo * clamp( Reflectance( min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f ), 1.5f ), 0.0f, 1.0f );
+            finalColor += throughput * intersection.albedo * clamp( Reflectance( min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f ), 1.5f ), 0.0f, 10.0f );
 		    break;
 		}
 
@@ -2136,6 +2136,29 @@ vec3 voronoi( in vec2 x )
 	return vec3( length(mr), id, md );
 }
 
+
+// textures for the material definition
+uniform sampler2D diffuseMaterial;
+uniform sampler2D displacementMaterial;
+uniform sampler2D roughnessMaterial;
+
+float deWHIRP ( vec3 p ) {
+	p = p.xzy;
+	vec3 cSize = vec3(1., 1., 1.3);
+	float scale = 1.;
+	for( int i=0; i < 12; i++ ){
+		p = 2.0*clamp(p, -cSize, cSize) - p;
+		float r2 = dot(p,p);
+		float k = max((2.)/(r2), .027);
+		p *= k; scale *= k;
+	}
+	float l = length(p.xy);
+	float rxy = l - 4.0;
+	float n = l * p.z;
+	rxy = max(rxy, -(n) / 4.);
+	return (rxy) / abs(scale);
+}
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -2157,15 +2180,43 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	const vec3 bboxDim = vec3( 3.0f, 3.0f, 6.0f );
+	const vec3 bboxDim = vec3( 25.0f, 40.0f, 5.0f );
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
-
-
 	p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 	vec3 displacement = matWood( p * 1.8f );
 	vec3 displacement2 = matWood( p * 3.8f );
+
+
+	{
+		const float scale = 66.4f;
+		p = p / scale;
+		const vec2 uv = 3.1f * rot( 0.3f ) * ( p.xz + vec2( 0.5f ) );
+		const float d = max( ( p.y - texture( displacementMaterial, uv ).r * 0.05f ) * scale, dBounds );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			float rough =  texture( roughnessMaterial, uv ).r;
+			hitSurfaceType = NormalizedRandomFloat() > pow( rough, 0.5f ) ? MIRROR : DIFFUSE;
+			hitRoughness = rough;
+			hitColor = texture( diffuseMaterial, uv ).rgb;
+			//			hitColor.rg = p.xy;
+		}
+	}
+
+	{
+		p = pOriginal.xzy;
+		const float scale = 20.0f;
+		const float d = max( deWHIRP( p / scale ) * scale, dBounds );
+
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = NormalizedRandomFloat() > 0.1f ? METALLIC : MIRROR;
+			 hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( 0.01f );
+			hitRoughness = 0.2f;
+		}
+
+	}
 
 	if ( false ) {
 
@@ -2174,7 +2225,8 @@ float de( in vec3 p ) {
 
 		const float scale = 1.0f;
 
-		const float d = max( max( dePortrait( p / scale ) * scale + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
+		 const float d = max( max( dePortrait( p / scale ) * scale + GetLuma( displacement2 ).r * 0.02f, dBounds ), dBounds );
+
 		// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -2290,7 +2342,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	{
+	if ( false ) {
 		 const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
 //		const vec4 d = concretemap( p );
 		sceneDist = min( sceneDist, d.x );
@@ -2301,9 +2353,9 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
-		pModInterval1( p.z, 5.0f, -5.0f, 5.0f );
-	 	const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 7.5f, 0.03f, 0.5f ) );
+	if ( false ) {
+		pModInterval1( p.z, 5.0f, -7.0f, 7.0f );
+		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 17.5f, 0.03f, 0.5f ).yxz );
 
 	 	// const float d = deJeyko( p );
 	 	sceneDist = min( sceneDist, d );
@@ -2311,8 +2363,21 @@ float de( in vec3 p ) {
 	 		hitSurfaceType = EMISSIVE_FRESNEL;
 //	 		hitColor = vec3( 3.618f * honey );
 
-			vec3 c = voronoi( pOriginal.xz * 5.0f );
-			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.12f ) ), 0.25f ) * ( honey * 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
+			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
+			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
+			vec3 c;
+			if ( c0.z > 0.1f )
+				c = c0;
+			else
+				c = c1;
+			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.1f ) ), 0.25f ) * ( 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
+			hitColor = hitColor * smoothstep( c1.z, 0.0f, 0.01f );
+
+			if ( c == c1 ) {
+				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+				hitRoughness = displacement.r;
+				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
+			}
 	 	}
 	 }
 
@@ -2728,12 +2793,12 @@ uint GetAlphaValueForIdx( ivec3 idx ) {
 //=============================================================================================================================
 vec3 GetColorForIdx( ivec3 idx ) {
 	// return vec3( 0.23f, 0.618f, 0.123f ).ggg;
-	return vec3( 0.99f );
+//	return vec3( 0.99f );
 	// return viridis( ( pcg3d( uvec3( idx ) ).x / 4294967296.0f ) / 5.0f + 0.6f );
 	// return vec3( pcg3d( uvec3( idx ) ) / 4294967296.0f ) + vec3( 0.8f );
 	// return mix( vec3( 0.99f ), vec3( 0.99, 0.6f, 0.1f ), pcg3d( uvec3( idx ) ).x / 4294967296.0f );
 	// return mix( vec3( 0.618f ), vec3( 0.0, 0.0f, 0.0f ), saturate( pcg3d( uvec3( idx ) ) / 4294967296.0f ) );
-	// return imageLoad( DDATex, idx ).rgb / 255.0f;
+	 return GetLuma( imageLoad( DDATex, idx ).rgb / 255.0f ) * 3.0f * nvidia;
 	// return magma( imageLoad( HeightmapTex, idx.xy ).r );
 }
 //=============================================================================================================================

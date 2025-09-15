@@ -49,6 +49,41 @@ public:
 			DDAVATTex();
 			// HeightmapTex();
 
+			{ // loading material textures
+
+				string base = string( "../../Materials/" ) +
+					// "aerial_rocks_01_"; // works
+					// "aerial_rocks_02_"; // works
+					// "aerial_rocks_04_"; // works
+					// "metal_plate_"; // works
+					// "red_mud_stones_"; // works
+					// "rock_wall_10_"; // works
+					// "rocks_ground_02_"; // works
+					"rocky_terrain_02_"; // works
+					// "rusty_metal_03_"; // works
+
+				Image_4F diffuse( base + "diff_8k.exr", Image_4F::backend::TINYEXR );
+				Image_4F displacement( base + "disp_8k.exr", Image_4F::backend::TINYEXR  );
+				Image_4F roughness( base + "rough_8k.exr", Image_4F::backend::TINYEXR );
+
+				opts = textureOptions_t();
+				opts.textureType	= GL_TEXTURE_2D;
+				opts.dataType = GL_RGBA32F;
+				opts.width = opts.height = 8196;
+				opts.magFilter = opts.minFilter = GL_LINEAR;
+				opts.pixelDataType = GL_FLOAT;
+				opts.wrap = GL_REPEAT;
+
+				opts.initialData = diffuse.GetImageDataBasePtr();
+				textureManager.Add( "Diffuse Material Texture", opts );
+
+				opts.initialData = displacement.GetImageDataBasePtr();
+				textureManager.Add( "Displacement Material Texture", opts );
+
+				opts.initialData = roughness.GetImageDataBasePtr();
+				textureManager.Add( "Roughness Material Texture", opts );
+			}
+
 			{ // color grading tools
 				// exposure/brightness/color histogram setup
 				glGenBuffers( 1, &daedalusConfig.render.grading.colorHistograms );

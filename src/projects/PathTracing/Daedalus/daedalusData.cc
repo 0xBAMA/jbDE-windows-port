@@ -171,9 +171,16 @@ void Daedalus::SendBasePathtraceUniforms() {
 	textureManager.BindImageForShader( "Color Accumulator", "accumulatorColor", shader, 1 );
 	textureManager.BindImageForShader( "Depth/Normals Accumulator", "accumulatorNormalsAndDepth", shader, 2 );
 	textureManager.BindTexForShader( "Sky Cache", "skyCache", shader, 3 );
-	textureManager.BindImageForShader( "TextBuffer", "textBuffer", shader, 4 );
-	textureManager.BindImageForShader( "DDATex", "DDATex", shader, 5 );
+	// textureManager.BindImageForShader( "TextBuffer", "textBuffer", shader, 4 );
+	textureManager.BindImageForShader( "DDATex", "DDATex", shader, 4 );
 	// textureManager.BindImageForShader( "HeightmapTex", "HeightmapTex", shader, 5 );
+
+	textureManager.BindImageForShader( "Diffuse Material Texture", "diffuseMaterial", shader, 5 );
+	textureManager.BindTexForShader( "Diffuse Material Texture", "diffuseMaterial", shader, 5 );
+	textureManager.BindImageForShader( "Displacement Material Texture", "displacementMaterial", shader, 6 );
+	textureManager.BindTexForShader( "Displacement Material Texture", "displacementMaterial", shader, 6 );
+	textureManager.BindImageForShader( "Roughness Material Texture", "roughnessMaterial", shader, 7 );
+	textureManager.BindTexForShader( "Roughness Material Texture", "roughnessMaterial", shader, 7 );
 }
 
 void Daedalus::SendInnerLoopPathtraceUniforms() {
