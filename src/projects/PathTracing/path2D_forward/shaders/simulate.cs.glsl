@@ -131,6 +131,10 @@ float getIORForMaterial ( int material ) {
 	return IoR;
 }
 
+bool isRefractive ( int id ) {
+	return id >= CAUCHY_FUSEDSILICA;
+}
+
 // should we invert the lenses?
 bool invert = false;
 
@@ -276,11 +280,15 @@ float deLensSystem ( vec2 uv ) {
 		LensElement lens2 = lensSystem[i + 1];
 
 		float element = sdLensElement(lens1, lens2, uv, opticalAxisX);
+		float minDistCache = minDist;
 		minDist = min( minDist, ( invert ? -1.0f : 1.0f ) * element );
 
-		if ( abs( element ) < epsilon ) {
-			lensSystemResult = SELLMEIER_BOROSILICATE_BK7 + i % 2;
-			break;
+		if ( lens1.isAir ) {
+			minDist = min( minDistCache, abs( element ) );
+		} else {
+			minDist = min( minDist, ( invert ? -1.0f : 1.0f ) * element );
+			lensSystemResult = SELLMEIER_BOROSILICATE_BK7;
+			// break;
 		}
 
 		/*
@@ -337,15 +345,31 @@ float de ( vec2 p ) {
 	hitRoughness = 0.0f;
 
 	{
-		const float d = abs( sdParabola( p - vec2( 0.0f, 400.0f ), 1600.0f, 1000.0f ) ) - 15.0f;
+		float opticalAxisOffset = 0.0f;
+		const float scale = 5.0f;
+		for ( int i = 0; i < lensSystem.length(); i++ ) {
+			// const float d = deLensSystem( p / scale ) * scale;
+			const float d = ( ( invert && !lensSystem[ i + 1 ].isAir ) ? -1.0f : 1.0f ) * sdLensElement( lensSystem[ i ], lensSystem[ i + 1 ], p / scale, opticalAxisOffset ) * scale;
+			sceneDist = min( sceneDist, d );
+			if ( sceneDist == d && d < epsilon ) {
+				hitSurfaceType = lensSystem[ i ].isAir ? AIR : SELLMEIER_BOROSILICATE_BK7;
+				hitAlbedo = 1.0f;
+			}
+			opticalAxisOffset += lensSystem[ i ].thickness;
+		}
+	}
+
+	/*
+	{
+		const float d = abs( sdParabola( p - vec2( 0.0f, 400.0f ), 300.0f, 200.0f ) ) - 15.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = MIRROR;
-			hitAlbedo = 1.0f;
+			hitAlbedo = 0.1f;
 		}
 	}
 	{
-		const float d = abs( sdParabola( vec2( 1.0f, -1.0f ) * p - vec2( 0.0f, 400.0f ), 1200.0f, 400.0f ) ) - 15.0f;
+		const float d = abs( sdParabola( vec2( 1.0f, -1.0f ) * p - vec2( 0.0f, 400.0f ), 500.0f, 100.0f ) ) - 15.0f;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = MIRROR;
@@ -353,10 +377,10 @@ float de ( vec2 p ) {
 		}
 	}
 
-	{ // an example object (refractive)
+	if ( false ) { // an example object (refractive)
 		pModPolar( p.xy, 17.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( max( distance( p, vec2( 90.0f, 0.0f ) ) - 100.0f, distance( p, vec2( 110.0f, 0.0f ) ) - 150.0f ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 500.0f, 0.0f ) ) - 80.0f );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 300.0f, 0.0f ) ) - 40.0f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
@@ -367,18 +391,18 @@ float de ( vec2 p ) {
 	if ( false ) {
 		p = Rotate2D( 0.3f ) * pOriginal;
 		vec2 gridIndex;
-		gridIndex.x = pModInterval1( p.x, 200.0f, -100.0f, 100.0f );
-		gridIndex.y = pModInterval1( p.y, 200.0f, -6.0f, 16.0f );
+		gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
+		gridIndex.y = pModInterval1( p.y, 100.0f, -6.0f, 16.0f );
 		{ // an example object (refractive)
 			uint seedCache = seed;
 			seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
-			const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy / 3.0f, 0.0f ) ) + vec3( 1.0f );
-			// const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 80.0f * noise.y, 50.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
-			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 50.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 48.0f * noise.y ) ) ) );
+			const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy, 0.0f ) ) + vec3( 2.0f );
+			 const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 2.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 5.0f * noise.y, 15.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 14.0f * noise.y ) ) ) );
+//			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 20.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
 			seed = seedCache;
 			sceneDist = min( sceneDist, d );
 			if ( sceneDist == d && d < epsilon ) {
-				 hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				 hitSurfaceType = noise.z > 2.2f ? MIRROR : SELLMEIER_BOROSILICATE_BK7;
 				 hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
 			}
 		}
