@@ -6,6 +6,14 @@ struct path2DConfig_t {
 	uint32_t autoExposureBufferDim = 0;
 	uint32_t autoExposureMipLevels = 0;
 	float autoExposureBase = 10000000.0f;
+
+	// raytrace state
+	uint64_t pathsRun = 0;
+	uint64_t maxPaths = 1000000;
+
+	// interface stuff
+	vec2 mappedMousePos = vec2( 0.0f );
+	int pickedLight = 9;
 };
 
 class path2D final : public engineBase { // sample derived from base engine class
@@ -246,52 +254,61 @@ public:
 	}
 
 	void OnUpdate () {
-		ZoneScoped; scopedTimer Start( "Update" );
+		if ( path2DConfig.pathsRun < path2DConfig.maxPaths ) {
+			ZoneScoped; scopedTimer Start( "Update" );
 
-		// run the shader to run some rays
-		static rngi wangSeeder = rngi( 0, 1000000 );
-		const GLuint shader = shaders[ "Simulate" ];
-		glUseProgram( shader );
+			// run the shader to run some rays
+			static rngi wangSeeder = rngi( 0, 1000000 );
+			const GLuint shader = shaders[ "Simulate" ];
+			glUseProgram( shader );
 
-		/*
-		static int t = 1711;
-		static int samples = 0;
-		static bool resetRequested = false;
-		if ( resetRequested ) {
-			resetRequested = false;
-			textureManager.ZeroTexture2D( "Field X Tally" );
-			textureManager.ZeroTexture2D( "Field Y Tally" );
-			textureManager.ZeroTexture2D( "Field Z Tally" );
-			textureManager.ZeroTexture2D( "Field Count" );
-		}
-		if ( samples++ == 200 ) {
-			samples = 0;
-			t--;
-			if ( t == 1690 ) {
-				pQuit = true;
+			/*
+			static int t = 1711;
+			static int samples = 0;
+			static bool resetRequested = false;
+			if ( resetRequested ) {
+				resetRequested = false;
+				textureManager.ZeroTexture2D( "Field X Tally" );
+				textureManager.ZeroTexture2D( "Field Y Tally" );
+				textureManager.ZeroTexture2D( "Field Z Tally" );
+				textureManager.ZeroTexture2D( "Field Count" );
 			}
-			screenshotRequested = true;
-			screenshotIndex = t;
-			resetRequested = true;
+			if ( samples++ == 200 ) {
+				samples = 0;
+				t--;
+				if ( t == 1690 ) {
+					pQuit = true;
+				}
+				screenshotRequested = true;
+				screenshotIndex = t;
+				resetRequested = true;
+			}
+			*/
+			// glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
+			glUniform1f( glGetUniformLocation( shader, "t" ), 0.0f );
+			glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
+
+			rng offset = rng( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), offset(), offset() );
+
+			glUniform2f( glGetUniformLocation( shader, "mousePos" ),
+				std::clamp( path2DConfig.mappedMousePos.x, -float( path2DConfig.dims.x ), float( path2DConfig.dims.x ) ),
+				std::clamp( path2DConfig.mappedMousePos.y, -float( path2DConfig.dims.y ), float( path2DConfig.dims.y ) ) );
+
+			glUniform1i( glGetUniformLocation( shader, "pickedLight" ), path2DConfig.pickedLight );
+
+			textureManager.BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
+			textureManager.BindImageForShader( "Field X Tally", "bufferImageX", shader, 2 );
+			textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
+			textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
+			textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
+			textureManager.BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
+
+			// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
+			glDispatchCompute( 3, 3, 1 );
+			path2DConfig.pathsRun += 3 * 3 * 1 * 16 * 16 * 1;
+			glMemoryBarrier( GL_ALL_BARRIER_BITS );
 		}
-		*/
-		// glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
-		glUniform1f( glGetUniformLocation( shader, "t" ), 0.0f );
-		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
-
-		rng offset = rng( 0, 512 );
-		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), offset(), offset() );
-
-		textureManager.BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
-		textureManager.BindImageForShader( "Field X Tally", "bufferImageX", shader, 2 );
-		textureManager.BindImageForShader( "Field Y Tally", "bufferImageY", shader, 3 );
-		textureManager.BindImageForShader( "Field Z Tally", "bufferImageZ", shader, 4 );
-		textureManager.BindImageForShader( "Field Count", "bufferImageCount", shader, 5 );
-		textureManager.BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
-
-		// glDispatchCompute( ( path2DConfig.dims.x + 15 ) / 16, ( path2DConfig.dims.y + 15 ) / 16, 1 );
-		glDispatchCompute( 16, 16, 3 );
-		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 
 	void OnRender () {
