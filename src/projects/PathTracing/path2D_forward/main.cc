@@ -1,7 +1,7 @@
 #include "../../../engine/engine.h"
 
 struct path2DConfig_t {
-	ivec2 dims = ivec2( 2880 / 1, 1800 / 1 );
+	ivec2 dims = ivec2( 1280, 768 );
 
 	uint32_t autoExposureBufferDim = 0;
 	uint32_t autoExposureMipLevels = 0;

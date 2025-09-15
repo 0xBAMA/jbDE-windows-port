@@ -385,14 +385,14 @@ float de ( vec2 p ) {
 	// walls at the edges of the screen for the rays to bounce off of
 	if ( true ) {
 		const float d = min( min( min(
-			rectangle( pOriginal - vec2( 0.0f, -1800.0f ), vec2( 4000.0f, 20.0f ) ),
-			rectangle( pOriginal - vec2( 0.0f, 1700.0f ), vec2( 4000.0f, 20.0f ) ) ),
-			rectangle( pOriginal - vec2( -2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) ),
-			rectangle( pOriginal - vec2( 2300.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
+			rectangle( pOriginal - vec2( 0.0f, -768.0f ), vec2( 4000.0f, 20.0f ) ),
+			rectangle( pOriginal - vec2( 0.0f, 768.0f ), vec2( 4000.0f, 20.0f ) ) ),
+			rectangle( pOriginal - vec2( -1280.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) ),
+			rectangle( pOriginal - vec2( 1280.0f, 0.0f ), vec2( 20.0f, 3000.0f ) ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = MIRROR;
-			hitAlbedo = 0.0f;
+			hitAlbedo = 0.3f;
 		}
 	}
 
