@@ -25,6 +25,9 @@ public:
 	bool screenshotRequested = false;
 	int screenshotIndex = -1;
 
+	std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
+		"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -75,8 +78,6 @@ public:
 
 			// setup the importance sampled emission spectra stuff
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
-				"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
 			Image_1F inverseCDF( 1024, LUTFilenames.size() );
 
 			for ( int i = 0; i < LUTFilenames.size(); i++ ) {
@@ -168,10 +169,37 @@ public:
 			profilerWindow.Render(); // GPU graph is presented on top, CPU on bottom
 		}
 
-		ImGui::Begin( "Screenshot Window" );
+		ImGui::Begin( "Debug Window" );
 		if ( ImGui::Button(  "Screenshot" ) ) {
 			screenshotRequested = true;
 		}
+		ImGui::Text( "Rays Comlete: %d / %d", path2DConfig.pathsRun, path2DConfig.maxPaths );
+		ImGui::Text( "Mouse Position: %d %d", inputHandler.getMousePos().x, inputHandler.getMousePos().y );
+		{
+			// mouse remapping to match the shader
+			path2DConfig.mappedMousePos = vec2( inputHandler.getMousePos().x, config.height - inputHandler.getMousePos().y ) + vec2( 0.5f );
+			path2DConfig.mappedMousePos /= vec2( float( config.width ), float( config.height ) );
+			path2DConfig.mappedMousePos -= vec2( 0.025f, 0.15f );
+			path2DConfig.mappedMousePos *= 1.5f;
+			path2DConfig.mappedMousePos.x = RangeRemap( std::clamp( path2DConfig.mappedMousePos.x, 0.0f, 1.0f ), 0.0f, 1.0f, -path2DConfig.dims.x, path2DConfig.dims.x );
+			path2DConfig.mappedMousePos.y = RangeRemap( path2DConfig.mappedMousePos.y, 1.0f, 0.0f, -path2DConfig.dims.y, path2DConfig.dims.y );
+		}
+		ImGui::Text( "Remapped Mouse Position: %.2f %.2f", path2DConfig.mappedMousePos.x, path2DConfig.mappedMousePos.y );
+
+
+		static bool firstTime = true;
+		static char lightNames[ 4096 ] = { 0 };
+		if ( firstTime ) {
+			string writeString;
+			int i = 0;
+			for ( const auto & LUTFilename : LUTFilenames ) {
+				for ( const auto & c : LUTFilename ) {
+					lightNames[ i ] = c; i++;
+				}
+				lightNames[ i ] = 0; i++;
+			}
+		}
+		ImGui::Combo( "##pickedLight", &path2DConfig.pickedLight, lightNames );
 		ImGui::End();
 
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
@@ -180,7 +208,8 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{
+		static int frame = 0;
+		if ( false ) {
 			scopedTimer Start( "Autoexposure" );
 			{	// clear the texture with the max value
 				textureManager.ZeroTexture2D( "Field Max" );
@@ -263,6 +292,11 @@ public:
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Update( ImGui::GetIO().DeltaTime );
 			textRenderer.Draw( textureManager.Get( "Display Texture" ) );
+
+			progressBar p;
+			p.done = float( path2DConfig.pathsRun / 10000.0f );
+			p.total = float( path2DConfig.maxPaths / 10000.0f );
+			textRenderer.DrawProgressBarString( 36, p );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 	}
