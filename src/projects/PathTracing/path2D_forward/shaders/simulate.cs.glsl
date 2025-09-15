@@ -46,18 +46,20 @@ float presence ( vec3 a, vec3 b ) { // call presence( a, b ) to see if
 #define METALLIC					2
 #define MIRROR						3
 
+// air reserve value
+#define AIR							5
 // below this point, we have specific forms of glass
-#define CAUCHY_FUSEDSILICA			5
-#define CAUCHY_BOROSILICATE_BK7		6
-#define CAUCHY_HARDCROWN_K5			7
-#define CAUCHY_BARIUMCROWN_BaK4		8
-#define CAUCHY_BARIUMFLINT_BaF10	9
-#define CAUCHY_DENSEFLINT_SF10		10
+#define CAUCHY_FUSEDSILICA			6
+#define CAUCHY_BOROSILICATE_BK7		7
+#define CAUCHY_HARDCROWN_K5			8
+#define CAUCHY_BARIUMCROWN_BaK4		9
+#define CAUCHY_BARIUMFLINT_BaF10	10
+#define CAUCHY_DENSEFLINT_SF10		11
 // more coefficients available at https://web.archive.org/web/20151011033820/http://www.lacroixoptical.com/sites/default/files/content/LaCroix%20Dynamic%20Material%20Selection%20Data%20Tool%20vJanuary%202015.xlsm
-#define SELLMEIER_BOROSILICATE_BK7	11
-#define SELLMEIER_SAPPHIRE			12
-#define SELLMEIER_FUSEDSILICA		13
-#define SELLMEIER_MAGNESIUMFLOURIDE	14
+#define SELLMEIER_BOROSILICATE_BK7	12
+#define SELLMEIER_SAPPHIRE			13
+#define SELLMEIER_FUSEDSILICA		14
+#define SELLMEIER_MAGNESIUMFLOURIDE	15
 
 struct intersectionResult {
 	// scene intersection representation etc loosely based on Daedalus
