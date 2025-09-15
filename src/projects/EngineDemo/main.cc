@@ -30,6 +30,7 @@ public:
 
 			// =============================================================================================================
 
+			/*
 			int num = 0xFFDD1100;
 			cout << "starting with a number " << num << newline;
 			cout << bitfieldExtract( num, 0, 8 ) << newline;
@@ -37,6 +38,59 @@ public:
 			cout << bitfieldExtract( num, 16, 8 ) << newline;
 			cout << bitfieldExtract( num, 24, 8 ) << newline;
 			cout << endl;
+			*/
+
+			// processing EXRs down
+			string base = string( "../../Materials/" );
+			std::vector< string > filenames = {
+				"aerial_rocks_01_",
+				"aerial_rocks_02_",
+				"aerial_rocks_04_",
+				"metal_plate_",
+				"red_mud_stones_",
+				"rock_wall_10_",
+				"rocks_ground_02_",
+				"rocky_terrain_02_",
+			"rusty_metal_03_" };
+
+			for ( auto filename : filenames ) {
+				Tick();
+
+				// loading the associated images
+				Image_4F diffuse( base + filename + "diff_8k.exr", Image_4F::backend::TINYEXR );
+				Image_4F displacement( base + filename + "disp_8k.exr", Image_4F::backend::TINYEXR  );
+				Image_4F roughness( base + filename + "rough_8k.exr", Image_4F::backend::TINYEXR );
+
+				diffuse.Resize( 0.5f );
+				displacement.Resize( 0.5f );
+				roughness.Resize( 0.5f );
+
+				const uint32_t d = displacement.Width();
+
+				Image_1F displacementReencode( d, d );
+				Image_4F colorReencode( d, d );
+
+				for ( int x = 0; x < d; x++ ) {
+					for ( int y = 0; y < d; y++ ) {
+						color_4F diffuseRead = diffuse.GetAtXY( x, y );
+						color_4F displacementRead = displacement.GetAtXY( x, y );
+						color_4F roughnessRead = roughness.GetAtXY( x, y );
+
+						diffuseRead[ alpha ] = roughnessRead[ red ];
+						displacementReencode.SetAtXY( x, y, color_1F( { displacementRead[ red ] } ) );
+						colorReencode.SetAtXY( x, y, diffuseRead );
+					}
+				}
+
+				displacementReencode.Save( base + filename + "disp_4k.exr" );
+				colorReencode.Save( base + filename + "color_4k.exr" );
+
+				cout << "finished " << filename << " in " << Tock() / 1000.0f << "seconds" << newline;
+			}
+
+
+
+
 
 		// // messing with data moshing
 		// 	Image_4F testImage;
