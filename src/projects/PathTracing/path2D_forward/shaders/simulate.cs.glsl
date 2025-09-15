@@ -501,10 +501,13 @@ void drawPixel ( int x, int y, float AAFactor, vec3 XYZColor ) {
 	);
 	// maintaining sum + count by doing atomic writes along the ray
 	ivec2 p = ivec2( x, y );
-	imageAtomicAdd( bufferImageX, p, increment.x );
-	imageAtomicAdd( bufferImageY, p, increment.y );
-	imageAtomicAdd( bufferImageZ, p, increment.z );
-	imageAtomicAdd( bufferImageCount, p, int( 256 * AAFactor ) );
+	const ivec2 iS = imageSize( bufferImageY ).xy - ivec2( 1 );
+	if ( p == clamp( p, ivec2( 0 ), iS ) ) {
+		imageAtomicAdd( bufferImageX, p, increment.x );
+		imageAtomicAdd( bufferImageY, p, increment.y );
+		imageAtomicAdd( bufferImageZ, p, increment.z );
+		imageAtomicAdd( bufferImageCount, p, int( 256 * AAFactor ) );
+	}
 }
 
 void drawLine ( vec2 p0, vec2 p1, float energyTotal, float wavelength ) {
