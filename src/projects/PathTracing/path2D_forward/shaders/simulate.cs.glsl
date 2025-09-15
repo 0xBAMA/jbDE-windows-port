@@ -215,7 +215,7 @@ LensElement(-157.8, 30.0, 16.0, true )
 
 // CHOOSE LENS SYSTEM HERE
 
-const LensElement lensSystem[] = doubleGauss;
+const LensElement lensSystem[] = fisheye;
 
 // ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -387,6 +387,7 @@ float de ( vec2 p ) {
 			hitAlbedo = 0.99f;
 		}
 	}
+	*/
 
 	if ( false ) {
 		p = Rotate2D( 0.3f ) * pOriginal;
@@ -585,6 +586,9 @@ float BlackBody ( float t, float w_nm ) {
 	return o;
 }
 
+uniform vec2 mousePos;
+uniform int pickedLight;
+
 void main () {
 	seed = rngSeed + 42069 * gl_GlobalInvocationID.x + 6969 * gl_GlobalInvocationID.y + 619 * gl_GlobalInvocationID.z;
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
@@ -596,13 +600,18 @@ void main () {
 	// we have 13 entries in the LUT texture
 	const int numLights = textureSize( iCDFtex, 0 ).y;
 	// const int pickedLight = int( NormalizedRandomFloat() * 1000 ) % numLights;
-	const int pickedLight = 17;
 
 //	rayOrigin = vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 	// rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + Rotate2D( pickedLight * 0.3f ) * vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
-	rayOrigin = vec2( -1600 + 250.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
+	// rayOrigin = vec2( -400 + 5.0f * ( NormalizedRandomFloat() - 0.5f ), -330.0f );
+	rayOrigin = mousePos;
+
+	mat2 rotation = Rotate2D( 0.5f );
+
+//	rayOrigin = mousePos + rotation * vec2( 0.0f, -100.0f + 200.0f * NormalizedRandomFloat() );
 //	rayOrigin = mix( vec2( -1200.0f, -1600.0f ), vec2( 1200.0f, -1600.0f ), int( count * NormalizedRandomFloat() ) / float( count ) );
-	 rayDirection = normalize( vec2( -0.0f * rnd_disc_cauchy().x + 0.4f, 3.0f ) );
+	 rayDirection = normalize( vec2( 1.0f, 0.1f + 0.01f * rnd_disc_cauchy() ) );
+//	rayDirection = normalize( vec2( 1.0f, 0.0f ) );
 
 //	rayOrigin = vec2( -2000.0f + 300.0f * pickedLight, 0.0f ) + clamp( 0.1f * rnd_disc_cauchy(), vec2( -10.0f ), vec2( 10.0f ) );
 //	rayDirection = normalize( CircleOffset() );
@@ -616,7 +625,8 @@ void main () {
 //	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 2.5f / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
-	const int maxBounces = 64;
+	const int maxBounces = 128;
+	float previousIoR = 1.0f;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene...
 		intersectionResult result = sceneTrace( rayOrigin, rayDirection );
@@ -666,7 +676,9 @@ void main () {
 			// varying behavior already, we can just treat it uniformly, only need to consider frontface/backface for inversion
 		default:
 			rayOrigin -= result.normal * epsilon * 5;
-			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR ); // "reverse" back to physical properties for IoR
+//			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR ); // "reverse" back to physical properties for IoR
+			float IoRCache = result.IoR;
+			result.IoR = result.IoR / previousIoR;
 
 			float cosTheta = min( dot( -normalize( rayDirection ), result.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
@@ -677,6 +689,7 @@ void main () {
 				rayDirection = normalize( mix( refract( normalize( rayDirection ), result.normal, result.IoR ), CircleOffset(), result.roughness ).xy );
 			}
 
+			previousIoR = IoRCache;
 			break;
 		}
 	}
