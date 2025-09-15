@@ -385,27 +385,6 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		const float increment = -jbDE::pi / 360.0f;
-		const vec3 axis = vec3( 0.0f, 0.0f, 1.0f );
-
-		static int frame = 0;
-
-		static mat4 baseMatrixCache = daedalusConfig.modelMatrix;
-		if ( daedalusConfig.tiles.SampleCount() == 1000 ) {
-			// take a screenshot
-			Screenshot_Named( "frames/" + fixedWidthNumberString( frame ), "Tonemapped" , true, false );
-
-			// advance the animation
-			baseMatrixCache = glm::rotate( daedalusConfig.modelMatrix, increment, axis );
-
-			// reset
-			ResetAccumulators();
-			frame++;
-		}
-
-		rng offset = rng( 0.0f, 1.0f );
-		daedalusConfig.modelMatrix = glm::rotate( baseMatrixCache, offset() * increment, axis );
-
 		if ( daedalusConfig.filterEveryFrame ) {
 			ApplyFilter( daedalusConfig.filterSelector, 1 );
 		}
