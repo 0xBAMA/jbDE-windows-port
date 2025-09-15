@@ -242,7 +242,7 @@ void Voraldo13::CreateTextures () {
 void Voraldo13::newHeightmapPerlin() {
 	// might add more parameters at some point
 	std::vector<unsigned char> data;
-	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
+	const uint32_t dim = std::max( std::max( blockDim.x, blockDim.y ), blockDim.z );
 	PerlinNoise p;
 	float xscale = 0.014f;
 	float yscale = 0.04f;
@@ -265,7 +265,7 @@ void Voraldo13::newHeightmapDiamondSquare() {
 	long unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine engine{ seed };
 	std::uniform_real_distribution<float> distribution{ 0, 1 };
-	uint32_t size = max( max( blockDim.x, blockDim.y ), blockDim.z ) + 1;
+	uint32_t size = std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) + 1;
 	uint32_t edge = size - 1;
 	
 	std::vector< std::vector< uint8_t > > map;
@@ -303,7 +303,7 @@ void Voraldo13::newHeightmapDiamondSquare() {
 void Voraldo13::newHeightmapXOR() {
 	static std::vector<unsigned char> data;
 	static bool firstTime = true;
-	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
+	const uint32_t dim = std::max( std::max( blockDim.x, blockDim.y ), blockDim.z );
 	data.reserve( dim * dim * 4 );
 	if ( firstTime ) {
 		for ( unsigned int x = 0; x < dim; x++ ) {
@@ -325,7 +325,7 @@ void Voraldo13::newHeightmapAND() {
 	static std::vector<unsigned char> data;
 	static bool firstTime = true;
 	// not sure how this is going to handle nonuniform block sizes...
-	const uint32_t dim = max( max( blockDim.x, blockDim.y ), blockDim.z );
+	const uint32_t dim = std::max( std::max( blockDim.x, blockDim.y ), blockDim.z );
 	data.reserve( dim * dim * 4 );
 	if ( firstTime ) {
 		for ( unsigned int x = 0; x < dim; x++ ) {

@@ -243,8 +243,8 @@ void Voraldo13::MenuCylinderTube () {
 		static glm::vec4 color( 0.0f );
 
 		OrangeText( "Radii" );
-		ImGui::SliderFloat( "Inner", &innerRadius, 0.0f, float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
-		ImGui::SliderFloat( "Outer", &outerRadius, 0.0f, float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
+		ImGui::SliderFloat( "Inner", &innerRadius, 0.0f, float( std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
+		ImGui::SliderFloat( "Outer", &outerRadius, 0.0f, float( std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
 
 		OrangeText( "Top Point" );
 		ImGui::SliderFloat( "Top X", &topVector.x, 0.0f, float( blockDim.x ), "%.3f" );
@@ -564,7 +564,7 @@ void Voraldo13::MenuSphere () {
 		ImGui::SliderFloat( "Center Y", &center.y, 0.0f, float( blockDim.y ), "%.3f" );
 		ImGui::SliderFloat( "Center Z", &center.z, 0.0f, float( blockDim.z ), "%.3f" );
 		OrangeText( "Radius" );
-		ImGui::SliderFloat( "Radius", &radius, 0.0f, float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
+		ImGui::SliderFloat( "Radius", &radius, 0.0f, float( std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
 		ColorPickerHelper( draw, mask, color );
 
 		SetPosBottomRightCorner();
@@ -636,7 +636,7 @@ void Voraldo13::MenuTriangle () {
 		ImGui::SliderFloat( "Z3", &point3.z, 0.0f, float( blockDim.z ), "%.3f" );
 
 		OrangeText( "Thickness" );
-		ImGui::SliderFloat( "Thickness", &thickness, 0.0f, float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
+		ImGui::SliderFloat( "Thickness", &thickness, 0.0f, float( std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) ), "%.3f" );
 		ColorPickerHelper( draw, mask, color );
 
 		SetPosBottomRightCorner();
@@ -1059,7 +1059,7 @@ void Voraldo13::MenuVAT () {
 		ImGui::SliderFloat( "Beta", &beta, 0.0f, 1.0f, "%.3f" );
 		ImGui::SliderFloat( "Mag", &mag, 0.0f, 1.0f, "%.3f" );
 
-		int blockLevelsDeep = int( log2( float( max( max( blockDim.x, blockDim.y ), blockDim.z ) ) ) );
+		int blockLevelsDeep = int( log2( float( std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) ) ) );
 		if ( ImGui::Button( " Compute From String " ) ) {
 			voxelAutomataTerrain vS( blockLevelsDeep, flip, string( inputString ), initMode, lambda, beta, mag, glm::bvec3( minusX, minusY, minusZ ), glm::bvec3( plusX, plusY, plusZ ) );
 			strcpy( inputString, vS.getShortRule().c_str() );
@@ -1222,7 +1222,7 @@ void Voraldo13::MenuSpaceship () {
 			std::vector< uint8_t > data;
 			data.resize( blockDim.x * blockDim.y * blockDim.z * 4, 0 );
 			ssG.genSpaceship( count, spread, minXYScale, maxXYScale, minZScale, maxZScale, paletteIndex, paletteMin, paletteMax, alphaMin, alphaMax, glyphList );
-			ssG.getData( data, max( max( blockDim.x, blockDim.y ), blockDim.z ) );
+			ssG.getData( data, std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) );
 
 			// buffer to the loadbuffer
 			glBindTexture( GL_TEXTURE_3D, textureManager.Get( "LoadBuffer" ) );
@@ -1779,7 +1779,7 @@ void Voraldo13::MenuShiftTrim () {
 		OrangeText( "Trim" );
 		ImGui::Text( " " );
 		ImGui::Indent( 16.0f );
-		ImGui::SliderInt( "Amount", &trimAmount, 0, max( max( blockDim.x, blockDim.y ), blockDim.z ) / 4 );
+		ImGui::SliderInt( "Amount", &trimAmount, 0, std::max( std::max( blockDim.x, blockDim.y ), blockDim.z ) / 4 );
 		ImGui::Text( " " );
 
 		if ( ImGui::Button( "Trim" ) ) {
@@ -2176,7 +2176,7 @@ void Voraldo13::MenuConeLight () {
 		ImGui::SliderFloat( "Y ", &targetPosition.y, 0.01f, float( blockDim.y ), "%.3f" );
 		ImGui::SliderFloat( "Z ", &targetPosition.z, 0.01f, float( blockDim.z ), "%.3f" );
 		OrangeText( "Parameters" );
-		ImGui::SliderFloat( "Cone Angle", &coneAngle, 0.0f, float( 2.0f * pi ), "%.3f" );
+		ImGui::SliderFloat( "Cone Angle", &coneAngle, 0.0f, float( 2.0f * jbDE::pi ), "%.3f" );
 		ImGui::SliderFloat( "Distance Power", &distancePower, 0.0f, 5.0f, "%.3f" );
 		ImGui::SliderFloat( "Decay", &decay, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_Logarithmic );
 		ImGui::ColorEdit3( "Color", ( float* ) &color, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel );
@@ -2230,8 +2230,8 @@ void Voraldo13::MenuDirectionalLight () {
 		static glm::vec4 color = glm::vec4( 0.0f );
 
 		OrangeText( "Direction" );
-		ImGui::SliderFloat( "Theta", &theta, -float( pi ), float( pi ), "%.3f" );
-		ImGui::SliderFloat( "Phi", &phi, -float( pi ), float( pi ), "%.3f" );
+		ImGui::SliderFloat( "Theta", &theta, -float( jbDE::pi ), float( jbDE::pi ), "%.3f" );
+		ImGui::SliderFloat( "Phi", &phi, -float( jbDE::pi ), float( jbDE::pi ), "%.3f" );
 		OrangeText( "Parameters" );
 		ImGui::SliderFloat( "Decay", &decay, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_Logarithmic );
 		ImGui::ColorEdit3( "Color", ( float* ) &color, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf | ImGuiColorEditFlags_PickerHueWheel );
