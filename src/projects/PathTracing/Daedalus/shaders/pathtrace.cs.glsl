@@ -168,6 +168,7 @@ ray_t GetCameraRayForUV( in vec2 uv ) { // switchable cameras ( fisheye, etc ) -
 
 	case SPHERICAL: {
 		uv *= uvScalar;
+			uv *= 0.4f;
 		uv.y /= aspectRatio;
 		uv.x -= 0.05f;
 		uv = vec2( atan( uv.y, uv.x ) + 0.5f, ( length( uv ) + 0.5f ) * acos( -1.0f ) );
