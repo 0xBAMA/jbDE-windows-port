@@ -15,7 +15,7 @@ void main () {
     // bounds check
     if ( loc.x < iS.x && loc.y < iS.y ) {
         // find the brightness of the pixel... you can get this from the XYZ constant's Y value
-        const float brightness = max( 0.01f, float( texture( bufferImageY, vec2( loc + 0.5f ) / iS ).r ) / 16.0f );
+        const float brightness = max( 0.01f, float( texture( bufferImageY, vec2( loc + 0.5f ) / iS ).r ) / 64.0f );
         // const float brightness = max( 0.01f, float( texture( bufferImageY, vec2( loc + 0.5f ) / iS ).r ) / texture( bufferImageCount, vec2( loc + 0.5f ) / iS ).r ) / 1024.0f;
 
         // and store the result for layer N + 1
