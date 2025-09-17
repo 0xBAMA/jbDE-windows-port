@@ -3,8 +3,8 @@ bool IntersectAABB ( const vec3 rO, vec3 rD, in vec3 min, in vec3 max, out float
 //    Amy Williams, Steve Barrus, R. Keith Morley, and Peter Shirley
 //    "An Efficient and Robust Ray-Box Intersection Algorithm"
 //    Journal of graphics tools, 10(1):49-54, 2005
-	const float minDistance = -100.0;
-	const float maxDistance =  100.0;
+	const float minDistance = -10000.0;
+	const float maxDistance =  10000.0;
 	int s[ 3 ]; // sign toggle
 	// inverse of ray direction
 	const vec3 iD = vec3( 1.0 ) / rD;
