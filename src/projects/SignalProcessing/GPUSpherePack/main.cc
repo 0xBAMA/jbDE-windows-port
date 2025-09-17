@@ -140,6 +140,22 @@ public:
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
+		// compute dispatch for every voxel
+		const GLuint shader = shaders[ "Update" ];
+		glUseProgram( shader );
+
+		for ( int i = 0; i < 2; i++ ) {
+			static rngi wangSeeder( 1, 4000000000 );
+			glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+			glUniform1i( glGetUniformLocation( shader, "resetFlag" ), 0 );
+			textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 2 );
+			textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "1" : "0" ), "bufferTexture", shader, 3 );
+			swap = !swap;
+
+			glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		}
 	}
 
 	void OnRender () {
