@@ -626,6 +626,17 @@ target_link_libraries( CantorDust
 )
 
 # =================================================================================================
+# accelerating the process of placing packed spheres
+# =================================================================================================
+add_executable( GPUSpherePack
+		src/projects/SignalProcessing/GPUSpherePack/main.cc
+)
+
+target_link_libraries( GPUSpherePack
+		PUBLIC
+		engineBase
+)
+# =================================================================================================
 # Neural net stuff for identifying handwritten characters from the MNIST dataset
 # =================================================================================================
 add_executable( MNIST
