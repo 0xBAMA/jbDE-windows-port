@@ -20,6 +20,40 @@ public:
 			shaders[ "Draw" ] = computeShader( "../src/projects/SignalProcessing/GPUSpherePack/shaders/draw.cs.glsl" ).shaderHandle;
 			shaders[ "Update" ] = computeShader( "../src/projects/SignalProcessing/GPUSpherePack/shaders/update.cs.glsl" ).shaderHandle;
 
+			// create the buffer texture
+			textureOptions_t opts;
+			opts.dataType		= GL_RGBA32UI;
+			opts.textureType	= GL_TEXTURE_3D;
+			opts.width			= bufferDims.x;
+			opts.height			= bufferDims.y;
+			opts.depth			= bufferDims.z;
+			textureManager.Add( "Buffer 0", opts );
+			textureManager.Add( "Buffer 1", opts );
+
+			{
+				const GLuint shader = shaders[ "Update" ];
+				glUseProgram( shader );
+
+				static rngi wangSeeder( 1, 4000000000 );
+				glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+				glUniform1i( glGetUniformLocation( shader, "resetFlag" ), 1 );
+				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 2 );
+				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "1" : "0" ), "bufferTexture", shader, 3 );
+				swap = !swap;
+
+				glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+
+				glUniform1i( glGetUniformLocation( shader, "resetFlag" ), 1 );
+				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 2 );
+				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "1" : "0" ), "bufferTexture", shader, 3 );
+				swap = !swap;
+
+				glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			}
+		}
 	}
 
 	void HandleCustomEvents () {
