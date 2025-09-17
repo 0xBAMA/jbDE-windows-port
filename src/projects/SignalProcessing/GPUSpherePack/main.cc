@@ -59,6 +59,17 @@ public:
 	void HandleCustomEvents () {
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
+		const bool shift = inputHandler.getState( KEY_LEFT_SHIFT ) || inputHandler.getState( KEY_RIGHT_SHIFT );
+
+		// zoom in and out
+		if ( inputHandler.getState( KEY_EQUALS ) ) { scale /= shift ? 0.9f : 0.99f; }
+		if ( inputHandler.getState( KEY_MINUS ) ) { scale *= shift ? 0.9f : 0.99f; }
+
+		// vim-style x,y offsetting
+		if ( inputHandler.getState( KEY_H ) ) { viewOffset.x += shift ? 5.0f : 1.0f; }
+		if ( inputHandler.getState( KEY_J ) ) { viewOffset.y -= shift ? 5.0f : 1.0f; }
+		if ( inputHandler.getState( KEY_K ) ) { viewOffset.y += shift ? 5.0f : 1.0f; }
+		if ( inputHandler.getState( KEY_L ) ) { viewOffset.x -= shift ? 5.0f : 1.0f; }
 	}
 
 	void ImguiPass () {
@@ -88,6 +99,17 @@ public:
 			GLuint shader = shaders[ "Draw" ];
 			glUseProgram( shader );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
+			static rngi noiseOffset = rngi( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), noiseOffset(), noiseOffset() );
+
+			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
+			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+
+			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			glUniform2f( glGetUniformLocation( shader, "viewOffset" ), viewOffset.x, viewOffset.y );
+
+			textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 3 );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
