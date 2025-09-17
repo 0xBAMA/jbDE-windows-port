@@ -64,6 +64,8 @@ float blueNoiseRead ( ivec2 loc, int idx ) {
 	case 3:
 		return sampleValue.a / 255.0f;
 		break;
+	default:
+		break;
 	}
 }
 
@@ -149,15 +151,15 @@ void main () {
 			const vec3 hitpointMin = Origin + tMin * Direction;
 			const vec3 hitpointMax = Origin + tMax * Direction;
 			const vec3 blockUVMin = vec3(
-				RemapRange( hitpointMin.x, -blockSize.x / 2.0f, blockSize.x / 2.0f, 0 + epsilon, blockDimensions.x - epsilon ),
-				RemapRange( hitpointMin.y, -blockSize.y / 2.0f, blockSize.y / 2.0f, 0 + epsilon, blockDimensions.y - epsilon ),
-				RemapRange( hitpointMin.z, -blockSize.z / 2.0f, blockSize.z / 2.0f, 0 + epsilon, blockDimensions.z - epsilon )
+			RemapRange( hitpointMin.x, -blockSize.x / 2.0f, blockSize.x / 2.0f, 0 + epsilon, blockDimensions.x - epsilon ),
+			RemapRange( hitpointMin.y, -blockSize.y / 2.0f, blockSize.y / 2.0f, 0 + epsilon, blockDimensions.y - epsilon ),
+			RemapRange( hitpointMin.z, -blockSize.z / 2.0f, blockSize.z / 2.0f, 0 + epsilon, blockDimensions.z - epsilon )
 			);
 
 			const vec3 blockUVMax = vec3(
-				RemapRange( hitpointMax.x, -blockSize.x / 2.0f, blockSize.x / 2.0f, 0 + epsilon, blockDimensions.x - epsilon ),
-				RemapRange( hitpointMax.y, -blockSize.y / 2.0f, blockSize.y / 2.0f, 0 + epsilon, blockDimensions.y - epsilon ),
-				RemapRange( hitpointMax.z, -blockSize.z / 2.0f, blockSize.z / 2.0f, 0 + epsilon, blockDimensions.z - epsilon )
+			RemapRange( hitpointMax.x, -blockSize.x / 2.0f, blockSize.x / 2.0f, 0 + epsilon, blockDimensions.x - epsilon ),
+			RemapRange( hitpointMax.y, -blockSize.y / 2.0f, blockSize.y / 2.0f, 0 + epsilon, blockDimensions.y - epsilon ),
+			RemapRange( hitpointMax.z, -blockSize.z / 2.0f, blockSize.z / 2.0f, 0 + epsilon, blockDimensions.z - epsilon )
 			);
 
 			// DDA traversal
