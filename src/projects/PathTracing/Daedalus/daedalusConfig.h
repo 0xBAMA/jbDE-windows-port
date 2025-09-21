@@ -158,7 +158,7 @@ struct daedalusConfig_t {
 		render.exposure = 1.0f;
 		render.FoV = 0.618f;
 		render.epsilon = 0.0001f;
-		render.maxDistance = 500.0f;
+		render.maxDistance = 1000.0f;
 
 		render.viewerPosition = vec3( 0.0f, 0.0f, -10.0f );
 		render.basisX = vec3( 1.0f, 0.0f, 0.0f );
@@ -200,9 +200,9 @@ struct daedalusConfig_t {
 		render.scene.skyMode = 0;
 		render.scene.skyConstantColor1 = vec3( 1.0f );
 		render.scene.skyConstantColor2 = vec3( 0.0f );
-		render.scene.sunThresh = 164;
+		render.scene.sunThresh = 150;
 		render.scene.skyInvert = false;
-		render.scene.skyBrightnessScalar = 2.146f;
+		render.scene.skyBrightnessScalar = 1.0f;
 		render.scene.skyTime = 5.0f;
 		render.scene.skyClamp = 5.0f;
 
