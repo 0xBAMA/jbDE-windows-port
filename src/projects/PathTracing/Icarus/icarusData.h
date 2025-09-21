@@ -90,14 +90,14 @@ struct icarusState_t {
 
 // resize the mesh to fit in a unit cube, centered at the origin
 void expandBBox ( vec3 &mins, vec3 &maxs, vec3 p ) {
-	mins.x = min( mins.x, p.x );
-	maxs.x = max( maxs.x, p.x );
+	mins.x = std::min( mins.x, p.x );
+	maxs.x = std::max( maxs.x, p.x );
 
-	mins.y = min( mins.y, p.y );
-	maxs.y = max( maxs.y, p.y );
+	mins.y = std::min( mins.y, p.y );
+	maxs.y = std::max( maxs.y, p.y );
 
-	mins.z = min( mins.z, p.z );
-	maxs.z = max( maxs.z, p.z );
+	mins.z = std::min( mins.z, p.z );
+	maxs.z = std::max( maxs.z, p.z );
 }
 
 void UnitCubeRefit( vector< vec4 > &pointPositions ) {
@@ -112,7 +112,7 @@ void UnitCubeRefit( vector< vec4 > &pointPositions ) {
 	// figure out scaling
 	vec3 spans = maxs - mins;
 	vec3 center = ( mins + maxs ) / 2.0f;
-	float largestDimension = max( max( spans.x, spans.y ), spans.z ) * 0.51f;
+	float largestDimension = std::max( std::max( spans.x, spans.y ), spans.z ) * 0.51f;
 
 	// run through again, butting the bbox min up against the origin + scaling appropriately to just fit inside -1..1
 	for ( size_t i = 0; i < pointPositions.size(); i++ ) {
