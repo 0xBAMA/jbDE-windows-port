@@ -2997,7 +2997,7 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 	// box intersection
 	float tMin, tMax;
 	const ivec3 iS = imageSize( SpherePack ).xyz;
-	const float scale = 1.0f;
+	const float scale = 0.1f;
 	const vec3 blockSize = vec3( iS ) * scale;
 	const vec3 blockSizeHalf = vec3( blockSize ) / 2.0f;
 
@@ -3024,17 +3024,6 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 		vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( iS - vec3( 10.0f ) );
 		seed = seedCache;
 
-		#if 0
-
-		intersection.dTravel = distance( ray.origin, pCache );
-		intersection.normal = vec3( 0.0f, 0.0f, 1.0f );
-		intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
-		intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( radius / 128.0f, 0.5f ) );
-		// intersection.albedo = abs( center );
-		intersection.roughness = 0.2f;
-
-		#else
-
 		// do the traversal
 		// from https://www.shadertoy.com/view/7sdSzH
 		vec3 deltaDist = 1.0f / abs( ray.direction );
@@ -3055,12 +3044,13 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 				float radius = uintBitsToFloat( read.r );
 				const uint seedCache = seed;
 				seed = read.g; // evaluating deterministic radii
-				vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( iS - vec3( 10.0f ) );
+				vec3 center = vec3( 5.0f ) * scale + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( blockSize - vec3( 10.0f ) * scale );
+				vec3 colorCache = vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() );
 				seed = seedCache;
 
 				// iqIntersect test = IntersectSphere( ray, center - blockSize / 2.0f, radius );
 				// iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
-				iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
+				iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius * scale );
 				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
 
 				if ( !IsEmpty( test ) && !behindOrigin ) {
@@ -3070,18 +3060,29 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 					// get the location of the intersection
 					ray.origin = ray.origin + ray.direction * ( intersection.frontfaceHit ? test.a.x : test.b.x );
 					ray.origin = vec3( // map the ray back into the world space
-					RangeRemapValue( ray.origin.x, epsilon, blockSize.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
-					RangeRemapValue( ray.origin.y, epsilon, blockSize.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
-					RangeRemapValue( ray.origin.z, epsilon, blockSize.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
+					RangeRemapValue( ray.origin.x, epsilon, iS.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
+					RangeRemapValue( ray.origin.y, epsilon, iS.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
+					RangeRemapValue( ray.origin.z, epsilon, iS.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
 					);
 
-					intersection.dTravel = distance( ray.origin, rayCache.origin );
-					intersection.normal = intersection.frontfaceHit ? test.a.yzw : test.b.yzw;
+					intersection.dTravel = distance( ray.origin, rayCache.origin ) * scale;
+					intersection.normal = normalize( intersection.frontfaceHit ? test.a.yzw : test.b.yzw );
 					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
-					// intersection.materialID = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
-//					intersection.materialID = DIFFUSE;
-					intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( saturate( RangeRemapValue( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) );
+//					intersection.materialID = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+					// intersection.albedo = mix( carrot, sapphire, pow( saturate( RangeRemapValue( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 2.5f ) );
+					intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.9f ) : mix( nvidia, vec3( 0.0f ), colorCache.r );
+					intersection.IoR = 1.0f / 1.2f;
 					intersection.roughness = 0.0f;
+					/*
+					if ( colorCache.r < 0.01f ) {
+						intersection.materialID = EMISSIVE_FRESNEL;
+						intersection.albedo = vec3(0.5f);
+					} else if ( colorCache.g < 0.3f ) {
+						intersection.albedo = mix( nickel, gold, colorCache.b );
+						intersection.materialID = METALLIC;
+						intersection.roughness = 0.2f;
+					}
+					*/
 
 					break;
 				}
@@ -3090,7 +3091,6 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 			sideDist0 = sideDist1;
 			mapPos0 = mapPos1;
 		}
-		#endif
 
 		// otherwise, fall through with a default intersection result
 	}

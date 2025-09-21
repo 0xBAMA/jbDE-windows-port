@@ -96,8 +96,8 @@ public:
 				// create the combined texture
 				opts				= textureOptions_t();
 				opts.width			= seedBlock.Width() / 2;
-				opts.height			= seedBlock.Height() / 64;
-				opts.depth			= 64;
+				opts.height			= seedBlock.Height() / 128;
+				opts.depth			= 128;
 				opts.textureType	= GL_TEXTURE_3D;
 				opts.dataType		= GL_RG32UI;
 				opts.pixelDataType	= GL_UNSIGNED_INT;
