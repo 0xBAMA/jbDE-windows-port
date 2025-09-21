@@ -95,7 +95,7 @@ void main () {
 					vec2 result = RaySphereIntersect( Origin, Direction, center - blockSizeHalf, radius );
 					if ( result != vec2( -1.0f ) ) {
 						// col = vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( 100.0f / result.x );
-						col = mix( honey, vec3( 0.0f ), pow( saturate( RemapRange( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) ) * ( 500.0f / result.x );
+						col = mix( nvidia, vec3( 0.0f ), pow( saturate( RemapRange( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) ) * ( 500.0f / result.x );
 						break;
 					}
 				}

@@ -11,6 +11,8 @@ public:
 	vec2 viewOffset = vec2( 0.0f );
 	float scale = 500.0f;
 
+	GLuint readoutBuffer = 0;
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -19,6 +21,7 @@ public:
 			// something to put some basic data in the accumulator texture
 			shaders[ "Draw" ] = computeShader( "../src/projects/SignalProcessing/GPUSpherePack/shaders/draw.cs.glsl" ).shaderHandle;
 			shaders[ "Update" ] = computeShader( "../src/projects/SignalProcessing/GPUSpherePack/shaders/update.cs.glsl" ).shaderHandle;
+			shaders[ "Readout" ] = computeShader( "../src/projects/SignalProcessing/GPUSpherePack/shaders/readout.cs.glsl" ).shaderHandle;
 
 			// create the buffer texture
 			textureOptions_t opts;
@@ -53,7 +56,48 @@ public:
 				glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
+
+			{ // creating the readout buffer
+				// need 4 bytes per channel, and 2 channels...
+				glCreateBuffers( 1, &readoutBuffer );
+				glBindBuffer( GL_SHADER_STORAGE_BUFFER, readoutBuffer );
+				glBufferData( GL_SHADER_STORAGE_BUFFER, sizeof( float ) * 2 * bufferDims.x * bufferDims.y * bufferDims.z, NULL, GL_DYNAMIC_COPY );
+				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, readoutBuffer );
+			}
 		}
+	}
+
+	void BlockCapture () {
+
+		vector< uint8_t > data;
+		data.resize( bufferDims.x * bufferDims.y * bufferDims.z * 4 * 2, 0 );
+
+		{ // get the data from the GPU
+			// invoke the shader to prepare the readout buffer
+			glUseProgram( shaders[ "Readout" ] );
+			textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shaders[ "Readout" ], 3 );
+			glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
+			glMemoryBarrier( GL_ALL_BARRIER_BITS );
+
+			// readout the buffer
+			glGetBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, 8 * bufferDims.x * bufferDims.y * bufferDims.z, &data[ 0 ] );
+		}
+
+		// encode information into a voxel block - we can keep 1 byte per channel losslessly in a PNG (one holds radius, one holds seed value)
+		Image_4U seedBlock( bufferDims.x, bufferDims.y * bufferDims.z );
+		Image_4U radiusBlock( bufferDims.x, bufferDims.y * bufferDims.z );
+
+		for ( int i = 0; i < bufferDims.x * bufferDims.y * bufferDims.z; i++ ) {
+			const int idx = i * 4;
+			for ( int j = 0; j < 4; j++ ) { // copying the data out, byte-wise
+				seedBlock.GetImageDataBasePtr()[ idx + j ] = data[ 2 * idx + j ];
+				radiusBlock.GetImageDataBasePtr()[ idx + j ] = data[ 2 * idx + 4 + j ];
+			}
+		}
+
+		// save it back out
+		seedBlock.Save( "seedBlock.png" );
+		radiusBlock.Save( "radiusBlock.png" );
 	}
 
 	void HandleCustomEvents () {
@@ -70,6 +114,8 @@ public:
 		if ( inputHandler.getState( KEY_J ) ) { viewOffset.y -= shift ? 5.0f : 1.0f; }
 		if ( inputHandler.getState( KEY_K ) ) { viewOffset.y += shift ? 5.0f : 1.0f; }
 		if ( inputHandler.getState( KEY_L ) ) { viewOffset.x -= shift ? 5.0f : 1.0f; }
+
+		if ( inputHandler.getState( KEY_T ) ) { BlockCapture(); }
 	}
 
 	void ImguiPass () {
@@ -144,7 +190,7 @@ public:
 		const GLuint shader = shaders[ "Update" ];
 		glUseProgram( shader );
 
-		for ( int i = 0; i < 2; i++ ) {
+		for ( int i = 0; i < 20; i++ ) {
 			static rngi wangSeeder( 1, 4000000000 );
 			glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
 

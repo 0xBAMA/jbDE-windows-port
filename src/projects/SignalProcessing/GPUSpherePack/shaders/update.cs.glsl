@@ -34,7 +34,7 @@ void main () {
 	vec3 location = vec3( loc ) + vec3( 0.5f );
 	seed = wangSeed;
 
-	const mat3 rot = Rotate3D( 3.2f, normalize( vec3( 1.0f, 2.0f, 4.0f ) ) );
+	const mat3 rot = Rotate3D( 5.2f, normalize( vec3( 3.0f, 2.0f, 4.0f ) ) );
 
 	if ( resetFlag == 1 ) { // ensure we have cleared to an initial state
 		imageStore( bufferTextureSrc, loc, uvec4( floatBitsToUint( maxRadius ),
