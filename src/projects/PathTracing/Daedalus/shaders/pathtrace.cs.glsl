@@ -2191,7 +2191,7 @@ float de( in vec3 p ) {
 	const float noise2 = sqrt( saturate( perlinfbm( p, 1.5f, 5 ) + 0.4f ) );
 
 
-	{
+	if ( false ) {
 		const float scale = 66.4f;
 		p = p / scale;
 		const vec2 uv = 3.1f * rot( 0.3f ) * ( p.xz + vec2( 0.5f ) );
@@ -2206,7 +2206,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	{
+	if ( false ) {
 		p = pOriginal.xzy;
 		const float scale = 20.0f;
 		const float d = max( deWHIRP( p / scale ) * scale, dBounds );
@@ -2351,9 +2351,9 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
-		pModInterval1( p.z, 5.0f, -7.0f, 7.0f );
-		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 17.5f, 0.03f, 0.5f ).yxz );
+	if ( true ) {
+		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
+		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 100.0f, 0.03f, 0.5f ).yxz );
 
 	 	// const float d = deJeyko( p );
 	 	sceneDist = min( sceneDist, d );
@@ -2987,45 +2987,63 @@ intersection_t VoxelIntersection( in ray_t ray ) {
 	return intersection;
 }
 //=============================================================================================================================
-layout( binding = 5, rg32ui ) uniform uimage3D SpherePack;
+layout( binding = 4, rg32ui ) uniform uimage3D SpherePack;
 //=============================================================================================================================
+#include "intersect.h"
 intersection_t SpherePackDDA( in ray_t ray ) {
 	ray_t rayCache = ray;
 	intersection_t intersection = DefaultIntersection();
 
-	const ivec3 blockSize = ivec3( imageSize( SpherePack ).xyz );
-	const vec3 bboxSize = vec3( max( max( blockSize.x, blockSize.y ),blockSize.z ) );
-	const vec3 blockSizeHalf = bboxSize / 2.0f;
+	// box intersection
+	float tMin, tMax;
+	const ivec3 iS = imageSize( SpherePack ).xyz;
+	const float scale = 1.0f;
+	const vec3 blockSize = vec3( iS ) * scale;
+	const vec3 blockSizeHalf = vec3( blockSize ) / 2.0f;
 
-	iqIntersect boundingBoxIntersection = IntersectBox( ray, vec3( 0.0f ), blockSizeHalf );
-	const bool boxBehindOrigin = ( boundingBoxIntersection.a.x < 0.0f && boundingBoxIntersection.b.x < 0.0f );
-	const bool backfaceHit = ( boundingBoxIntersection.a.x < 0.0f && boundingBoxIntersection.b.x >= 0.0f );
+	// then intersect with the AABB
+	const bool hit = IntersectAABB( ray.origin, ray.direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
+	const bool behindOrigin = ( tMin < 0.0f && tMax < 0.0f );
+	const bool backface = ( tMin < 0.0f && tMax >= 0.0f );
+	const float epsilon = 0.001f;
 
-	if ( !IsEmpty( boundingBoxIntersection ) && !boxBehindOrigin ) {
-	// remap into grid space...
-		const float epsilon = 0.001f;
-		const vec3 hitpointMin = ray.origin + boundingBoxIntersection.a.x * ray.direction;
-		const vec3 hitpointMax = ray.origin + boundingBoxIntersection.b.x * ray.direction;
-		const vec3 blockUVMin = vec3(
-		RangeRemapValue( hitpointMin.x, -blockSizeHalf.x, blockSizeHalf.x, 0 + epsilon, blockSize.x - epsilon ),
-		RangeRemapValue( hitpointMin.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
-		RangeRemapValue( hitpointMin.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
+	if ( hit && !behindOrigin ) { // texture sample
+		// get a sample point in grid space... start at ray origin if you see a backface, or at the closest positive hit
+		vec3 p = backface ? ray.origin : ( ray.origin + tMin * ray.direction );
+		const vec3 pCache = p;
+		p = vec3(
+			RangeRemapValue( p.x, -blockSizeHalf.x, blockSizeHalf.x, epsilon, iS.x - epsilon ),
+			RangeRemapValue( p.y, -blockSizeHalf.y, blockSizeHalf.y, epsilon, iS.y - epsilon ),
+			RangeRemapValue( p.z, -blockSizeHalf.z, blockSizeHalf.z, epsilon, iS.z - epsilon )
 		);
-		const vec3 blockUVMax = vec3(
-		RangeRemapValue( hitpointMax.x, -blockSizeHalf.x, blockSizeHalf.x, 0 + epsilon, blockSize.x - epsilon ),
-		RangeRemapValue( hitpointMax.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
-		RangeRemapValue( hitpointMax.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
-		);
+
+		const uvec4 read = imageLoad( SpherePack, ivec3( p ) );
+		float radius = uintBitsToFloat( read.r );
+		const uint seedCache = seed;
+		seed = read.g; // evaluating deterministic radii
+		vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( iS - vec3( 10.0f ) );
+		seed = seedCache;
+
+		#if 0
+
+		intersection.dTravel = distance( ray.origin, pCache );
+		intersection.normal = vec3( 0.0f, 0.0f, 1.0f );
+		intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+		intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( radius / 128.0f, 0.5f ) );
+		// intersection.albedo = abs( center );
+		intersection.roughness = 0.2f;
+
+		#else
 
 		// do the traversal
-			// from https://www.shadertoy.com/view/7sdSzH
+		// from https://www.shadertoy.com/view/7sdSzH
 		vec3 deltaDist = 1.0f / abs( ray.direction );
 		ivec3 rayStep = ivec3( sign( ray.direction ) );
 		bvec3 mask0 = bvec3( false );
-		ivec3 mapPos0 = ivec3( floor( blockUVMin + 0.0f ) );
-		vec3 sideDist0 = ( sign( ray.direction ) * ( vec3( mapPos0 ) - blockUVMin ) + ( sign( ray.direction ) * 0.5f ) + 0.5f ) * deltaDist;
+		ivec3 mapPos0 = ivec3( floor( p + 0.0f ) );
+		vec3 sideDist0 = ( sign( ray.direction ) * ( vec3( mapPos0 ) - p ) + ( sign( ray.direction ) * 0.5f ) + 0.5f ) * deltaDist;
 
-		for ( int i = 0; i < 1000 && ( all( greaterThanEqual( mapPos0, ivec3( 0 ) ) ) && all( lessThan( mapPos0, imageSize( SpherePack ) ) ) ); i++ ) {
+		for ( int i = 0; i < 1000 && ( all( greaterThanEqual( mapPos0, ivec3( 0 ) ) ) && all( lessThan( mapPos0, iS ) ) ); i++ ) {
 			// Core of https://www.shadertoy.com/view/4dX3zl Branchless Voxel Raycasting
 			bvec3 mask1 = lessThanEqual( sideDist0.xyz, min( sideDist0.yzx, sideDist0.zxy ) );
 			vec3 sideDist1 = sideDist0 + vec3( mask1 ) * deltaDist;
@@ -3033,16 +3051,16 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 
 			// consider using distance to bubble hit, when bubble is enabled
 			uvec4 read = imageLoad( SpherePack, mapPos0 );
-			if ( read.b != 0 ) { // this might be a hit condition
-				float radius = uintBitsToFloat( read.g );
+			if ( read.g != 0 ) { // this might be a hit condition
+				float radius = uintBitsToFloat( read.r );
 				const uint seedCache = seed;
-				seed = read.b; // evaluating deterministic radii
-				vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( imageSize( SpherePack ).xyz - vec3( 10.0f ) );
+				seed = read.g; // evaluating deterministic radii
+				vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( iS - vec3( 10.0f ) );
 				seed = seedCache;
 
 				// iqIntersect test = IntersectSphere( ray, center - blockSize / 2.0f, radius );
 				// iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
-				iqIntersect test = IntersectSphere( ray, center, radius );
+				iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
 				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
 
 				if ( !IsEmpty( test ) && !behindOrigin ) {
@@ -3052,17 +3070,18 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 					// get the location of the intersection
 					ray.origin = ray.origin + ray.direction * ( intersection.frontfaceHit ? test.a.x : test.b.x );
 					ray.origin = vec3( // map the ray back into the world space
-						RangeRemapValue( ray.origin.x, epsilon, blockSize.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
-						RangeRemapValue( ray.origin.y, epsilon, blockSize.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
-						RangeRemapValue( ray.origin.z, epsilon, blockSize.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
+					RangeRemapValue( ray.origin.x, epsilon, blockSize.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
+					RangeRemapValue( ray.origin.y, epsilon, blockSize.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
+					RangeRemapValue( ray.origin.z, epsilon, blockSize.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
 					);
 
 					intersection.dTravel = distance( ray.origin, rayCache.origin );
 					intersection.normal = intersection.frontfaceHit ? test.a.yzw : test.b.yzw;
-					// intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
-					intersection.materialID = EMISSIVE_FRESNEL;
-					intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( saturate( RangeRemapValue( radius / 512.0f, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) );
-					intersection.roughness = 0.2f;
+					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+					// intersection.materialID = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+//					intersection.materialID = DIFFUSE;
+					intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( saturate( RangeRemapValue( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) );
+					intersection.roughness = 0.0f;
 
 					break;
 				}
@@ -3071,6 +3090,7 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 			sideDist0 = sideDist1;
 			mapPos0 = mapPos1;
 		}
+		#endif
 
 		// otherwise, fall through with a default intersection result
 	}
@@ -3264,7 +3284,7 @@ intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	// return a single intersection_t representing the closest ray intersection
 	intersection_t SDFResult		= raymarchEnable		? raymarch( ray )				: DefaultIntersection();
 	// intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
-	intersection_t VoxelResult		= ddaSpheresEnable		? SpherePackDDA( ray )			: DefaultIntersection();
+	intersection_t VoxelResult		= SpherePackDDA( ray );
 	intersection_t MaskedPlane		= maskedPlaneEnable		? MaskedPlaneIntersect( ray )	: DefaultIntersection();
 	intersection_t ExplicitList		= explicitListEnable	? ExplicitListIntersect( ray )	: DefaultIntersection();
 	intersection_t convexPolyhedra	= DefaultIntersection();

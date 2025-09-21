@@ -44,9 +44,9 @@ public:
 			SendExplicitPrimitiveSSBO();
 
 			// prepare the glyph and DDA VAT buffers
-			PrepGlyphBuffer();
+			// PrepGlyphBuffer();
 			// GoLTex();
-			DDAVATTex();
+			// DDAVATTex();
 			// HeightmapTex();
 
 			if ( false ) { // loading material textures
