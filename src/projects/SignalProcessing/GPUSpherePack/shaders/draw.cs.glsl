@@ -64,11 +64,6 @@ void main () {
 				RemapRange( hitpointMin.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
 				RemapRange( hitpointMin.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
 			);
-			const vec3 blockUVMax = vec3(
-				RemapRange( hitpointMax.x, -blockSizeHalf.x, blockSizeHalf.x, 0 + epsilon, blockSize.x - epsilon ),
-				RemapRange( hitpointMax.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
-				RemapRange( hitpointMax.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
-			);
 
 			// DDA traversal
 			// from https://www.shadertoy.com/view/7sdSzH
