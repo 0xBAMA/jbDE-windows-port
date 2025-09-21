@@ -83,21 +83,14 @@ public:
 			glGetBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, 8 * bufferDims.x * bufferDims.y * bufferDims.z, &data[ 0 ] );
 		}
 
-		// encode information into a voxel block - we can keep 1 byte per channel losslessly in a PNG (one holds radius, one holds seed value)
-		Image_4U seedBlock( bufferDims.x, bufferDims.y * bufferDims.z );
-		Image_4U radiusBlock( bufferDims.x, bufferDims.y * bufferDims.z );
-
-		for ( int i = 0; i < bufferDims.x * bufferDims.y * bufferDims.z; i++ ) {
-			const int idx = i * 4;
-			for ( int j = 0; j < 4; j++ ) { // copying the data out, byte-wise
-				seedBlock.GetImageDataBasePtr()[ idx + j ] = data[ 2 * idx + j ];
-				radiusBlock.GetImageDataBasePtr()[ idx + j ] = data[ 2 * idx + 4 + j ];
-			}
+		// encode information into a voxel block - we can keep 1 byte per channel losslessly in a PNG
+		Image_4U seedBlock( bufferDims.x * 2, bufferDims.y * bufferDims.z );
+		for ( int i = 0; i < 4 * 2 * bufferDims.x * bufferDims.y * bufferDims.z; i++ ) {
+			seedBlock.GetImageDataBasePtr()[ i ] = data[ i ];
 		}
 
 		// save it back out
 		seedBlock.Save( "seedBlock.png" );
-		radiusBlock.Save( "radiusBlock.png" );
 	}
 
 	void HandleCustomEvents () {
