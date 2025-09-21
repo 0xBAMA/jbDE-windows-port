@@ -54,13 +54,13 @@ void main () {
 		// we get our new radius... if you use a noise field to inform it, that could be interesting
 			// two clamps: inner clamp is for the boundary... outer clamp is enforcing a min and max radius
 		const float noiseScale = pow( abs( perlinfbm( rot * newPointLocation, 2.0f / 300.0f, 3 ) + 0.4f ), 0.70f );
-		const float newRadius = clamp( noiseScale * uintBitsToFloat( newPointSample.x ), 1.5f, distanceToNearestBoundary( newPointLocation ) < 40.0f ? distanceToNearestBoundary( newPointLocation ) : 40.0f );
+		const float newRadius = clamp( noiseScale * uintBitsToFloat( newPointSample.x ), 1.5f, 90.0f );
 		const float oldDistance = uintBitsToFloat( oldPointSample.x );
 		const float newDistance = distance( location, newPointLocation ) - newRadius;
 
 		// making a determination about what we want to write
 		uvec4 writeValue = uvec4( 0u );
-		if ( oldDistance < newDistance ) {
+		if ( oldDistance < newDistance || noiseScale < 0.3f ) {
 		// THE SPHERE OVERLAPS... No good. Keep the old data.
 			writeValue = oldPointSample;
 		} else {
