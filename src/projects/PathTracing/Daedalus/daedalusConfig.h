@@ -158,23 +158,18 @@ struct daedalusConfig_t {
 		render.exposure = 1.0f;
 		render.FoV = 0.618f;
 		render.epsilon = 0.0001f;
-		render.maxDistance = 100.0f;
+		render.maxDistance = 500.0f;
 
-		// render.viewerPosition = vec3( 0.0f );
-		// render.basisX = vec3( 1.0f, 0.0f, 0.0f );
-		// render.basisY = vec3( 0.0f, 1.0f, 0.0f );
-		// render.basisZ = vec3( 0.0f, 0.0f, 1.0f );
-
-		render.viewerPosition = vec3( 0.984f, 0.332f, -0.583f );
-		render.basisX = vec3( 0.11f, -0.876f, -0.469f );
-		render.basisY = vec3( 0.021f, -0.469f, 0.833f );
-		render.basisZ = vec3( -0.994f, -0.107f, -0.033f );
+		render.viewerPosition = vec3( 0.0f, 0.0f, -10.0f );
+		render.basisX = vec3( 1.0f, 0.0f, 0.0f );
+		render.basisY = vec3( 0.0f, 1.0f, 0.0f );
+		render.basisZ = vec3( 0.0f, 0.0f, 1.0f );
 
 		// thin lens config
-		render.thinLensEnable = true;
-		render.thinLensFocusDistance = 0.6366f;
-		render.thinLensJitterRadiusInner = 0.0005f;
-		render.thinLensJitterRadiusOuter = 0.0008f;
+		render.thinLensEnable = false;
+		render.thinLensFocusDistance = 5.0f;
+		render.thinLensJitterRadiusInner = 0.001f;
+		render.thinLensJitterRadiusOuter = 0.001f;
 		render.bokehMode = 18;
 		render.cameraType = 0;
 		render.voraldoCameraScalar = 1.0f;
@@ -182,7 +177,7 @@ struct daedalusConfig_t {
 		render.maxBounces = 10;
 
 		// SDF raymarch geo
-		render.scene.raymarchEnable = true;
+		render.scene.raymarchEnable = false;
 		render.scene.raymarchMaxDistance = render.maxDistance; // do I want to keep both? not sure
 		render.scene.raymarchMaxSteps = 420;
 		render.scene.raymarchUnderstep = 0.9f;
@@ -202,7 +197,7 @@ struct daedalusConfig_t {
 		// sky config
 		render.scene.skyDims = uvec2( 4096, 2048 );
 		render.scene.skyNeedsUpdate = false;
-		render.scene.skyMode = 3;
+		render.scene.skyMode = 0;
 		render.scene.skyConstantColor1 = vec3( 1.0f );
 		render.scene.skyConstantColor2 = vec3( 0.0f );
 		render.scene.sunThresh = 164;

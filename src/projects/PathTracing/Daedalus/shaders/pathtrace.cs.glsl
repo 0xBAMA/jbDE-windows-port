@@ -2685,7 +2685,7 @@ struct iqIntersect {
 
 // false Intersection
 const iqIntersect kEmpty = iqIntersect(
-	vec4( 1e20f, 0.0f, 0.0f, 0.0f ),
+	vec4(  1e20f, 0.0f, 0.0f, 0.0f ),
 	vec4( -1e20f, 0.0f, 0.0f, 0.0f )
 );
 
@@ -2857,8 +2857,8 @@ intersection_t DDATraversal( in ray_t ray, in float distanceToBounds ) {
 
 			#ifdef SPHEREORBOX
 				// see if we found an intersection - ball will almost fill the grid cell
-				iqIntersect test = IntersectSphere( ray, vec3( mapPos0 ) + GetOffsetForIdx( mapPos0 ), GetRadiusForIdx( mapPos0 ) );
 				// iqIntersect test = IntersectBox( ray, vec3( mapPos0 ) + vec3( 0.5f ), vec3( 0.5f ) );
+				iqIntersect test = IntersectSphere( ray, vec3( mapPos0 ) + GetOffsetForIdx( mapPos0 ), GetRadiusForIdx( mapPos0 ) );
 				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
 
 				// update ray, to indicate hit location
@@ -2972,6 +2972,7 @@ intersection_t DDATraversal( in ray_t ray, in float distanceToBounds ) {
 }
 
 
+//=============================================================================================================================
 intersection_t VoxelIntersection( in ray_t ray ) {
 	intersection_t intersection = DefaultIntersection();
 
@@ -2981,6 +2982,97 @@ intersection_t VoxelIntersection( in ray_t ray ) {
 
 	if ( !IsEmpty( boundingBoxIntersection ) && !boxBehindOrigin ) {
 		intersection = DDATraversal( ray, boundingBoxIntersection.a.x );
+	}
+
+	return intersection;
+}
+//=============================================================================================================================
+layout( binding = 5, rg32ui ) uniform uimage3D SpherePack;
+//=============================================================================================================================
+intersection_t SpherePackDDA( in ray_t ray ) {
+	ray_t rayCache = ray;
+	intersection_t intersection = DefaultIntersection();
+
+	const ivec3 blockSize = ivec3( imageSize( SpherePack ).xyz );
+	const vec3 bboxSize = vec3( max( max( blockSize.x, blockSize.y ),blockSize.z ) );
+	const vec3 blockSizeHalf = bboxSize / 2.0f;
+
+	iqIntersect boundingBoxIntersection = IntersectBox( ray, vec3( 0.0f ), blockSizeHalf );
+	const bool boxBehindOrigin = ( boundingBoxIntersection.a.x < 0.0f && boundingBoxIntersection.b.x < 0.0f );
+	const bool backfaceHit = ( boundingBoxIntersection.a.x < 0.0f && boundingBoxIntersection.b.x >= 0.0f );
+
+	if ( !IsEmpty( boundingBoxIntersection ) && !boxBehindOrigin ) {
+	// remap into grid space...
+		const float epsilon = 0.001f;
+		const vec3 hitpointMin = ray.origin + boundingBoxIntersection.a.x * ray.direction;
+		const vec3 hitpointMax = ray.origin + boundingBoxIntersection.b.x * ray.direction;
+		const vec3 blockUVMin = vec3(
+		RangeRemapValue( hitpointMin.x, -blockSizeHalf.x, blockSizeHalf.x, 0 + epsilon, blockSize.x - epsilon ),
+		RangeRemapValue( hitpointMin.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
+		RangeRemapValue( hitpointMin.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
+		);
+		const vec3 blockUVMax = vec3(
+		RangeRemapValue( hitpointMax.x, -blockSizeHalf.x, blockSizeHalf.x, 0 + epsilon, blockSize.x - epsilon ),
+		RangeRemapValue( hitpointMax.y, -blockSizeHalf.y, blockSizeHalf.y, 0 + epsilon, blockSize.y - epsilon ),
+		RangeRemapValue( hitpointMax.z, -blockSizeHalf.z, blockSizeHalf.z, 0 + epsilon, blockSize.z - epsilon )
+		);
+
+		// do the traversal
+			// from https://www.shadertoy.com/view/7sdSzH
+		vec3 deltaDist = 1.0f / abs( ray.direction );
+		ivec3 rayStep = ivec3( sign( ray.direction ) );
+		bvec3 mask0 = bvec3( false );
+		ivec3 mapPos0 = ivec3( floor( blockUVMin + 0.0f ) );
+		vec3 sideDist0 = ( sign( ray.direction ) * ( vec3( mapPos0 ) - blockUVMin ) + ( sign( ray.direction ) * 0.5f ) + 0.5f ) * deltaDist;
+
+		for ( int i = 0; i < 1000 && ( all( greaterThanEqual( mapPos0, ivec3( 0 ) ) ) && all( lessThan( mapPos0, imageSize( SpherePack ) ) ) ); i++ ) {
+			// Core of https://www.shadertoy.com/view/4dX3zl Branchless Voxel Raycasting
+			bvec3 mask1 = lessThanEqual( sideDist0.xyz, min( sideDist0.yzx, sideDist0.zxy ) );
+			vec3 sideDist1 = sideDist0 + vec3( mask1 ) * deltaDist;
+			ivec3 mapPos1 = mapPos0 + ivec3( vec3( mask1 ) ) * rayStep;
+
+			// consider using distance to bubble hit, when bubble is enabled
+			uvec4 read = imageLoad( SpherePack, mapPos0 );
+			if ( read.b != 0 ) { // this might be a hit condition
+				float radius = uintBitsToFloat( read.g );
+				const uint seedCache = seed;
+				seed = read.b; // evaluating deterministic radii
+				vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( imageSize( SpherePack ).xyz - vec3( 10.0f ) );
+				seed = seedCache;
+
+				// iqIntersect test = IntersectSphere( ray, center - blockSize / 2.0f, radius );
+				// iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
+				iqIntersect test = IntersectSphere( ray, center, radius );
+				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
+
+				if ( !IsEmpty( test ) && !behindOrigin ) {
+					// if you get a hit, fill out the struct
+					intersection.frontfaceHit = !( test.a.x < 0.0f && test.b.x >= 0.0f );
+
+					// get the location of the intersection
+					ray.origin = ray.origin + ray.direction * ( intersection.frontfaceHit ? test.a.x : test.b.x );
+					ray.origin = vec3( // map the ray back into the world space
+						RangeRemapValue( ray.origin.x, epsilon, blockSize.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
+						RangeRemapValue( ray.origin.y, epsilon, blockSize.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
+						RangeRemapValue( ray.origin.z, epsilon, blockSize.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
+					);
+
+					intersection.dTravel = distance( ray.origin, rayCache.origin );
+					intersection.normal = intersection.frontfaceHit ? test.a.yzw : test.b.yzw;
+					// intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+					intersection.materialID = EMISSIVE_FRESNEL;
+					intersection.albedo = mix( nvidia, vec3( 0.0f ), pow( saturate( RangeRemapValue( radius / 512.0f, 30.0f, 0.0f, 0.0f, 1.0f ) ), 1.5f ) );
+					intersection.roughness = 0.2f;
+
+					break;
+				}
+			}
+
+			sideDist0 = sideDist1;
+			mapPos0 = mapPos1;
+		}
+
+		// otherwise, fall through with a default intersection result
 	}
 
 	return intersection;
@@ -3171,7 +3263,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	// return a single intersection_t representing the closest ray intersection
 	intersection_t SDFResult		= raymarchEnable		? raymarch( ray )				: DefaultIntersection();
-	intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
+	// intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
+	intersection_t VoxelResult		= ddaSpheresEnable		? SpherePackDDA( ray )			: DefaultIntersection();
 	intersection_t MaskedPlane		= maskedPlaneEnable		? MaskedPlaneIntersect( ray )	: DefaultIntersection();
 	intersection_t ExplicitList		= explicitListEnable	? ExplicitListIntersect( ray )	: DefaultIntersection();
 	intersection_t convexPolyhedra	= DefaultIntersection();

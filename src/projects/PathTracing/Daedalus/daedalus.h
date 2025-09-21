@@ -49,7 +49,7 @@ public:
 			DDAVATTex();
 			// HeightmapTex();
 
-			{ // loading material textures
+			if ( false ) { // loading material textures
 
 				string base = string( "../../Materials/" ) +
 					// "aerial_rocks_01_"; // works
@@ -82,6 +82,35 @@ public:
 
 				opts.initialData = roughness.GetImageDataBasePtr();
 				textureManager.Add( "Roughness Material Texture", opts );
+			}
+
+			{ // loading the spherePack buffer
+				Image_4U seedBlock( "seedBlock.png" );
+				Image_4U radiusBlock( "radiusBlock.png" );
+
+				vector< uint32_t > bufferData;
+				bufferData.resize( 2 * seedBlock.Width() * seedBlock.Height() );
+				for ( int y = 0; y < seedBlock.Width(); y++ ) {
+					for ( int x = 0; x < seedBlock.Height(); x++ ) {
+						color_4U seed = seedBlock.GetAtXY( x, y );
+						color_4U radius = radiusBlock.GetAtXY( x, y );
+						bufferData[ 2 * ( seedBlock.Width() * y + x ) ]		=   seed[ red ] +   seed[ green ] << 8 +   seed[ blue ] << 16 +   seed[ alpha ]	<< 24;
+						bufferData[ 2 * ( seedBlock.Width() * y + x ) + 1 ]	= radius[ red ] + radius[ green ] << 8 + radius[ blue ] << 16 + radius[ alpha ]	<< 24;
+					}
+				}
+
+				// create the combined texture
+				opts				= textureOptions_t();
+				opts.width			= seedBlock.Width();
+				opts.height			= seedBlock.Height() / 64;
+				opts.depth			= 64;
+				opts.textureType	= GL_TEXTURE_3D;
+				opts.dataType		= GL_RG32UI;
+				opts.pixelDataType	= GL_UNSIGNED_INT;
+				opts.initialData	= &bufferData[ 0 ];
+				opts.wrap			= GL_CLAMP_TO_BORDER;
+
+				textureManager.Add( "SpherePack", opts );
 			}
 
 			{ // color grading tools
