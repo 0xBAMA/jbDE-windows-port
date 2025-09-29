@@ -8,7 +8,7 @@ public:
 	bool swap = false;
 	// ivec3 bufferDims = ivec3( 640, 360, 64 );
 	// ivec3 bufferDims = ivec3( 512, 256, 64 );
-	ivec3 bufferDims = ivec3( 512, 512, 128 );
+	ivec3 bufferDims = ivec3( 500, 2048, 256 );
 	vec2 viewOffset = vec2( 0.0f );
 	float scale = 500.0f;
 

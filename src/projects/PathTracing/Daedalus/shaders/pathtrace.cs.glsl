@@ -2389,7 +2389,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
 		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 100.0f, 0.03f, 0.5f ).yxz );
 
@@ -2415,7 +2415,7 @@ float de( in vec3 p ) {
 //				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
 //			}
 
-			 hitColor = 3.0f * ( mod( i, 2 ) == 0 ? vec3( 0.99f ) : mix( blood, honey, 0.3f ) );
+//			 hitColor = 3.0f * ( mod( i, 2 ) == 0 ? vec3( 0.99f ) : mix( blood, honey, 0.3f ) );
 //			hitColor = 2.0f * sapphire;
 	 	}
 	 }
@@ -3038,7 +3038,7 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 	// box intersection
 	float tMin, tMax;
 	const ivec3 iS = imageSize( SpherePack ).xyz;
-	const float scale = 0.1f;
+	const float scale = 0.01f;
 	const vec3 blockSize = vec3( iS ) * scale;
 	const vec3 blockSizeHalf = vec3( blockSize ) / 2.0f;
 

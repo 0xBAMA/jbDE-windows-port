@@ -34,7 +34,8 @@ void main () {
 	vec3 location = vec3( loc ) + vec3( 0.5f );
 	seed = wangSeed;
 
-	const mat3 rot = Rotate3D( 5.2f, normalize( vec3( 3.0f, 2.0f, 4.0f ) ) );
+	const mat3 rot = Rotate3D( 3.2f, normalize( vec3( 3.0f, 2.0f, 4.0f ) ) );
+	const mat3 rot2 = Rotate3D( 9.2f, normalize( vec3( 1.0f, 2.0f, 1.0f ) ) );
 
 	if ( resetFlag == 1 ) { // ensure we have cleared to an initial state
 		imageStore( bufferTextureSrc, loc, uvec4( floatBitsToUint( maxRadius ),
@@ -53,14 +54,15 @@ void main () {
 
 		// we get our new radius... if you use a noise field to inform it, that could be interesting
 			// two clamps: inner clamp is for the boundary... outer clamp is enforcing a min and max radius
-		const float noiseScale = pow( abs( perlinfbm( rot * newPointLocation, 2.0f / 300.0f, 3 ) + 0.4f ), 0.70f );
-		const float newRadius = clamp( noiseScale * uintBitsToFloat( newPointSample.x ), 1.5f, 90.0f );
+		const float noiseScale = saturate( 0.5f * ( perlinfbm( 0.3f * rot * newPointLocation, 1.5f / 200.0f, 2 ) + 1.0f ) );
+		const float noiseScale2 = saturate( 0.5f * ( perlinfbm( 0.5f * rot2 * newPointLocation, 1.0f / 500.0f, 1 ) + 1.0f ) );
+		const float newRadius = clamp( pow( ( noiseScale * noiseScale2 ), 0.5f ) * ( ( NormalizedRandomFloat() < 0.00618f ) ? 80.0f : 10.0f ) * NormalizedRandomFloat(), 1.5f, uintBitsToFloat( newPointSample.x ) );
 		const float oldDistance = uintBitsToFloat( oldPointSample.x );
 		const float newDistance = distance( location, newPointLocation ) - newRadius;
 
 		// making a determination about what we want to write
 		uvec4 writeValue = uvec4( 0u );
-		if ( oldDistance < newDistance || noiseScale < 0.3f ) {
+		if ( oldDistance < newDistance || ( noiseScale2 > 0.9f || noiseScale2 < 0.4f ) || ( noiseScale > 0.9f || noiseScale < 0.5f ) ) {
 		// THE SPHERE OVERLAPS... No good. Keep the old data.
 			writeValue = oldPointSample;
 		} else {
