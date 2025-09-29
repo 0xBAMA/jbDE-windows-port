@@ -3089,8 +3089,6 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 				vec3 colorCache = vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() );
 				seed = seedCache;
 
-				// iqIntersect test = IntersectSphere( ray, center - blockSize / 2.0f, radius );
-				// iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius );
 				iqIntersect test = IntersectSphere( ray, center - blockSizeHalf, radius * scale );
 				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
 
@@ -3100,31 +3098,47 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 
 					// get the location of the intersection
 					ray.origin = ray.origin + ray.direction * ( intersection.frontfaceHit ? test.a.x : test.b.x );
-					ray.origin = vec3( // map the ray back into the world space
-					RangeRemapValue( ray.origin.x, epsilon, iS.x - epsilon, -blockSizeHalf.x, blockSizeHalf.x ),
-					RangeRemapValue( ray.origin.y, epsilon, iS.y - epsilon, -blockSizeHalf.y, blockSizeHalf.y ),
-					RangeRemapValue( ray.origin.z, epsilon, iS.z - epsilon, -blockSizeHalf.z, blockSizeHalf.z )
-					);
 
-					intersection.dTravel = distance( ray.origin, rayCache.origin ) * scale;
+					intersection.dTravel = distance( ray.origin, rayCache.origin );
 					intersection.normal = normalize( intersection.frontfaceHit ? test.a.yzw : test.b.yzw );
-					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
-//					intersection.materialID = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
-					// intersection.albedo = mix( carrot, sapphire, pow( saturate( RangeRemapValue( radius, 30.0f, 0.0f, 0.0f, 1.0f ) ), 2.5f ) );
-					intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.9f ) : mix( nvidia, vec3( 0.0f ), colorCache.r );
-					intersection.IoR = 1.0f / 1.2f;
-					intersection.roughness = 0.0f;
-					/*
-					if ( colorCache.r < 0.01f ) {
+//					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+//					intersection.materialID = DIFFUSE;
+					intersection.materialID = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+					// intersection.IoR = 1.0f / ( 1.5f + 0.1f * colorCache.r );
+					intersection.IoR = ( 1.5f + 0.1f * colorCache.r );
+//					intersection.materialID = NormalizedRandomFloat() > ( Reflectance(  min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f ), intersection.IoR ) ) ? DIFFUSE : MIRROR;
+					// intersection.albedo = mix( honey, vec3( 1.0f ), pow( saturate( RangeRemapValue( radius, 0.0f, 10.0f, 0.0f, 1.0f ) ), 1.0f ) );
+//					intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.99f ) : mix( nvidia, vec3( 0.0f ), colorCache.r );
+					intersection.albedo = vec3( 0.618f );
+					 if ( colorCache.g < 0.2f ) {
+						intersection.roughness = colorCache.b;
+						 intersection.albedo = vec3( colorCache.b );
+					 }
+
+					if ( intersection.materialID == MIRROR ) {
+						intersection.albedo = vec3( 0.99f );
+					}
+
+					if ( radius > 10.0f ) {
 						intersection.materialID = EMISSIVE_FRESNEL;
-						intersection.albedo = vec3(0.5f);
-					} else if ( colorCache.g < 0.3f ) {
-						intersection.albedo = mix( nickel, gold, colorCache.b );
-						intersection.materialID = METALLIC;
-						intersection.roughness = 0.2f;
+						intersection.albedo *= 0.1f;
+					}
+					/*
+					if ( colorCache.r < 0.07f && radius < 4.0f ) {
+						intersection.materialID = EMISSIVE_FRESNEL;
+						intersection.albedo = vec3( ( 0.3f + colorCache.b * 0.4f ) * mix( honey, carrot, colorCache.g / 3.0f ) );
+					} else {
+						if ( colorCache.b < 0.3f ) {
+							intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+							// intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.99f ) : ( ( colorCache.b < 0.3f ) ? ( honey * colorCache.r ) : ( ( colorCache.b < 0.6f ) ? blood * colorCache.r : vec3( 0.01f ) ) );
+							intersection.roughness = colorCache.b;
+							intersection.albedo = vec3( 0.99f - 0.8f * colorCache.g );
+						} else {
+							// intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.99f ) : vec3( 0.01f );
+							intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.99f ) : nvidia * colorCache.g;
+						}
 					}
 					*/
-
 					break;
 				}
 			}
