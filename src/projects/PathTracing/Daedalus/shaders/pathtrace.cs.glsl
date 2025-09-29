@@ -2624,7 +2624,7 @@ intersection_t raymarch( in ray_t ray ) {
 	}
 	// fill out the intersection struct
 	intersection_t intersection;
-	intersection.dTravel = dTotal;
+	intersection.dTravel = ( dTotal > raymarchMaxDistance ) ? maxDistance : dTotal; // mitigating issues with expensive raymarch
 	intersection.albedo = hitColor;
 	intersection.materialID = hitSurfaceType;
 	intersection.roughness = hitRoughness;

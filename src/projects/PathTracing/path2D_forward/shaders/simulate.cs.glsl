@@ -344,7 +344,7 @@ float de ( vec2 p ) {
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
 
-	{
+	if ( false ) {
 		float opticalAxisOffset = 0.0f;
 		const float scale = 5.0f;
 		for ( int i = 0; i < lensSystem.length(); i++ ) {
@@ -389,7 +389,7 @@ float de ( vec2 p ) {
 	}
 	*/
 
-	if ( false ) {
+	if ( true ) {
 		p = Rotate2D( 0.3f ) * pOriginal;
 		vec2 gridIndex;
 		gridIndex.x = pModInterval1( p.x, 100.0f, -100.0f, 100.0f );
@@ -398,13 +398,15 @@ float de ( vec2 p ) {
 			uint seedCache = seed;
 			seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
 			const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy, 0.0f ) ) + vec3( 2.0f );
-			 const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 2.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 5.0f * noise.y, 15.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 14.0f * noise.y ) ) ) );
+//			 const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 2.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 5.0f * noise.y, 15.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 14.0f * noise.y ) ) ) );
 //			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 20.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
+			const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 15.0f * noise.z );
 			seed = seedCache;
 			sceneDist = min( sceneDist, d );
 			if ( sceneDist == d && d < epsilon ) {
-				 hitSurfaceType = noise.z > 2.2f ? MIRROR : SELLMEIER_BOROSILICATE_BK7;
-				 hitAlbedo = 1.0f * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
+				 hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
+				 hitAlbedo = 1.0f;
+				// * RangeRemapValue( wavelength, 300, 900, RangeRemapValue( noise.y, 0.0f, 1.0f, 0.5f, 1.0f ), RangeRemapValue( noise.x, 0.0f, 1.0f, 0.85f, 1.0f ) );
 			}
 		}
 	}
