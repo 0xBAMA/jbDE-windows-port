@@ -184,7 +184,7 @@ public:
 		const GLuint shader = shaders[ "Update" ];
 		glUseProgram( shader );
 
-		for ( int i = 0; i < 20; i++ ) {
+		for ( int i = 0; i < 1; i++ ) {
 			static rngi wangSeeder( 1, 4000000000 );
 			glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
 
