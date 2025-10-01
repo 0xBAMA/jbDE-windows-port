@@ -8,11 +8,13 @@ public:
 	bool swap = false;
 	// ivec3 bufferDims = ivec3( 640, 360, 64 );
 	// ivec3 bufferDims = ivec3( 512, 256, 64 );
-	ivec3 bufferDims = ivec3( 500, 2048, 256 );
+	ivec3 bufferDims = ivec3( 600, 800, 200 );
 	vec2 viewOffset = vec2( 0.0f );
 	float scale = 500.0f;
 
 	GLuint readoutBuffer = 0;
+
+	int iterationsPerFrame = 10;
 
 	void OnInit () {
 		ZoneScoped;
@@ -33,6 +35,11 @@ public:
 			opts.depth			= bufferDims.z;
 			textureManager.Add( "Buffer 0", opts );
 			textureManager.Add( "Buffer 1", opts );
+
+			terminal.addCommand( { "setIterations" },
+				{ { "numIterations", INT, "number of iterations" } },
+				[=] ( args_t args ) { iterationsPerFrame = args[ "numIterations" ].data.x; },
+				"setting number of iterations that run per frame" );
 
 			{
 				const GLuint shader = shaders[ "Update" ];
@@ -184,7 +191,7 @@ public:
 		const GLuint shader = shaders[ "Update" ];
 		glUseProgram( shader );
 
-		for ( int i = 0; i < 1; i++ ) {
+		for ( int i = 0; i < iterationsPerFrame; i++ ) {
 			static rngi wangSeeder( 1, 4000000000 );
 			glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
 
