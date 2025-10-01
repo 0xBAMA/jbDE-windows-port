@@ -2376,7 +2376,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		// const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
 		const vec4 d = vec4( fractalD( p / 3.0f ) * 3.0f );
 //		const vec4 d = concretemap( p );
@@ -2389,9 +2389,9 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
+	if ( true ) {
 		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
-		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 100.0f, 0.03f, 0.5f ).yxz );
+		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 69.0f, 0.2f, 0.5f ).yxz );
 
 	 	// const float d = deJeyko( p );
 	 	sceneDist = min( sceneDist, d );
@@ -2399,21 +2399,21 @@ float de( in vec3 p ) {
 	 		hitSurfaceType = EMISSIVE_FRESNEL;
 //	 		hitColor = vec3( 3.618f * honey );
 
-//			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
-//			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
-//			vec3 c;
-//			if ( c0.z > 0.1f )
-//				c = c0;
-//			else
-//				c = c1;
-//			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.1f ) ), 0.25f ) * ( 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
-//			hitColor = hitColor * smoothstep( c1.z, 0.0f, 0.01f );
-//
-//			if ( c == c1 ) {
-//				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
-//				hitRoughness = displacement.r;
-//				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
-//			}
+			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
+			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
+			vec3 c;
+			if ( c0.z > 0.1f )
+				c = c0;
+			else
+				c = c1;
+			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.1f ) ), 0.25f ) * ( 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
+			hitColor = ( blood + honey ) * hitColor * smoothstep( c1.z, 0.0f, 0.01f );
+
+			if ( c == c1 ) {
+				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+				hitRoughness = displacement.r;
+				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
+			}
 
 //			 hitColor = 3.0f * ( mod( i, 2 ) == 0 ? vec3( 0.99f ) : mix( blood, honey, 0.3f ) );
 //			hitColor = 2.0f * sapphire;
@@ -3038,7 +3038,7 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 	// box intersection
 	float tMin, tMax;
 	const ivec3 iS = imageSize( SpherePack ).xyz;
-	const float scale = 0.01f;
+	const float scale = 0.125f;
 	const vec3 blockSize = vec3( iS ) * scale;
 	const vec3 blockSizeHalf = vec3( blockSize ) / 2.0f;
 
@@ -3101,28 +3101,29 @@ intersection_t SpherePackDDA( in ray_t ray ) {
 
 					intersection.dTravel = distance( ray.origin, rayCache.origin );
 					intersection.normal = normalize( intersection.frontfaceHit ? test.a.yzw : test.b.yzw );
-//					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
+					 intersection.materialID = intersection.frontfaceHit ? REFRACTIVE : REFRACTIVE_BACKFACE;
 //					intersection.materialID = DIFFUSE;
-					intersection.materialID = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+//					intersection.materialID = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
 					// intersection.IoR = 1.0f / ( 1.5f + 0.1f * colorCache.r );
-					intersection.IoR = ( 1.5f + 0.1f * colorCache.r );
+					intersection.IoR = 1.0f / ( 1.5f + 0.1f * colorCache.r );
 //					intersection.materialID = NormalizedRandomFloat() > ( Reflectance(  min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f ), intersection.IoR ) ) ? DIFFUSE : MIRROR;
 					// intersection.albedo = mix( honey, vec3( 1.0f ), pow( saturate( RangeRemapValue( radius, 0.0f, 10.0f, 0.0f, 1.0f ) ), 1.0f ) );
 //					intersection.albedo = intersection.materialID == MIRROR ? vec3( 0.99f ) : mix( nvidia, vec3( 0.0f ), colorCache.r );
-					intersection.albedo = vec3( 0.618f );
-					 if ( colorCache.g < 0.2f ) {
+					// intersection.albedo = vec3( 0.618f );
+					intersection.albedo = vec3( 0.8f ) * mix( nvidia, honey, colorCache.r );
+					 if ( colorCache.g < 0.1f ) {
 						intersection.roughness = colorCache.b;
-						 intersection.albedo = vec3( colorCache.b );
+//						 intersection.albedo = vec3( colorCache.b );
 					 }
 
-					if ( intersection.materialID == MIRROR ) {
-						intersection.albedo = vec3( 0.99f );
-					}
-
-					if ( radius > 10.0f ) {
-						intersection.materialID = EMISSIVE_FRESNEL;
-						intersection.albedo *= 0.1f;
-					}
+//					if ( intersection.materialID == MIRROR ) {
+//						intersection.albedo = mix( blood, vec3( 0.0f ), mix( colorCache.r, radius / 15.0f, 0.8f ) );
+//					}
+//
+//					if ( radius > 10.0f ) {
+//						intersection.materialID = EMISSIVE_FRESNEL;
+//						intersection.albedo *= 0.1f;
+//					}
 					/*
 					if ( colorCache.r < 0.07f && radius < 4.0f ) {
 						intersection.materialID = EMISSIVE_FRESNEL;
