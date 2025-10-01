@@ -186,10 +186,10 @@ public:
 		}
 		ImGui::Text( "Remapped Mouse Position: %.2f %.2f", path2DConfig.mappedMousePos.x, path2DConfig.mappedMousePos.y );
 
-
 		static bool firstTime = true;
 		static char lightNames[ 4096 ] = { 0 };
 		if ( firstTime ) {
+			firstTime = false;
 			string writeString;
 			int i = 0;
 			for ( const auto & LUTFilename : LUTFilenames ) {
