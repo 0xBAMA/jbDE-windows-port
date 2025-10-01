@@ -623,7 +623,7 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// selected wavelength - y picks which light it is
-	 wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
 //	wavelength = texture( iCDFtex, vec2( NormalizedRandomFloat(), 2.5f / textureSize( iCDFtex, 0 ).y ) ).r;
 
 	// pathtracing loop
