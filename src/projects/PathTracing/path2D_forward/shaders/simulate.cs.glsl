@@ -678,9 +678,9 @@ void main () {
 			// varying behavior already, we can just treat it uniformly, only need to consider frontface/backface for inversion
 		default:
 			rayOrigin -= result.normal * epsilon * 5;
-//			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR ); // "reverse" back to physical properties for IoR
-			float IoRCache = result.IoR;
-			result.IoR = result.IoR / previousIoR;
+			result.IoR = result.frontFacing ? ( 1.0f / result.IoR ) : ( result.IoR ); // "reverse" back to physical properties for IoR
+//			float IoRCache = result.IoR;
+//			result.IoR = result.IoR / previousIoR;
 
 			float cosTheta = min( dot( -normalize( rayDirection ), result.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
@@ -691,7 +691,7 @@ void main () {
 				rayDirection = normalize( mix( refract( normalize( rayDirection ), result.normal, result.IoR ), CircleOffset(), result.roughness ).xy );
 			}
 
-			previousIoR = IoRCache;
+//			previousIoR = IoRCache;
 			break;
 		}
 	}
