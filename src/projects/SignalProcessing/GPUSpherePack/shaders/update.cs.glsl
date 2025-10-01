@@ -56,20 +56,24 @@ void main () {
 		// we get our new radius... if you use a noise field to inform it, that could be interesting
 			// two clamps: inner clamp is for the boundary... outer clamp is enforcing a min and max radius
 
-		const float noise = GetLuma( matWood( rot * newPointLocation * 0.0001f ) ).r * 3.0f;
-		const float newRadius = clamp( noise * 30.0f * NormalizedRandomFloat(), minRadius, uintBitsToFloat( newPointSample.x ) );
-		const float oldDistance = uintBitsToFloat( oldPointSample.x );
-		const float newDistance = distance( location, newPointLocation ) - newRadius;
-		const bool otherRejectCriteria = noise < 0.9f;
+		const float noise0 = perlinfbm( rot * newPointLocation * 2.4f, 1.8f / imageSize( bufferTextureDst ).x, 3 ) + 0.1f;
+		const bool otherRejectCriteria = noise0 > 0.0f;
+		uvec4 writeValue = oldPointSample;
 
-		// making a determination about what we want to write
-		uvec4 writeValue = uvec4( 0u );
-		if ( newRadius < minRadius || oldDistance < newDistance || otherRejectCriteria ) {
-		// THE SPHERE OVERLAPS...or else it's too small, or we just want to get rid of it. No good. Keep the old data.
-			writeValue = oldPointSample;
-		} else {
-		// We want to take the new data
-			writeValue = uvec4( floatBitsToUint( newDistance ), floatBitsToUint( newRadius ), wangSeed, 0u );
+		if ( !otherRejectCriteria ) {
+			const float noise = matWood( rot * newPointLocation * 0.001f ).r;
+			const float newRadius = clamp( noise * 15.0f * saturate( 0.8f + NormalizedRandomFloat() ), minRadius, uintBitsToFloat( newPointSample.x ) );
+			const float oldDistance = uintBitsToFloat( oldPointSample.x );
+			const float newDistance = distance( location, newPointLocation ) - newRadius;
+
+			// making a determination about what we want to write
+			if ( newRadius < minRadius || oldDistance < newDistance || otherRejectCriteria ) {
+			// THE SPHERE OVERLAPS...or else it's too small, or we just want to get rid of it. No good. Keep the old data.
+				// keep value
+			} else {
+			// We want to take the new data
+				writeValue = uvec4( floatBitsToUint( newDistance ), floatBitsToUint( newRadius ), wangSeed, 0u );
+			}
 		}
 
 		// storing the image data back
