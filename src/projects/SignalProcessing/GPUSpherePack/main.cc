@@ -116,7 +116,7 @@ public:
 		if ( inputHandler.getState( KEY_K ) ) { viewOffset.y += shift ? 5.0f : 1.0f; }
 		if ( inputHandler.getState( KEY_L ) ) { viewOffset.x -= shift ? 5.0f : 1.0f; }
 
-		if ( inputHandler.getState( KEY_T ) ) { BlockCapture(); }
+		if ( inputHandler.getState( KEY_T ) && !terminal.active ) { BlockCapture(); }
 	}
 
 	void ImguiPass () {
