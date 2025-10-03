@@ -16,5 +16,5 @@ void main () {
 
 
 	// write the data to the accumulator, which will then be postprocessed and presented
-	imageStore( accumulatorTexture, writeLoc, vec4( col, 1.0f ) );
+	imageStore( accumulatorTexture, writeLoc, vec4( 0.0f, 0.0f, 0.0f, 1.0f ) );
 }

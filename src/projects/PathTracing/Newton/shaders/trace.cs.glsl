@@ -22,7 +22,7 @@ uniform uint seedValue;
 	// relative chance to be picked... should this do like a prefix sum, kind of thing? for discrete, weighted picking of a light to start from
 
 float getWavelengthForLight( int selectedLight ) {
-	return texture( iCDFtex, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( iCDFtex, 0 ).y ) ).r;
+	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
 }
 
 // buffer for tinyBVH... can we try doing the TLAS thing this time? I'm not sure what's involved...
