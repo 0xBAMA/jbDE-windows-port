@@ -9,6 +9,68 @@ public:
 	std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
 		"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
 
+	// load model triangles
+	SoftRast s;
+	vec3 sceneMins = vec3( 1e30f );
+	vec3 sceneMaxs = vec3( -1e30f );
+	void sceneBboxGrowToInclude ( vec3 p ) {
+		// update bbox minimums, with this new point
+		sceneMins.x = std::min( sceneMins.x, p.x );
+		sceneMins.y = std::min( sceneMins.y, p.y );
+		sceneMins.z = std::min( sceneMins.z, p.z );
+		// and same for bbox maximums
+		sceneMaxs.x = std::max( sceneMaxs.x, p.x );
+		sceneMaxs.y = std::max( sceneMaxs.y, p.y );
+		sceneMaxs.z = std::max( sceneMaxs.z, p.z );
+	}
+
+	struct triangle_t {
+		int idx;
+		vec3 p0, p1, p2; // positions
+		vec3 t0, t1, t2; // texcoords
+		vec3 c0, c1, c2; // colors
+		vec3 n0, n1, n2; // normals
+	};
+
+	vector< triangle_t > triangleList;
+	void LoadModel () {
+
+		// I'm not sure how I'm handling specification of materials, yet... can we get that from the OBJ? if so, it probably makes sense to drop the SoftRast layer and do it directly...
+
+		s.LoadModel( "../src/projects/PathTracing/Newton/Model/chamber.obj", "../src/projects/PathTracing/Newton/Model/" );
+		triangleList.resize( 0 );
+
+		for ( auto& triangle : s.triangles ) {
+			triangle_t loaded;
+
+			// vertex positions
+			loaded.p0 = triangle.p0;
+			loaded.p1 = triangle.p1;
+			loaded.p2 = triangle.p2;
+			sceneBboxGrowToInclude( triangle.p0 );
+			sceneBboxGrowToInclude( triangle.p1 );
+			sceneBboxGrowToInclude( triangle.p2 );
+
+			// vertex colors
+			loaded.c0 = triangle.c0;
+			loaded.c1 = triangle.c1;
+			loaded.c2 = triangle.c2;
+
+			// vertex texcoords, not yet important
+			// loaded.texcoord0 = triangle.t0;
+			// loaded.texcoord1 = triangle.t1;
+			// loaded.texcoord2 = triangle.t2;
+
+			// vertex normals in n0, n1, n2... not sure how to use that in a pathtracer
+			// loaded.normal = normalize( triangle.n0 + triangle.n1 + triangle.n2 );
+
+			loaded.idx = triangleList.size();
+
+			// and push it onto the list
+			triangleList.push_back( loaded );
+		}
+	}
+
 	void OnInit () {
 		ZoneScoped;
 		{
@@ -19,6 +81,46 @@ public:
 			shaders[ "Draw" ]	= computeShader( basePath + "draw.cs.glsl" ).shaderHandle;
 			shaders[ "Trace" ]	= computeShader( basePath + "trace.cs.glsl" ).shaderHandle;
 
+			// ================================================================================================================
+			// loading a model...
+			LoadModel();
+
+			// create a copy of the data with just the information required by the BVH builder
+			vector< tinybvh::bvhvec4 > triangleData;
+			for ( auto& t : triangleList ) {
+				triangleData.push_back( tinybvh::bvhvec4( t.p0.x, t.p0.y, t.p0.z, t.idx ) );
+				triangleData.push_back( tinybvh::bvhvec4( t.p1.x, t.p1.y, t.p1.z, t.idx ) );
+				triangleData.push_back( tinybvh::bvhvec4( t.p2.x, t.p2.y, t.p2.z, t.idx ) );
+			}
+			tinybvh::BVH8_CWBVH sceneBVH;
+			sceneBVH.BuildHQ( &triangleData[ 0 ], triangleData.size() / 3 );
+
+			// uploading the buffer to the GPU
+			Tick();
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Data, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
+			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "Terrain CWBVH Node Data" ).c_str() );
+			cout << "Terrain CWBVH8 Node Data is " << GetWithThousandsSeparator( terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Tris, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
+			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "Terrain CWBVH Tri Data" ).c_str() );
+			cout << "Terrain CWBVH8 Triangle Data is " << GetWithThousandsSeparator( terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleData );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &terrainTriangles[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
+			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Terrain Triangle Data" ).c_str() );
+			cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+
+			float msTakenBufferTerrainBVH = Tock();
+			totalTime += msTakenBufferTerrainBVH;
+			cout << endl << "Terrain BVH passed to GPU in " << msTakenBufferTerrainBVH / 1000.0f << "s\n";
+
+			// ================================================================================================================
 			// emission spectra LUT textures, packed together
 			textureOptions_t opts;
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
@@ -75,9 +177,10 @@ public:
 			opts.initialData = inverseCDF.GetImageDataBasePtr();
 			textureManager.Add( "iCDF", opts );
 
-			// buffer for ray states (N rays * M bounces * 64 byte struct)
-
+			// ================================================================================================================
 			// film plane buffer
+
+			// ================================================================================================================
 
 		}
 	}
