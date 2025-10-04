@@ -33,6 +33,9 @@ public:
 	};
 
 	vector< triangle_t > triangleList;
+	GLuint bvhNodeBuffer = 0;
+	GLuint bvhDataBuffer = 0;
+	GLuint triDataBuffer = 0;
 	void LoadModel () {
 
 		// I'm not sure how I'm handling specification of materials, yet... can we get that from the OBJ? if so, it probably makes sense to drop the SoftRast layer and do it directly...
@@ -93,32 +96,51 @@ public:
 				triangleData.push_back( tinybvh::bvhvec4( t.p2.x, t.p2.y, t.p2.z, t.idx ) );
 			}
 			tinybvh::BVH8_CWBVH sceneBVH;
-			sceneBVH.BuildHQ( &triangleData[ 0 ], triangleData.size() / 3 );
+			sceneBVH.Build( &triangleData[ 0 ], triangleData.size() / 3 );
 
 			// uploading the buffer to the GPU
 			Tick();
 
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhNodesDataBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Data, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, cwbvhNodesDataBuffer );
-			glObjectLabel( GL_BUFFER, cwbvhNodesDataBuffer, -1, string( "Terrain CWBVH Node Data" ).c_str() );
-			cout << "Terrain CWBVH8 Node Data is " << GetWithThousandsSeparator( terrainBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glCreateBuffers( 1, &bvhNodeBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, bvhNodeBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, sceneBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) sceneBVH.bvh8Data, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, bvhNodeBuffer );
+			glObjectLabel( GL_BUFFER, bvhNodeBuffer, -1, string( "CWBVH Node Data" ).c_str() );
+			cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( sceneBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, cwbvhTrisDataBuffer );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) terrainBVH.bvh8Tris, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, cwbvhTrisDataBuffer );
-			glObjectLabel( GL_BUFFER, cwbvhTrisDataBuffer, -1, string( "Terrain CWBVH Tri Data" ).c_str() );
-			cout << "Terrain CWBVH8 Triangle Data is " << GetWithThousandsSeparator( terrainBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glCreateBuffers( 1, &bvhDataBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, bvhDataBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, sceneBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) sceneBVH.bvh8Tris, GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, bvhDataBuffer );
+			glObjectLabel( GL_BUFFER, bvhDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
+			cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( sceneBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
-			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triangleData );
-			glBufferData( GL_SHADER_STORAGE_BUFFER, terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &terrainTriangles[ 0 ], GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triangleData );
-			glObjectLabel( GL_BUFFER, triangleData, -1, string( "Actual Terrain Triangle Data" ).c_str() );
-			cout << "Terrain Triangle Test Data is " << GetWithThousandsSeparator( terrainTriangles.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
+			glCreateBuffers( 1, &triDataBuffer );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triDataBuffer );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, triangleData.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &triangleData[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triDataBuffer );
+			glObjectLabel( GL_BUFFER, triDataBuffer, -1, string( "Actual Triangle Data" ).c_str() );
+			cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleData.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
-			float msTakenBufferTerrainBVH = Tock();
-			totalTime += msTakenBufferTerrainBVH;
-			cout << endl << "Terrain BVH passed to GPU in " << msTakenBufferTerrainBVH / 1000.0f << "s\n";
+			float msTakenBufferBVH = Tock();
+			cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
+
+			// testing the BVH
+#if 1
+			Image_4U testImage(  512, 512 );
+
+			for ( uint32_t y = 0; y < 512; y++ )
+			for ( uint32_t x = 0; x < 512; x++ ) {
+				color_4U color;
+				tinybvh::Ray r = tinybvh::Ray( tinybvh::bvhvec3( ( x - 256 ) / 512.0f, ( y - 256 ) / 512.0f, -5.0f ),tinybvh::bvhvec3( 0.0f, 0.0f, 1.0f ) ) ;
+				sceneBVH.Intersect( r );
+				color[ red ] = color[ green ] = color[ blue ] = uint8_t( RangeRemap( r.hit.t, 0.0f, 10.0f, 0.0f, 255.0f ) );
+				color[ alpha ] = 255u;
+				testImage.SetAtXY( x, y, color );
+			}
+
+			testImage.Save( "test.png" );
+#endif
 
 			// ================================================================================================================
 			// emission spectra LUT textures, packed together
