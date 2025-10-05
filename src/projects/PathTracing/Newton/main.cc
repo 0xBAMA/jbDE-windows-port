@@ -6,9 +6,6 @@ public:
 	Newton () { Init(); OnInit(); PostInit(); }
 	~Newton () { Quit(); }
 
-	std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
-		"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
-
 	// load model triangles
 	SoftRast s;
 	vec3 sceneMins = vec3( 1e30f );
