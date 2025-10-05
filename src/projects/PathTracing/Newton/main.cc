@@ -95,12 +95,13 @@ public:
 				triangleData.push_back( tinybvh::bvhvec4( t.p1.x, t.p1.y, t.p1.z, t.idx ) );
 				triangleData.push_back( tinybvh::bvhvec4( t.p2.x, t.p2.y, t.p2.z, t.idx ) );
 			}
-			tinybvh::BVH8_CWBVH sceneBVH;
+			tinybvh::BVH sceneBVH;
 			sceneBVH.Build( &triangleData[ 0 ], triangleData.size() / 3 );
 
 			// uploading the buffer to the GPU
 			Tick();
 
+			/*
 			glCreateBuffers( 1, &bvhNodeBuffer );
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, bvhNodeBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, sceneBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) sceneBVH.bvh8Data, GL_DYNAMIC_COPY );
@@ -124,17 +125,22 @@ public:
 
 			float msTakenBufferBVH = Tock();
 			cout << endl << "BVH passed to GPU in " << msTakenBufferBVH / 1000.0f << "s\n";
+			*/
 
 			// testing the BVH
 #if 1
 			Image_4U testImage(  512, 512 );
+			const float scale = 10.0f;
+			const glm::mat4 rot = glm::inverse( glm::lookAt( vec3( 10.0f, 10.0f, 10.0f ), vec3( 0.0f, 0.0f, 0.0f ), vec3(0.0f, 1.0f, 0.0f) ) );
 
 			for ( uint32_t y = 0; y < 512; y++ )
 			for ( uint32_t x = 0; x < 512; x++ ) {
 				color_4U color;
-				tinybvh::Ray r = tinybvh::Ray( tinybvh::bvhvec3( ( x - 256 ) / 512.0f, ( y - 256 ) / 512.0f, -5.0f ),tinybvh::bvhvec3( 0.0f, 0.0f, 1.0f ) ) ;
+				glm::vec3 org = ( rot * vec4( scale * ( float( y ) - 256 ) / 512.0f, scale * ( float( x ) - 256 ) / 512.0f, 10.0f, 1.0f ) ).xyz();
+				glm::vec3 dir = ( rot * vec4( 0.0f, 0.0f, -1.0f, 0.0f ) ).xyz();
+				tinybvh::Ray r = tinybvh::Ray( tinybvh::bvhvec3( org.x, org.y, org.z ),tinybvh::bvhvec3( dir.x, dir.y, dir.z ) ) ;
 				sceneBVH.Intersect( r );
-				color[ red ] = color[ green ] = color[ blue ] = uint8_t( RangeRemap( r.hit.t, 0.0f, 10.0f, 0.0f, 255.0f ) );
+				color[ red ] = color[ green ] = color[ blue ] = uint8_t( RangeRemap( r.hit.t, 0.0f, 20.0f, 0.0f, 255.0f ) );
 				color[ alpha ] = 255u;
 				testImage.SetAtXY( x, y, color );
 			}
