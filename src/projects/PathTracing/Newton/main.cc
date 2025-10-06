@@ -286,6 +286,7 @@ public:
 			ImGui::Text( "" );
 			if ( ImGui::Button( " + Add Light " ) ) {
 				// add a light
+				sprintf( &lights[ numLights ].label[ 0 ], "Light %d", numLights );
 				numLights++;
 			}
 
