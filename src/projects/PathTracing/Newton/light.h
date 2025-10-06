@@ -38,9 +38,17 @@ struct lightSpec {
 	int emitterType;	// type of light emitter
 	int pickedLUT;		// type of light source
 
-	// 'power' - this is an arbitrary scale factor, and only matters relative to other light sources
+	float power;		// 'power' - this is an arbitrary scale factor, and only matters relative to other light sources
 
-	// emitter parameterizatoin
+	// emitter parameterization - 16 floats should be sufficient
+	vec4 emitterParams[ 4 ];
+
+	lightSpec() {
+		emitterType = 0;
+		pickedLUT = 4;
+		power = 1.0f;
+	}
+
 };
 
 // and packing to the GPU, we just pack as 2x vec4's (tbd, maybe more)
