@@ -1,12 +1,17 @@
+#pragma once
+
 // specifying the distribution of emitted rays
-std::vector< string > emitterTypes = {
+// std::vector< string > emitterTypes = {
+inline const char* emitterTypes[] = {
 	/* 0 */ "Point",
 	/* 1 */ "Cauchy Beam",
 	/* 2 */ "Laser Disk",
 	/* 3 */ "Uniform Line Emitter" };
+inline const int numEmitters = sizeof( emitterTypes ) / sizeof( emitterTypes[ 0 ] );
 
 // specifying the LUT which will be used for selecting wavelengths
-std::vector< string > LUTFilenames = {
+// std::vector< string > LUTFilenames = {
+inline const char* LUTFilenames[] = {
 	/* 0 */ "AmberLED",
 	/* 1 */ "2700kLED",
 	/* 2 */ "6500kLED",
@@ -26,6 +31,7 @@ std::vector< string > LUTFilenames = {
 	/* 16 */ "SulphurPlasma",
 	/* 17 */ "Sunlight",
 	/* 18 */ "Xenon" };
+inline const int numLUTs = sizeof( LUTFilenames ) / sizeof( LUTFilenames[ 0 ] );
 
 // struct defining the state for the data-driven interaction with a user-specified light
 struct lightSpec {
