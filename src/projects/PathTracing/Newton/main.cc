@@ -1,10 +1,16 @@
 #include "../../../engine/engine.h"
 #include "shaders/lib/shaderWrapper.h"
+#include "light.h"
 
 class Newton final : public engineBase { // sample derived from base engine class
 public:
 	Newton () { Init(); OnInit(); PostInit(); }
 	~Newton () { Quit(); }
+
+	// list of lights
+	static constexpr int maxLights = 1024;
+	int numLights = 0;
+	lightSpec lights[ maxLights ];
 
 	// load model triangles
 	SoftRast s;
@@ -195,6 +201,98 @@ public:
 
 	void ImguiPass () {
 		ZoneScoped;
+		static int flaggedForRemoval = -1; // this will run next frame when I want to remove an entry from the list, to avoid imgui confusion
+		if ( flaggedForRemoval != -1 && flaggedForRemoval < numLights ) {
+			// remove it from the list by bumping the remainder of the list up
+			for ( int i = flaggedForRemoval; i < numLights; i++ ) {
+				lights[ i ] = lights[ i + 1 ];
+			}
+
+			// reset trigger and decrement light count
+			flaggedForRemoval = -1;
+			numLights--;
+			if ( numLights < 1024 )
+				lights[ numLights ] = lightSpec(); // zero out the entry
+		}
+
+		{
+			ImGui::Begin( "Light Config" );
+
+			// iterate through the list of lights, and allow manipulation of state on each one
+			for ( int l = 0; l < numLights; l++ ) {
+				const string lString = string( "##" ) + to_string( l );
+
+				ImGui::Text( "" );
+				ImGui::Text( ( string( "Light " ) + to_string( l ) ).c_str() );
+
+				// interesting method for right-aligned buttons from https://github.com/ocornut/imgui/issues/934
+				const float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
+				static float HostButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
+				float pos = HostButtonWidth + itemSpacing;
+				ImGui::SameLine(ImGui::GetWindowWidth() - pos);
+				if ( ImGui::SmallButton( ( string( "Remove" ) + lString ).c_str() ) ) {
+					flaggedForRemoval = l;
+				}
+				HostButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
+
+				ImGui::SliderFloat( ( string( "Power" ) + lString ).c_str(), &lights[ l ].power, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &lights[ l ].pickedLUT, LUTFilenames, numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
+				ImGui::Combo( ( string( "Emitter Type" ) + lString ).c_str(), &lights[ l ].emitterType, emitterTypes, numEmitters );
+				ImGui::Text( "Emitter Settings:" );
+				switch ( lights[ l ].emitterType ) {
+				case 0: // point emitter
+
+					// need to set the 3D point location
+					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+
+					break;
+
+				case 1: // cauchy beam emitter
+
+					// need to set the 3D emitter location
+					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					// need to set the 3D direction - tbd how this is going to go, euler angles?
+					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					// need to set the scale factor for the angular spread
+					ImGui::SliderFloat( ( string( "Angular Spread" ) + lString ).c_str(), &lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+					break;
+
+				case 2: // laser disk
+
+					// need to set the 3D emitter location
+					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					// need to set the 3D direction (defining disk plane)
+					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					// need to set the radius of the disk being used
+					ImGui::SliderFloat( ( string( "Radius" ) + lString ).c_str(), &lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+
+					break;
+
+				case 3: // uniform line emitter
+
+					// need to set the 3D location of points A and B
+					ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+
+					break;
+
+				default:	break;
+				}
+				ImGui::Text( "" );
+				ImGui::Separator();
+			}
+
+			// option to add a new light
+			ImGui::Text( "" );
+			if ( ImGui::Button( " + Add Light " ) ) {
+				// add a light
+				numLights++;
+			}
+
+			ImGui::End();
+		}
+
 		if ( tonemap.showTonemapWindow ) {
 			TonemapControlsWindow();
 		}
@@ -214,6 +312,7 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
+		/*
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
@@ -231,6 +330,7 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
+		*/
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
