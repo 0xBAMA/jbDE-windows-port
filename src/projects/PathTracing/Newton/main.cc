@@ -263,7 +263,7 @@ public:
 					// need to set the 3D emitter location
 					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
 					// need to set the 3D direction (defining disk plane)
-					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
 					// need to set the radius of the disk being used
 					ImGui::SliderFloat( ( string( "Radius" ) + lString ).c_str(), &lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 
