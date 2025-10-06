@@ -126,9 +126,9 @@ public:
 			// emission spectra LUT textures, packed together
 			textureOptions_t opts;
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			Image_1F inverseCDF( 1024, LUTFilenames.size() );
+			Image_1F inverseCDF( 1024, numLUTs );
 
-			for ( int i = 0; i < LUTFilenames.size(); i++ ) {
+			for ( int i = 0; i < numLUTs; i++ ) {
 				Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
 
 				// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
@@ -170,7 +170,7 @@ public:
 
 			// we now have the solution for the LUT
 			opts.width = 1024;
-			opts.height = LUTFilenames.size();
+			opts.height = numLUTs;
 			opts.dataType = GL_R32F;
 			opts.minFilter = GL_LINEAR;
 			opts.magFilter = GL_LINEAR;
