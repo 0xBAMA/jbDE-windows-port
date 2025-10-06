@@ -223,18 +223,11 @@ public:
 				const string lString = string( "##" ) + to_string( l );
 
 				ImGui::Text( "" );
-				ImGui::Text( ( string( "Light " ) + to_string( l ) ).c_str() );
+				// ImGui::Text( ( string( "Light " ) + to_string( l ) ).c_str() );
+				ImGui::Indent();
 
-				// interesting method for right-aligned buttons from https://github.com/ocornut/imgui/issues/934
-				const float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
-				static float HostButtonWidth = 100.0f; //The 100.0f is just a guess size for the first frame.
-				float pos = HostButtonWidth + itemSpacing;
-				ImGui::SameLine(ImGui::GetWindowWidth() - pos);
-				if ( ImGui::SmallButton( ( string( "Remove" ) + lString ).c_str() ) ) {
-					flaggedForRemoval = l;
-				}
-				HostButtonWidth = ImGui::GetItemRectSize().x; //Get the actual width for next frame.
 
+				ImGui::InputTextWithHint( ( string( "Light Name" ) + lString ).c_str(), "Enter a name for this light, if you would like. Not used for anything other than organization.", lights[ l ].label, 256 );
 				ImGui::SliderFloat( ( string( "Power" ) + lString ).c_str(), &lights[ l ].power, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 				ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &lights[ l ].pickedLUT, LUTFilenames, numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
 				ImGui::Combo( ( string( "Emitter Type" ) + lString ).c_str(), &lights[ l ].emitterType, emitterTypes, numEmitters );
@@ -277,9 +270,15 @@ public:
 
 					break;
 
-				default:	break;
+				default:
+					ImGui::Text( "Invalid Emitter Type" );
+					break;
+				}
+				if ( ImGui::Button( ( string( "Remove" ) + lString ).c_str() ) ) {
+					flaggedForRemoval = l;
 				}
 				ImGui::Text( "" );
+				ImGui::Unindent();
 				ImGui::Separator();
 			}
 

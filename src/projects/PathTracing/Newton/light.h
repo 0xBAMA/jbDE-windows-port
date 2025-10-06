@@ -43,10 +43,15 @@ struct lightSpec {
 	// emitter parameterization - 16 floats should be sufficient
 	vec4 emitterParams[ 4 ];
 
+	char label[ 256 ];
+
 	lightSpec() {
 		emitterType = 0;
 		pickedLUT = 4;
 		power = 1.0f;
+
+		// reset the label string
+		label[ 0 ] = '\0';
 	}
 
 };
