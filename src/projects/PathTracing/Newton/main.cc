@@ -40,6 +40,7 @@ public:
 	GLuint bvhNodeBuffer = 0;
 	GLuint bvhDataBuffer = 0;
 	GLuint triDataBuffer = 0;
+	GLuint lightBuffer = 0;
 	void LoadModel () {
 
 		// I'm not sure how I'm handling specification of materials, yet... can we get that from the OBJ? if so, it probably makes sense to drop the SoftRast layer and do it directly...
@@ -228,6 +229,54 @@ public:
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
+
+	}
+
+	void PrepLightBuffer () {
+		// we want to go through the list of lights, and create a data structure to assist with importance sampling them
+		if ( !lightBuffer ) {
+			glGenBuffers ( 1, &lightBuffer );
+		}
+
+		// I'm going to go ahead and say, we are not supporting massive dynamic range... lights will need to have power levels relative to one another that are not more than about 3 orders of magnitude (1000x)
+			// this is because we are constructing a list of light indices... these indices are collected such that more powerful lights are more commonly represented in the set. Uniformly picking amongst the
+			// elements of the set will therefore constitute a form of importance sampling, whereby more powerful lights are picked to emit rays more frequently.
+
+		// the buffer consists of two parts:
+			// 1024 ints, the shuffled list of light indices with weighted representation
+			// a list of lights, with at least as many as the maximum index specified in the indices portion... otherwise, it will try to refer to nonexistent data when trying to reference that entry
+
+		// total power helps us inform how the buffer is populated, based on the relative contribution of each light
+		float totalPower = 0.0f;
+		std::vector< float > powers;
+		for ( int l = 0; l < numLights; l++ ) {
+			totalPower += lights[ l ].power;
+			powers.push_back( totalPower );
+		}
+
+		// this only fires when the light list is edited, so I'm going to do this kind of a dumb way, using a uniform distribution to pick
+		rng pick = rng( 0.0f, totalPower );
+		std::vector< uint32_t > lightBufferDataA;
+		for ( int i = 0; i < maxLights; i++ ) {
+			float thresh = pick();
+			int j = 0;
+			for ( ; j < powers.size(); j++ ) {
+				if ( thresh <= powers[ j ] ) { // we threw a dart and now have run out to it and passed it. Take this result.
+					break; // because we are generating numbers 0.0f to totalPower, we will land in one of these bins, with frequency weighted by their relative magnitude in "power"
+				}
+			}
+			lightBufferDataA.push_back( j );
+		}
+		// then we also need some information for each individual light...
+		std::vector< vec4 > lightBufferDataB;
+		for ( int i = 0; i < numLights; i++ ) {
+			// the 3x vec4's specifying a light for the GPU process...
+			lightBufferDataB.push_back( vec4( lights[ i ].emitterType, lights[ i ].pickedLUT, 0.0f, 0.0f ) );
+			lightBufferDataB.push_back( lights[ i ].emitterParams[ 0 ] );
+			lightBufferDataB.push_back( lights[ i ].emitterParams[ 1 ] );
+			lightBufferDataB.push_back( vec4( 0.0f ) );
+		}
+
 
 	}
 
