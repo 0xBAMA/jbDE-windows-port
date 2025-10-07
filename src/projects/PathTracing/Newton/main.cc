@@ -267,6 +267,35 @@ public:
 			}
 			lightBufferDataA.push_back( j );
 		}
+
+		// this first part of the buffer, I want to visualize...
+		Image_4U importanceVisualizer( 64 * 5 + 1, 16 * 5 + 1 );
+		for ( uint32_t y = 0; y < 16; y++ ) {
+			for ( uint32_t x = 0; x < 64; x++ ) {
+				int index = y * 64 + x;
+				int pickedLight = lightBufferDataA[ index ];
+				color_4U color, black;
+				color[ red ] = visualizerColors[ pickedLight ].r * 255;
+				color[ green ] = visualizerColors[ pickedLight ].g * 255;
+				color[ blue ] = visualizerColors[ pickedLight ].b * 255;
+				black[ alpha ] = color[ alpha ] = 255;
+				black[ red ] = black[ green ] = black[ blue ] = 0;
+
+				for ( uint32_t bY = 0; bY < 6; bY++ ) {
+					for ( uint32_t bX = 0; bX < 6; bX++ ) {
+						if ( bY == 0 || bX == 0 || bY == 5 || bX == 5 ) {
+							importanceVisualizer.SetAtXY( 5 * x + bX, 5 * y + bY, black );
+						} else {
+							importanceVisualizer.SetAtXY( 5 * x + bX, 5 * y + bY, color );
+						}
+					}
+				}
+			}
+		}
+		glActiveTexture( GL_TEXTURE0 );
+		glBindTexture( GL_TEXTURE_2D, textureManager.Get( "Light Importance Visualizer" ) );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, importanceVisualizer.Width(), importanceVisualizer.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, importanceVisualizer.GetImageDataBasePtr() );
+
 		// then we also need some information for each individual light...
 		std::vector< vec4 > lightBufferDataB;
 		for ( int i = 0; i < numLights; i++ ) {
@@ -301,6 +330,12 @@ public:
 
 		{
 			ImGui::Begin( "Light Config" );
+
+			// visualizer of the light buffer importance structure...
+			ImGui::Text( "" );
+			ImGui::SetCursorPosX( 80 );
+			ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager.Get( "Light Importance Visualizer" ) ), ImVec2( 64 * 5 + 1, 16 * 5 + 1 ) );
+			ImGui::Text( "" );
 
 			// iterate through the list of lights, and allow manipulation of state on each one
 			for ( int l = 0; l < numLights; l++ ) {
@@ -387,12 +422,17 @@ public:
 			// option to add a new light
 			ImGui::Text( "" );
 			if ( ImGui::Button( " + Add Light " ) ) {
-				// add a light
-				sprintf( &lights[ numLights ].label[ 0 ], "Light %d", numLights );
+				// add a new light with default settings
+				bufferDirty = true;
 				numLights++;
 			}
 
 			ImGui::End();
+
+			// if anything on the light list got edited this frame, we need to redo the light buffer for the GPU
+			if ( bufferDirty ) {
+				PrepLightBuffer();
+			}
 		}
 
 		if ( tonemap.showTonemapWindow ) {
@@ -414,12 +454,11 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		/*
-		{ // dummy draw - draw something into accumulatorTexture
+		{ // draw the current state of the film buffer into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			glUseProgram( shaders[ "Dummy Draw" ] );
-			glUniform1f( glGetUniformLocation( shaders[ "Dummy Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			glUseProgram( shaders[ "Draw" ] );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -432,7 +471,6 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
-		*/
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
