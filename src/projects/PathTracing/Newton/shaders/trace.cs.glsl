@@ -42,10 +42,10 @@ layout( binding = 0, std430 ) buffer lightBuffer {
 	lightSpecGPU lightList[]; // we do not need to know how many lights exist, because it is implicitly encoded in the importance structure's indexing
 };
 
-
 // ===================================================================================================
 float getWavelengthForLight( int selectedLight ) {
-	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
+	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( selectedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
+}
 }
 
 // buffer for tinyBVH... can we try doing the TLAS thing this time? I'm not sure what's involved...
