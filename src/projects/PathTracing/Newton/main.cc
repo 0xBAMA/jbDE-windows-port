@@ -130,65 +130,96 @@ public:
 
 			// ================================================================================================================
 			// emission spectra LUT textures, packed together
-			textureOptions_t opts;
-			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-			Image_1F inverseCDF( 1024, numLUTs );
+			{
+				textureOptions_t opts;
+				string LUTPath = "../src/data/spectraLUT/Preprocessed/";
+				Image_1F inverseCDF( 1024, numLUTs );
 
-			for ( int i = 0; i < numLUTs; i++ ) {
-				Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
+				for ( int i = 0; i < numLUTs; i++ ) {
+					Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
 
-				// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
-				std::vector< float > cdf;
-				float cumSum = 0.0f;
-				for ( int x = 0; x < pdfLUT.Width(); x++ ) {
-					float sum = 0.0f;
-					for ( int y = 0; y < pdfLUT.Height(); y++ ) {
-						// invert because lut uses dark for positive indication... maybe fix that
-						sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
-					}
-					// increment cumulative sum and CDF
-					cumSum += sum;
-					cdf.push_back( cumSum );
-				}
-
-				// normalize the CDF values by the final value during CDF sweep
-				std::vector< vec2 > CDFpoints;
-				for ( int x = 0; x < pdfLUT.Width(); x++ ) {
-					// compute the inverse CDF with the aid of a series of 2d points along the curve
-					// adjust baseline for our desired range -> 380nm to 830nm, we have 450nm of data
-					CDFpoints.emplace_back( x + 380, cdf[ x ] / cumSum );
-				}
-
-				for ( int x = 0; x < 1024; x++ ) {
-					// each pixel along this strip needs a value of the inverse CDF
-					// this is the intersection with the line defined by the set of segments in the array CDFpoints
-					float normalizedPosition = ( x + 0.5f ) / 1024.0f;
-					for ( int p = 0; p < CDFpoints.size(); p++ )
-						if ( p == ( CDFpoints.size() - 1 ) ) {
-							inverseCDF.SetAtXY( x, i, color_1F( { CDFpoints[ p ].x } ) );
-						} else if ( CDFpoints[ p ].y >= normalizedPosition ) {
-							inverseCDF.SetAtXY( x, i, color_1F( { RangeRemap( normalizedPosition,
-									CDFpoints[ p - 1 ].y, CDFpoints[ p ].y, CDFpoints[ p - 1 ].x, CDFpoints[ p ].x ) } ) );
-							break;
+					// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
+					std::vector< float > cdf;
+					float cumSum = 0.0f;
+					for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+						float sum = 0.0f;
+						for ( int y = 0; y < pdfLUT.Height(); y++ ) {
+							// invert because lut uses dark for positive indication... maybe fix that
+							sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
 						}
+						// increment cumulative sum and CDF
+						cumSum += sum;
+						cdf.push_back( cumSum );
+					}
+
+					// normalize the CDF values by the final value during CDF sweep
+					std::vector< vec2 > CDFpoints;
+					for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+						// compute the inverse CDF with the aid of a series of 2d points along the curve
+						// adjust baseline for our desired range -> 380nm to 830nm, we have 450nm of data
+						CDFpoints.emplace_back( x + 380, cdf[ x ] / cumSum );
+					}
+
+					for ( int x = 0; x < 1024; x++ ) {
+						// each pixel along this strip needs a value of the inverse CDF
+						// this is the intersection with the line defined by the set of segments in the array CDFpoints
+						float normalizedPosition = ( x + 0.5f ) / 1024.0f;
+						for ( int p = 0; p < CDFpoints.size(); p++ )
+							if ( p == ( CDFpoints.size() - 1 ) ) {
+								inverseCDF.SetAtXY( x, i, color_1F( { CDFpoints[ p ].x } ) );
+							} else if ( CDFpoints[ p ].y >= normalizedPosition ) {
+								inverseCDF.SetAtXY( x, i, color_1F( { RangeRemap( normalizedPosition,
+										CDFpoints[ p - 1 ].y, CDFpoints[ p ].y, CDFpoints[ p - 1 ].x, CDFpoints[ p ].x ) } ) );
+								break;
+							}
+					}
 				}
+
+				// we now have the solution for the LUT
+				opts.width = 1024;
+				opts.height = numLUTs;
+				opts.dataType = GL_R32F;
+				opts.minFilter = GL_LINEAR;
+				opts.magFilter = GL_LINEAR;
+				opts.textureType = GL_TEXTURE_2D;
+				opts.pixelDataType = GL_FLOAT;
+				opts.initialData = inverseCDF.GetImageDataBasePtr();
+				textureManager.Add( "iCDF", opts );
 			}
 
-			// we now have the solution for the LUT
-			opts.width = 1024;
-			opts.height = numLUTs;
-			opts.dataType = GL_R32F;
-			opts.minFilter = GL_LINEAR;
-			opts.magFilter = GL_LINEAR;
-			opts.textureType = GL_TEXTURE_2D;
-			opts.pixelDataType = GL_FLOAT;
-			opts.initialData = inverseCDF.GetImageDataBasePtr();
-			textureManager.Add( "iCDF", opts );
-
 			// ================================================================================================================
-			// film plane buffer
+			{ // film plane buffer
+				textureOptions_t opts;
 
+				opts.textureType = GL_TEXTURE_2D;
+				opts.dataType = GL_R32UI;
+				opts.minFilter = GL_NEAREST;
+				opts.magFilter = GL_NEAREST;
+				opts.width = 1920 * 3; // red, green, and blue sensitivities
+				opts.height = 1080;
+
+				textureManager.Add( "Film Plane", opts );
+			}
 			// ================================================================================================================
+			{ // I want to do something to visualize the light distribution...
+				textureOptions_t opts;
+				opts.dataType = GL_RGBA8;
+				opts.minFilter = GL_NEAREST;
+				opts.magFilter = GL_NEAREST;
+				opts.width = 32;
+				opts.height = 32;
+				opts.textureType = GL_TEXTURE_2D;
+
+				textureManager.Add( "Light Importance Visualizer", opts );
+			}
+
+			{ // we need some colors to visualize the light buffer...
+				rng pick( 0.0f, 1.0f );
+				for ( int x = 0; x < 1024; x++ ) {
+					visualizerColors[ x ] = vec4( pick(), pick(), pick(), 1.0f );
+				}
+				PrepLightBuffer();
+			}
 
 		}
 	}
