@@ -47,6 +47,7 @@ struct lightSpec {
 		emitterType = 0;
 		pickedLUT = 4;
 		power = 1.0f;
+		emitterParams[ 0 ] = emitterParams[ 1 ] = vec4( 0.0f );
 
 		// reset the label string
 		sprintf( label, "Default Light" );
