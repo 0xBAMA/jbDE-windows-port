@@ -504,8 +504,13 @@ public:
 		ZoneScoped; scopedTimer Start( "Update" );
 
 		// run some rays
+		glUseProgram( shaders[ "Trace" ] );
 
-		// run the autoexposure stuff
+		// environment setup
+
+		glDispatchCompute( 16, 16, 1 );
+
+		// what's the plan for autoexposure stuff?
 
 	}
 

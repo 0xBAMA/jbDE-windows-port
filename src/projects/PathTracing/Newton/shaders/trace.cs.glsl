@@ -1,5 +1,5 @@
 #version 430
-layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
+layout( local_size_x = 4, local_size_y = 16, local_size_z = 1 ) in;
 
 // environmental
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
@@ -65,8 +65,45 @@ void main () {
 	lightSpecGPU pickedLight = lightList[ lightIStructure[ wangHash() % 1024 ] ];
 
 	// generate a new ray, based on the properties of the selected light...
-		// what is my starting position, direction?
-		// what is my wavelength?
+	// what is my starting position, direction?
+	vec3 rO = vec3( 0.0f ), rD = vec3( 0.0f );
+	switch ( int( pickedLight.typeVec.x ) ) { // based on the type of emitter specified...
+	case 0: // point light
+		rO = pickedLight.parameters0.xyz;
+		rD = RandomUnitVector();
+		break;
+
+	case 1: // cauchy beam
+		// emitting from a single point
+		r0 = pickedLight.parameters0.xyz;
+		// we need to be able to place a jittered target position...
+		vec3 x, y;
+		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
+		vec2 c = rnd_disc_cauchy();
+		rD = normalize( pickedLight.parameters0.w * ( x * c.x + y * c.y ) + pickedLight.parameters1.xyz );
+		break;
+
+	case 2: // laser disk
+		// similar to above, but using a constant direction value, and using the basis jitter for a disk offset
+		vec3 x, y;
+		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
+		vec2 c = randCircle();
+		rO = pickedLight.parameters0.xyz + pickedLight.parameters0.w * ( x * c.x + y * c.y );
+		// emitting along a single direction vector
+		rD = normalize( pickedLight.parameters1.xyz );
+		break;
+
+	case 3: // uniform line emitter
+		r0 = mix( pickedLight.parameters0.xyz, pickedLight.parameters1.xyz, NormalizedRandomFloat() );
+		rD = RandomUnitVector();
+		break;
+
+	default:
+		break;
+	}
+
+	// what is my wavelength?
+	float myWavelength = getWavelengthForLight( int( pickedLight.typeVec.y ) );
 
 	// initialize pathtracing state for the given ray initialization
 
