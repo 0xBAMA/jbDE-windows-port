@@ -14,8 +14,6 @@ layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 #include "random.h"
 uniform uint seedValue;
 
-// TODO: buffer of light sources... plus method to pick from them
-
 // ===================================================================================================
 struct lightSpecGPU {
 	// less than ideal way to do this...
@@ -63,10 +61,8 @@ void main () {
 	// seeding the RNG process...
 	seed = seedValue + loc.x + 42069 + loc.y * 31415;
 
-	// the role of this shader is to do the intersection tests, and update the ray state structure in the buffer with the closest intersection
-		// it will also update the film plane...
-
-	// pick a light source that we are starting from
+	// pick a light source that we are starting from... this is importance sampling by "power"
+	lightSpecGPU pickedLight = lightList[ lightIStructure[ wangHash() % 1024 ] ];
 
 	// generate a new ray, based on the properties of the selected light...
 		// what is my starting position, direction?
