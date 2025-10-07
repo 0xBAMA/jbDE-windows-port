@@ -1,7 +1,6 @@
 #pragma once
 
 // specifying the distribution of emitted rays
-// std::vector< string > emitterTypes = {
 inline const char* emitterTypes[] = {
 	/* 0 */ "Point",
 	/* 1 */ "Cauchy Beam",
@@ -10,7 +9,6 @@ inline const char* emitterTypes[] = {
 inline const int numEmitters = sizeof( emitterTypes ) / sizeof( emitterTypes[ 0 ] );
 
 // specifying the LUT which will be used for selecting wavelengths
-// std::vector< string > LUTFilenames = {
 inline const char* LUTFilenames[] = {
 	/* 0 */ "AmberLED",
 	/* 1 */ "2700kLED",
@@ -40,8 +38,8 @@ struct lightSpec {
 
 	float power;		// 'power' - this is an arbitrary scale factor, and only matters relative to other light sources
 
-	// emitter parameterization - 16 floats should be sufficient
-	vec4 emitterParams[ 4 ];
+	// emitter parameterization - 8 floats should be sufficient
+	vec4 emitterParams[ 2 ];
 
 	char label[ 256 ];
 
@@ -51,9 +49,7 @@ struct lightSpec {
 		power = 1.0f;
 
 		// reset the label string
-		label[ 0 ] = '\0';
+		sprintf( label, "Default Light" );
 	}
 
 };
-
-// and packing to the GPU, we just pack as 2x vec4's (tbd, maybe more)

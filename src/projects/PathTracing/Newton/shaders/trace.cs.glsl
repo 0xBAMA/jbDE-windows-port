@@ -9,18 +9,41 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 uniform sampler2D lightICDF;
 
 // film plane state - film plane is 3x as wide as it would be otherwise, to accomodate the separate channels
-layout( binding = 3, r32ui ) uniform uimage2D tallyImage;
+layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 
 #include "random.h"
 uniform uint seedValue;
 
 // TODO: buffer of light sources... plus method to pick from them
-// number of lights...
-// per light:
-	// spawn distribution + orientation
-	// type of light
-	// relative chance to be picked... should this do like a prefix sum, kind of thing? for discrete, weighted picking of a light to start from
 
+// ===================================================================================================
+struct lightSpecGPU {
+	// less than ideal way to do this...
+	vec4 typeVec;		// emitter type, LUT type, 0, 0
+	vec4 parameters0;	// varies
+	vec4 parameters1;	// varies
+	vec4 pad;			// zeroes
+
+	// so, everything we need to know:
+		// type of light ( 1 float -> int )
+		// type of emitter ( 1 float -> int )
+		// emitter parameterization
+			// varies by emitter...
+
+	// Parameters:
+		// point emitter has 1x vec3 parameter
+		// cauchy beam has 2x vec3 parameters and 1x float parameter
+		// laser disk has 2x vec3 parameters and 1x float parameter
+		// uniform line emitter has 2x vec3 parameters...
+};
+
+layout( binding = 0, std430 ) buffer lightBuffer {
+	int lightIStructure[ 1024 ]; // we uniformly sample an index out of this list of 1024 to know which light we want to pick...
+	lightSpecGPU lightList[]; // we do not need to know how many lights exist, because it is implicitly encoded in the importance structure's indexing
+};
+
+
+// ===================================================================================================
 float getWavelengthForLight( int selectedLight ) {
 	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( pickedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
 }
