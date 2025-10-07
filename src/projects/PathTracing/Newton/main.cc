@@ -9,8 +9,9 @@ public:
 
 	// list of lights
 	static constexpr int maxLights = 1024;
-	int numLights = 0;
+	int numLights = 1;
 	lightSpec lights[ maxLights ];
+	vec4 visualizerColors[ maxLights ];
 
 	// load model triangles
 	SoftRast s;
