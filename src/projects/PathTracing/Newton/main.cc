@@ -206,8 +206,8 @@ public:
 			{ // I want to do something to visualize the light distribution...
 				textureOptions_t opts;
 				opts.dataType = GL_RGBA8;
-				opts.minFilter = GL_NEAREST;
-				opts.magFilter = GL_NEAREST;
+				opts.minFilter = GL_LINEAR;
+				opts.magFilter = GL_LINEAR;
 				opts.width = 32;
 				opts.height = 32;
 				opts.textureType = GL_TEXTURE_2D;
@@ -347,8 +347,8 @@ public:
 
 			// visualizer of the light buffer importance structure...
 			ImGui::Text( "" );
-			ImGui::SetCursorPosX( 80 );
-			ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager.Get( "Light Importance Visualizer" ) ), ImVec2( 64 * 5 + 1, 16 * 5 + 1 ) );
+			const int w = ImGui::GetContentRegionAvail().x;
+			ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager.Get( "Light Importance Visualizer" ) ), ImVec2( w, w * ( 16.0f * 5.0f + 1.0f ) / ( 64.0f * 5.0f + 1.0f ) ) );
 			ImGui::Text( "" );
 
 			// iterate through the list of lights, and allow manipulation of state on each one
