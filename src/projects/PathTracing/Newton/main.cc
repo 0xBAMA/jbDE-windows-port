@@ -233,6 +233,7 @@ public:
 
 	void ImguiPass () {
 		ZoneScoped;
+		bool bufferDirty = false;
 		static int flaggedForRemoval = -1; // this will run next frame when I want to remove an entry from the list, to avoid imgui confusion
 		if ( flaggedForRemoval != -1 && flaggedForRemoval < numLights ) {
 			// remove it from the list by bumping the remainder of the list up
@@ -245,6 +246,8 @@ public:
 			numLights--;
 			if ( numLights < 1024 )
 				lights[ numLights ] = lightSpec(); // zero out the entry
+
+			bufferDirty = true;
 		}
 
 		{
@@ -258,17 +261,26 @@ public:
 				// ImGui::Text( ( string( "Light " ) + to_string( l ) ).c_str() );
 				ImGui::Indent();
 
+				// color used for visualization
+				ImGui::ColorEdit4( ( string( "MyColor" ) + lString ).c_str(), ( float* ) &visualizerColors[ l ], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel );
+				bufferDirty |= ImGui::IsItemEdited();
 
+				ImGui::SameLine();
 				ImGui::InputTextWithHint( ( string( "Light Name" ) + lString ).c_str(), "Enter a name for this light, if you would like. Not used for anything other than organization.", lights[ l ].label, 256 );
 				ImGui::SliderFloat( ( string( "Power" ) + lString ).c_str(), &lights[ l ].power, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+				// this will latch, so we basically get a big chained or that triggers if any of the conditionals like this one got triggered
+				bufferDirty |= ImGui::IsItemEdited();
 				ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &lights[ l ].pickedLUT, LUTFilenames, numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
+				bufferDirty |= ImGui::IsItemEdited();
 				ImGui::Combo( ( string( "Emitter Type" ) + lString ).c_str(), &lights[ l ].emitterType, emitterTypes, numEmitters );
+				bufferDirty |= ImGui::IsItemEdited();
 				ImGui::Text( "Emitter Settings:" );
 				switch ( lights[ l ].emitterType ) {
 				case 0: // point emitter
 
 					// need to set the 3D point location
 					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 
 					break;
 
@@ -276,10 +288,13 @@ public:
 
 					// need to set the 3D emitter location
 					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 					// need to set the 3D direction - tbd how this is going to go, euler angles?
 					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 					// need to set the scale factor for the angular spread
 					ImGui::SliderFloat( ( string( "Angular Spread" ) + lString ).c_str(), &lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+					bufferDirty |= ImGui::IsItemEdited();
 
 					break;
 
@@ -287,10 +302,13 @@ public:
 
 					// need to set the 3D emitter location
 					ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 					// need to set the 3D direction (defining disk plane)
 					ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 					// need to set the radius of the disk being used
 					ImGui::SliderFloat( ( string( "Radius" ) + lString ).c_str(), &lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+					bufferDirty |= ImGui::IsItemEdited();
 
 					break;
 
@@ -298,7 +316,9 @@ public:
 
 					// need to set the 3D location of points A and B
 					ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 					ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+					bufferDirty |= ImGui::IsItemEdited();
 
 					break;
 
@@ -307,6 +327,7 @@ public:
 					break;
 				}
 				if ( ImGui::Button( ( string( "Remove" ) + lString ).c_str() ) ) {
+					bufferDirty = true;
 					flaggedForRemoval = l;
 				}
 				ImGui::Text( "" );
