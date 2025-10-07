@@ -109,21 +109,21 @@ public:
 			glCreateBuffers( 1, &bvhNodeBuffer );
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, bvhNodeBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, sceneBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) sceneBVH.bvh8Data, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, bvhNodeBuffer );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, bvhNodeBuffer );
 			glObjectLabel( GL_BUFFER, bvhNodeBuffer, -1, string( "CWBVH Node Data" ).c_str() );
 			cout << "CWBVH8 Node Data is " << GetWithThousandsSeparator( sceneBVH.usedBlocks * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glCreateBuffers( 1, &bvhDataBuffer );
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, bvhDataBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, sceneBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) sceneBVH.bvh8Tris, GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 1, bvhDataBuffer );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, bvhDataBuffer );
 			glObjectLabel( GL_BUFFER, bvhDataBuffer, -1, string( "CWBVH Tri Data" ).c_str() );
 			cout << "CWBVH8 Triangle Data is " << GetWithThousandsSeparator( sceneBVH.idxCount * 3 * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
 			glCreateBuffers( 1, &triDataBuffer );
 			glBindBuffer( GL_SHADER_STORAGE_BUFFER, triDataBuffer );
 			glBufferData( GL_SHADER_STORAGE_BUFFER, triangleData.size() * sizeof( tinybvh::bvhvec4 ), ( GLvoid* ) &triangleData[ 0 ], GL_DYNAMIC_COPY );
-			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 2, triDataBuffer );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, triDataBuffer );
 			glObjectLabel( GL_BUFFER, triDataBuffer, -1, string( "Actual Triangle Data" ).c_str() );
 			cout << "Triangle Test Data is " << GetWithThousandsSeparator( triangleData.size() * sizeof( tinybvh::bvhvec4 ) ) << " bytes" << endl;
 
@@ -306,7 +306,21 @@ public:
 			lightBufferDataB.push_back( vec4( 0.0f ) );
 		}
 
+		std::vector< uint32_t > lightBufferDataConcat;
+		for ( int i = 0; i < maxLights; i++ ) {
+			lightBufferDataConcat.push_back( lightBufferDataA[ i ] );
+		}
+		for ( int i = 0; i < numLights * 4; i++ ) {
+			lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].x ) );
+			lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].y ) );
+			lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].z ) );
+			lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].w ) );
+		}
 
+		// and sending the latest data to the GPU
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, lightBuffer );
+		glBufferData( GL_SHADER_STORAGE_BUFFER, 4 * lightBufferDataConcat.size(), ( GLvoid * ) &lightBufferDataConcat[ 0 ], GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, lightBuffer );
 	}
 
 	void ImguiPass () {
