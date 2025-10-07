@@ -46,6 +46,11 @@ layout( binding = 0, std430 ) buffer lightBuffer {
 float getWavelengthForLight( int selectedLight ) {
 	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( selectedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
 }
+
+// given a particular input vector, we basically need two perpendicular vectors to be able to freely place in 3 dimensions
+void createBasis ( in vec3 z, out vec3 x, out vec3 y ) {
+	x = cross( z, ( z.y > 0.999f ) ? vec3( 1.0f, 0.0f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f ) ); // prevent using an identical vector when taking the initial cross product
+	y = cross( x, z ); // y simply needs to be mutually perpendicular to these two vectors, which are themselves mutually perpendicular to one another
 }
 
 // buffer for tinyBVH... can we try doing the TLAS thing this time? I'm not sure what's involved...
