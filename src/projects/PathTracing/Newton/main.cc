@@ -233,11 +233,15 @@ public:
 		}
 	}
 
+	bool screenshotRequested = false;
 	vec3 viewerPosition = vec3( 0.0f );
 	vec3 basisX = vec3( 1.0f, 0.0f, 0.0f );
 	vec3 basisY = vec3( 0.0f, 1.0f, 0.0f );
 	vec3 basisZ = vec3( 0.0f, 0.0f, 1.0f );
+	float filmScale = 0.01f;
 	float powerScalar = 1000.0f;
+	// for the biasGain curve
+	float slope = 2.5f, thresh = 0.6f;
 
 	void HandleCustomEvents () {
 		// application specific controls
@@ -418,6 +422,18 @@ public:
 		}
 
 		{
+			ImGui::Begin( "Film Config" );
+			ImGui::SliderFloat( "powerScale", &powerScalar, 0.0f, 1000000.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			ImGui::SliderFloat( "slope", &slope, 0.0f, 64.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			ImGui::SliderFloat( "thresh", &thresh, 0.0f, 1.0f, "%.5f" );
+			ImGui::SliderFloat( "filmScale", &filmScale, 0.0f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			if ( ImGui::Button( "Screensho(t)" ) ) {
+				screenshotRequested = true;
+			}
+			ImGui::End();
+		}
+
+		{
 			ImGui::Begin( "Light Config" );
 
 			// visualizer of the light buffer importance structure...
@@ -549,6 +565,8 @@ public:
 			glUseProgram( shaders[ "Draw" ] );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "powerScalar" ), powerScalar );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "slope" ), slope );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "thresh" ), thresh );
 			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Draw" ], 3 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );

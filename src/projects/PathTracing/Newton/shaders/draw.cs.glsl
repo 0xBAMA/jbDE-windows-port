@@ -9,20 +9,27 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 
 #include "colorspaceConversions.glsl"
+#include "biasGain.h"
 
+uniform float slope;
+uniform float thresh;
 uniform float powerScalar;
 
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 
+	// I want some additional UI drawn here... I'd like to see the current exposure level on something like a log scale...
+		// info about orientation... this kind of thing would be nice
+
+
 	// grab the current state of the film plane... try to figure out how to map this to a color
 	vec3 tallySample = vec3(
-		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 0, 0 ) ).r,
-		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 1, 0 ) ).r,
-		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 2, 0 ) ).r
+		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 0, 0 ) ).r / powerScalar ), slope, thresh ),
+		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 1, 0 ) ).r / powerScalar ), slope, thresh ),
+		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 2, 0 ) ).r / powerScalar ), slope, thresh )
 	);
 
 	// write the data to the accumulator, which will then be postprocessed and presented
-	imageStore( accumulatorTexture, writeLoc, vec4( tallySample / powerScalar, 1.0f ) );
+	imageStore( accumulatorTexture, writeLoc, vec4( tallySample, 1.0f ) );
 }
