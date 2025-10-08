@@ -473,6 +473,7 @@ public:
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Draw" ], 3 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -507,6 +508,12 @@ public:
 		glUseProgram( shaders[ "Trace" ] );
 
 		// environment setup
+		rngi wangSeeder = rngi( 0, 1000000 );
+		glUniform1ui( glGetUniformLocation( shaders[ "Trace" ], "seedValue" ), wangSeeder() );
+
+		textureManager.BindImageForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
+		textureManager.BindTexForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
+		textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Trace" ], 3 );
 
 		glDispatchCompute( 16, 16, 1 );
 
