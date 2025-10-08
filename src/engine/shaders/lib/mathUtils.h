@@ -100,3 +100,9 @@ bool checkerBoard ( in float scale, in vec3 p ) {
 		cos( scale * pi * p.y + pi / 2.0f ) *
 		cos( scale * pi * p.z + pi / 2.0f ) ) == 0 );
 }
+//=============================================================================================================================
+// given a particular input vector, we basically need two perpendicular vectors to be able to freely place in 3 dimensions
+void createBasis ( in vec3 z, out vec3 x, out vec3 y ) {
+	x = normalize( cross( z, ( z.y > 0.999f ) ? vec3( 1.0f, 0.0f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f ) ) ); // prevent using an identical vector when taking the initial cross product
+	y = normalize( cross( x, z ) ); // y simply needs to be mutually perpendicular to these two vectors, which are themselves mutually perpendicular to one another
+}
