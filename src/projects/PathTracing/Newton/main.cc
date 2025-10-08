@@ -587,6 +587,22 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
+		if ( screenshotRequested ) {
+			// take a screenshot of the prepped LDR
+			const GLuint tex = textureManager.Get( "Display Texture" );
+			uvec2 dims = textureManager.GetDimensions( "Display Texture" );
+			std::vector< float > imageBytesToSave;
+			imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+			glBindTexture( GL_TEXTURE_2D, tex );
+			glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+			screenshot.RGBtoSRGB();
+			screenshot.FlipVertical();
+			const string filename = string( "Newton-" ) + timeDateString() + string( ".png" );
+			screenshot.Save( filename, Image_4F::backend::LODEPNG );
+			screenshotRequested = false;
+		}
+
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Clear();
