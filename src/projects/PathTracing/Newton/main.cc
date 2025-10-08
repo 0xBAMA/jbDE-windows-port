@@ -9,7 +9,7 @@ public:
 
 	// list of lights
 	static constexpr int maxLights = 1024;
-	int numLights = 1;
+	int numLights = 2;
 	lightSpec lights[ maxLights ];
 	vec4 visualizerColors[ maxLights ];
 
@@ -214,6 +214,13 @@ public:
 
 				textureManager.Add( "Light Importance Visualizer", opts );
 			}
+
+			// some dummy lights...
+			lights[ 0 ].emitterParams[ 0 ].x += 1.0f;
+			lights[ 0 ].pickedLUT = 3;
+
+			lights[ 1 ].emitterParams[ 0 ].x -= 1.0f;
+			lights[ 1 ].pickedLUT = 5;
 
 			{ // we need some colors to visualize the light buffer...
 				rng pick( 0.0f, 1.0f );
