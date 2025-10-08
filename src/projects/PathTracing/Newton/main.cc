@@ -249,10 +249,7 @@ public:
 
 		// I hit this the other day - need to reject program controls when the terminal is active or you will trigger while typing
 		if ( !terminal.active ) {
-
-			if ( inputHandler.getState4( KEY_R ) == KEYSTATE_RISING ) textureManager.ZeroTexture2D( "Film Plane" );
-
-
+			bool wipe = false;
 			{
 				// quaternion based rotation via retained state in the basis vectors
 				const float scalar = ( inputHandler.getState( KEY_LEFT_SHIFT ) || inputHandler.getState( KEY_RIGHT_SHIFT ) ) ? 0.1f : ( ( inputHandler.getState( KEY_LEFT_CTRL ) || inputHandler.getState( KEY_RIGHT_CTRL ) ) ? 0.0005f : 0.02f );
@@ -260,38 +257,44 @@ public:
 					glm::quat rot = glm::angleAxis( scalar, basisX ); // basisX is the axis, therefore remains untransformed
 					basisY = ( rot * vec4( basisY, 0.0f ) ).xyz();
 					basisZ = ( rot * vec4( basisZ, 0.0f ) ).xyz();
+					wipe = true;
 				}
 				if ( inputHandler.getState( KEY_S ) ) {
 					glm::quat rot = glm::angleAxis( -scalar, basisX );
 					basisY = ( rot * vec4( basisY, 0.0f ) ).xyz();
 					basisZ = ( rot * vec4( basisZ, 0.0f ) ).xyz();
+					wipe = true;
 				}
 				if ( inputHandler.getState( KEY_A ) ) {
 					glm::quat rot = glm::angleAxis( -scalar, basisY ); // same as above, but basisY is the axis
 					basisX = ( rot * vec4( basisX, 0.0f ) ).xyz();
 					basisZ = ( rot * vec4( basisZ, 0.0f ) ).xyz();
+					wipe = true;
 				}
 				if ( inputHandler.getState( KEY_D ) ) {
 					glm::quat rot = glm::angleAxis( scalar, basisY );
 					basisX = ( rot * vec4( basisX, 0.0f ) ).xyz();
 					basisZ = ( rot * vec4( basisZ, 0.0f ) ).xyz();
+					wipe = true;
 				}
 				if ( inputHandler.getState( KEY_Q ) ) {
 					glm::quat rot = glm::angleAxis( scalar, basisZ ); // and again for basisZ
 					basisX = ( rot * vec4( basisX, 0.0f ) ).xyz();
 					basisY = ( rot * vec4( basisY, 0.0f ) ).xyz();
+					wipe = true;
 				}
 				if ( inputHandler.getState( KEY_E ) ) {
 					glm::quat rot = glm::angleAxis( -scalar, basisZ );
 					basisX = ( rot * vec4( basisX, 0.0f ) ).xyz();
 					basisY = ( rot * vec4( basisY, 0.0f ) ).xyz();
+					wipe = true;
 				}
 
 				if ( inputHandler.getState( KEY_MINUS ) ) {
-					powerScalar += 100;
+					powerScalar += ( inputHandler.getState( KEY_LEFT_SHIFT ) || inputHandler.getState( KEY_RIGHT_SHIFT ) ) ? 1000 : 100;
 				}
 				if ( inputHandler.getState( KEY_EQUALS ) ) {
-					powerScalar -= 100;
+					powerScalar -= ( inputHandler.getState( KEY_LEFT_SHIFT ) || inputHandler.getState( KEY_RIGHT_SHIFT ) ) ? 1000 : 100;
 				}
 
 				// f to reset basis, shift + f to reset basis and home to origin
@@ -300,14 +303,17 @@ public:
 					basisX = vec3( 1.0f, 0.0f, 0.0f );
 					basisY = vec3( 0.0f, 1.0f, 0.0f );
 					basisZ = vec3( 0.0f, 0.0f, 1.0f );
+					wipe = true;
 				}
-				if ( inputHandler.getState( KEY_UP ) )			viewerPosition += scalar * basisZ;
-				if ( inputHandler.getState( KEY_DOWN ) )		viewerPosition -= scalar * basisZ;
-				if ( inputHandler.getState( KEY_RIGHT ) )		viewerPosition += scalar * basisX;
-				if ( inputHandler.getState( KEY_LEFT ) )		viewerPosition -= scalar * basisX;
-				if ( inputHandler.getState( KEY_PAGEDOWN ) )	viewerPosition += scalar * basisY;
-				if ( inputHandler.getState( KEY_PAGEUP ) )		viewerPosition -= scalar * basisY;
+				if ( inputHandler.getState( KEY_UP ) )			viewerPosition += scalar * basisZ, wipe = true;
+				if ( inputHandler.getState( KEY_DOWN ) )		viewerPosition -= scalar * basisZ, wipe = true;
+				if ( inputHandler.getState( KEY_RIGHT ) )		viewerPosition += scalar * basisX, wipe = true;
+				if ( inputHandler.getState( KEY_LEFT ) )		viewerPosition -= scalar * basisX, wipe = true;
+				if ( inputHandler.getState( KEY_PAGEDOWN ) )	viewerPosition += scalar * basisY, wipe = true;
+				if ( inputHandler.getState( KEY_PAGEUP ) )		viewerPosition -= scalar * basisY, wipe = true;
 			}
+			if ( wipe || inputHandler.getState4( KEY_R ) == KEYSTATE_RISING ) textureManager.ZeroTexture2D( "Film Plane" );
+			if ( inputHandler.getState4( KEY_T ) == KEYSTATE_RISING ) screenshotRequested = true;
 		}
 	}
 
