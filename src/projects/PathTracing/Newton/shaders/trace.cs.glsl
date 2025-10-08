@@ -101,6 +101,8 @@ void main () {
 	// generate a new ray, based on the properties of the selected light...
 	// what is my starting position, direction?
 	vec3 rO = vec3( 0.0f ), rD = vec3( 0.0f );
+	vec3 x, y;
+	vec2 c;
 	switch ( int( pickedLight.typeVec.x ) ) { // based on the type of emitter specified...
 	case 0: // point light
 		rO = pickedLight.parameters0.xyz;
@@ -109,26 +111,24 @@ void main () {
 
 	case 1: // cauchy beam
 		// emitting from a single point
-		r0 = pickedLight.parameters0.xyz;
-		// we need to be able to place a jittered target position...
-		vec3 x, y;
+		rO = pickedLight.parameters0.xyz;
+		// we need to be able to place a jittered target position... it's a 2D offset in the plane whose normal is defined by the beam direction
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
-		vec2 c = rnd_disc_cauchy();
+		c = rnd_disc_cauchy();
 		rD = normalize( pickedLight.parameters0.w * ( x * c.x + y * c.y ) + pickedLight.parameters1.xyz );
 		break;
 
 	case 2: // laser disk
-		// similar to above, but using a constant direction value, and using the basis jitter for a disk offset
-		vec3 x, y;
+		// similar to above, but using a constant direction value, and using the basis jitter for a scaled disk offset
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
-		vec2 c = randCircle();
+		c = CircleOffset();
 		rO = pickedLight.parameters0.xyz + pickedLight.parameters0.w * ( x * c.x + y * c.y );
 		// emitting along a single direction vector
 		rD = normalize( pickedLight.parameters1.xyz );
 		break;
 
 	case 3: // uniform line emitter
-		r0 = mix( pickedLight.parameters0.xyz, pickedLight.parameters1.xyz, NormalizedRandomFloat() );
+		rO = mix( pickedLight.parameters0.xyz, pickedLight.parameters1.xyz, NormalizedRandomFloat() );
 		rD = RandomUnitVector();
 		break;
 
@@ -137,21 +137,28 @@ void main () {
 	}
 
 	// what is my wavelength?
-	float myWavelength = getWavelengthForLight( int( pickedLight.typeVec.y ) );
+	myWavelength = getWavelengthForLight( int( pickedLight.typeVec.y ) );
 
 	// initialize pathtracing state for the given ray initialization
+	float energy = 1.0f;
 
 	// tracing paths, for N bounces
+	const int maxBounces = 64;
 	for ( int b = 0; b < maxBounces; b++ ) {
 
 		// scene intersection ( BVH, DDA maybe eventually )
+		float dIntersection = sceneIntersection( rO, rD );
 
+		if ( hitFilmPlane( rO, rD, dIntersection, energy, myWavelength ) ) {
 		// ray hits film plane? if so, it tallies energy contribution and dies
-
-		// material evaluation, if the ray is going to continue
-
-		// ...
-
+			break;
+		} else {
+		// material evaluation, update r0, rD, if the ray is going to continue
+			// placeholder mirror material
+			rO = rO + dIntersection * rD;
+			rD = reflect( rD, hitNormal );
+			energy *= hitAlbedo;
+		}
 	}
 	// if we fall out without hitting the film plane... nothing special happens
 }
