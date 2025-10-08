@@ -241,7 +241,8 @@ vec2 rnd_disc_cauchy() {
 	vec2 h = vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) * vec2( 6.28318530718f, pi / 2.0f );
 	// note ( re: below ): this clamp is actually significant, at a value of 10.0f... depending on application it may be an issue that it will be clipping frequently
 	// h.y = clamp( tan( h.y ), 0.0f, 10.0f ); // this distribution has a very long (read: infinite) tail, and it is creating noise
-	h.y = tan( h.y * 0.95f );
+	// h.y = tan( h.y * 0.95f );
+	h.y = tan( h.y );
 	return h.y * vec2( sin( h.x ), cos( h.x ) );
 }
 
