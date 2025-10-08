@@ -84,10 +84,52 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 
 	return result.r;
 }
+//=============================================================================================================================
+bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energy, in float wavelength ) {
+	// we are going to define basically an arbitrary plane location, for now... eventually we will need this to be more interactive
+		// the plane will only accept forward hits, closer than the max specified distance
 
-// buffer for tinyBVH... can we try doing the TLAS thing this time? I'm not sure what's involved...
-	// wrapper function for scene intersection...
+	vec3 planePoint = vec3( 0.0f, 0.0f, 1.0f );
+	vec3 planeNormal = vec3( 0.0f, 0.0f, -1.0f );
 
+	const float planeDistance = -( dot( rO - planePoint, planeNormal ) ) / dot( rD, planeNormal );
+
+	// hitting front side of plane, and hitting with a positive distance...
+	if ( ( dot( rD, planeNormal ) < 0.0f ) && planeDistance > 0.0f && planeDistance < maxDistance ) {
+		// we hit the plane... where?
+		vec3 x, y;
+		createBasis( planeNormal, x, y );
+
+		// we're going to then solve for basically a pixel index...
+		const vec3 pHit = rO + planeDistance * rD;
+
+		// we know where we hit. We know the base point of the plane. We're going to mask a portion of the plane to represent the image...
+			// we have to decompose the offset from the point we hit to the base point of the plane, which will be the center of the image...
+		const vec3 pHitOffset = pHit - planePoint;
+		const vec2 pHitOffsetXY = vec2( dot( pHitOffset, x ), dot( pHitOffset, y ) );
+
+		const float scale = 0.3f; // arbitrary scale factor, will need controls
+		const vec2 iS = vec2( imageSize( filmPlaneImage ).xy ) * vec2( 1.0f / 3.0f, 1.0f ) * scale;
+		const vec2 iShalf = iS / 2.0f;
+		if ( all( lessThanEqual( abs( pHitOffsetXY - iShalf ), iShalf ) ) ) {
+			// we hit a valid pixel... we need to apply an energy increment
+			ivec2 pixelSelect = ivec2( ( pHitOffsetXY - iShalf ) / scale );
+			vec3 XYZColor = energy * wavelengthColor( wavelength );
+			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect, uint( 256 * XYZColor.x ) );
+			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 1, 0 ), uint( 256 * XYZColor.y ) );
+			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 2, 0 ), uint( 256 * XYZColor.z ) );
+			return true;
+		}
+	}
+	return false;
+}
+//=============================================================================================================================
+// sampling the iCDF texture with a random offset on x will give us importance sampled wavelengths for different light sources
+uniform sampler2D lightICDF;
+float getWavelengthForLight( int selectedLight ) {
+	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( selectedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
+}
+//=============================================================================================================================
 void main () {
 	// my invocation...
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
