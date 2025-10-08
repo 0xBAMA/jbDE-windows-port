@@ -85,20 +85,23 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	return result.r;
 }
 //=============================================================================================================================
+uniform vec3 viewerPosition;
+uniform vec3 basisX;
+uniform vec3 basisY;
+uniform vec3 basisZ;
 bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energy, in float wavelength ) {
 	// we are going to define basically an arbitrary plane location, for now... eventually we will need this to be more interactive
 		// the plane will only accept forward hits, closer than the max specified distance
 
-	vec3 planePoint = vec3( 0.0f, 0.0f, 1.0f );
-	vec3 planeNormal = vec3( 0.0f, 0.0f, -1.0f );
+	vec3 planePoint = viewerPosition;
+	vec3 planeNormal = basisZ;
 
 	const float planeDistance = -( dot( rO - planePoint, planeNormal ) ) / dot( rD, planeNormal );
 
 	// hitting front side of plane, and hitting with a positive distance...
 	if ( ( dot( rD, planeNormal ) < 0.0f ) && planeDistance > 0.0f && planeDistance < maxDistance ) {
 		// we hit the plane... where?
-		vec3 x, y;
-		createBasis( planeNormal, x, y );
+		vec3 x = basisX, y = basisY;
 
 		// we're going to then solve for basically a pixel index...
 		const vec3 pHit = rO + planeDistance * rD;
