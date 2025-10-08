@@ -237,6 +237,12 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
+		// I hit this the other day - need to reject program controls when the terminal is active or you will trigger while typing
+		if ( !terminal.active ) {
+
+			if ( inputHandler.getState4( KEY_R ) == KEYSTATE_RISING ) textureManager.ZeroTexture2D( "Film Plane" );
+
+		}
 	}
 
 	void PrepLightBuffer () {
