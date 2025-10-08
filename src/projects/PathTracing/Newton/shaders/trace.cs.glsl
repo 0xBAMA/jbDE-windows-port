@@ -136,10 +136,10 @@ float getWavelengthForLight( int selectedLight ) {
 //=============================================================================================================================
 void main () {
 	// my invocation...
-	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
+	const ivec3 loc = ivec3( gl_GlobalInvocationID.xyz );
 
 	// seeding the RNG process...
-	seed = seedValue + loc.x + 42069 + loc.y * 31415;
+	seed = seedValue + loc.x + 42069 + loc.y * 31415 + loc.z * 45081;
 
 	// pick a light source that we are starting from... this is importance sampling by "power"
 	lightSpecGPU pickedLight = lightList[ lightIStructure[ wangHash() % 1024 ] ];

@@ -592,15 +592,13 @@ public:
 		glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( basisX ) );
 		glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( basisY ) );
 		glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( basisZ ) );
+		glUniform1f( glGetUniformLocation( shader, "filmScale" ), filmScale );
 
 		textureManager.BindImageForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
 		textureManager.BindTexForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
 		textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Trace" ], 3 );
 
 		glDispatchCompute( 16, 16, 1 );
-
-		// what's the plan for autoexposure stuff?
-
 	}
 
 	void OnRender () {
