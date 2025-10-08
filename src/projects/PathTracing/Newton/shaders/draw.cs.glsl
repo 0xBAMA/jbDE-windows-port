@@ -10,6 +10,8 @@ layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 
 #include "colorspaceConversions.glsl"
 
+uniform float powerScalar;
+
 void main () {
 	// pixel location
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
@@ -22,5 +24,5 @@ void main () {
 	);
 
 	// write the data to the accumulator, which will then be postprocessed and presented
-	imageStore( accumulatorTexture, writeLoc, vec4( tallySample / 10.0f, 1.0f ) );
+	imageStore( accumulatorTexture, writeLoc, vec4( tallySample / powerScalar, 1.0f ) );
 }

@@ -237,6 +237,8 @@ public:
 	vec3 basisX = vec3( 1.0f, 0.0f, 0.0f );
 	vec3 basisY = vec3( 0.0f, 1.0f, 0.0f );
 	vec3 basisZ = vec3( 0.0f, 0.0f, 1.0f );
+	float powerScalar = 1000.0f;
+
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
@@ -279,6 +281,13 @@ public:
 					glm::quat rot = glm::angleAxis( -scalar, basisZ );
 					basisX = ( rot * vec4( basisX, 0.0f ) ).xyz();
 					basisY = ( rot * vec4( basisY, 0.0f ) ).xyz();
+				}
+
+				if ( inputHandler.getState( KEY_MINUS ) ) {
+					powerScalar += 100;
+				}
+				if ( inputHandler.getState( KEY_EQUALS ) ) {
+					powerScalar -= 100;
 				}
 
 				// f to reset basis, shift + f to reset basis and home to origin
@@ -539,6 +548,7 @@ public:
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
 			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "powerScalar" ), powerScalar );
 			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Draw" ], 3 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
