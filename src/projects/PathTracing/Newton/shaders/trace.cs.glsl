@@ -200,7 +200,7 @@ void main () {
 		} else {
 		// material evaluation, update r0, rD, if the ray is going to continue
 			// placeholder mirror material
-			rO = rO + dIntersection * rD;
+			rO = rO + dIntersection * rD + 0.00001f * hitNormal;
 			rD = reflect( rD, hitNormal );
 			energy *= hitAlbedo;
 		}
