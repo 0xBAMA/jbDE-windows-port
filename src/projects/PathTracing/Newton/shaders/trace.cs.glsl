@@ -108,13 +108,13 @@ bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energ
 		const vec3 pHitOffset = pHit - planePoint;
 		const vec2 pHitOffsetXY = vec2( dot( pHitOffset, x ), dot( pHitOffset, y ) );
 
-		const float scale = 0.3f; // arbitrary scale factor, will need controls
+		const float scale = 0.01f; // arbitrary scale factor, will need controls
 		const vec2 iS = vec2( imageSize( filmPlaneImage ).xy ) * vec2( 1.0f / 3.0f, 1.0f ) * scale;
 		const vec2 iShalf = iS / 2.0f;
-		if ( all( lessThanEqual( abs( pHitOffsetXY - iShalf ), iShalf ) ) ) {
+		if ( all( lessThanEqual( abs( pHitOffsetXY - iShalf ), iS ) ) ) {
 			// we hit a valid pixel... we need to apply an energy increment
-			ivec2 pixelSelect = ivec2( ( pHitOffsetXY - iShalf ) / scale );
-			vec3 XYZColor = energy * wavelengthColor( wavelength );
+			ivec2 pixelSelect = ivec2( ( pHitOffsetXY + iShalf ) / scale );
+			vec3 XYZColor = rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
 			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect, uint( 256 * XYZColor.x ) );
 			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 1, 0 ), uint( 256 * XYZColor.y ) );
 			imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 2, 0 ), uint( 256 * XYZColor.z ) );

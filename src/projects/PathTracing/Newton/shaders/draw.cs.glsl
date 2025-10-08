@@ -15,12 +15,12 @@ void main () {
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 
 	// grab the current state of the film plane... try to figure out how to map this to a color
-	uvec3 tallySample = uvec3(
+	vec3 tallySample = vec3(
 		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 0, 0 ) ).r,
 		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 1, 0 ) ).r,
 		imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 2, 0 ) ).r
 	);
 
 	// write the data to the accumulator, which will then be postprocessed and presented
-	imageStore( accumulatorTexture, writeLoc, vec4( rgb_to_srgb( xyz_to_rgb( vec3( tallySample ) / 1000.0f ) ), 1.0f ) );
+	imageStore( accumulatorTexture, writeLoc, vec4( tallySample / 10.0f, 1.0f ) );
 }
