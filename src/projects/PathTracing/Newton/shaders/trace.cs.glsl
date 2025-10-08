@@ -1,20 +1,21 @@
 #version 430
 layout( local_size_x = 4, local_size_y = 16, local_size_z = 1 ) in;
-
+//=============================================================================================================================
 // environmental
 layout( binding = 0, rgba8ui ) uniform uimage2D blueNoiseTexture;
 layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
-
-// holding the information for the light sources
-uniform sampler2D lightICDF;
-
 // film plane state - film plane is 3x as wide as it would be otherwise, to accomodate the separate channels
 layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
-
+//=============================================================================================================================
+#include "mathUtils.h"
+#include "spectrumXYZ.h"
+#include "colorspaceConversions.glsl"
+//=============================================================================================================================
 #include "random.h"
 uniform uint seedValue;
-
-// ===================================================================================================
+//=============================================================================================================================
+float myWavelength = 0.0f;
+//=============================================================================================================================
 struct lightSpecGPU {
 	// less than ideal way to do this...
 	vec4 typeVec;		// emitter type, LUT type, 0, 0
@@ -35,20 +36,53 @@ struct lightSpecGPU {
 		// uniform line emitter has 2x vec3 parameters...
 };
 
-layout( binding = 0, std430 ) buffer lightBuffer {
+layout( binding = 0, std430 ) readonly buffer lightBuffer {
 	int lightIStructure[ 1024 ]; // we uniformly sample an index out of this list of 1024 to know which light we want to pick...
 	lightSpecGPU lightList[]; // we do not need to know how many lights exist, because it is implicitly encoded in the importance structure's indexing
 };
+//=============================================================================================================================
+layout( binding = 1, std430 ) readonly buffer cwbvhNodesBuffer { vec4 cwbvhNodes[]; };
+layout( binding = 2, std430 ) readonly buffer cwbvhTrisBuffer { vec4 cwbvhTris[]; };
+layout( binding = 3, std430 ) readonly buffer triangleDataBuffer { vec4 triangleData[]; };
 
-// ===================================================================================================
-float getWavelengthForLight( int selectedLight ) {
-	return texture( lightICDF, vec2( NormalizedRandomFloat(), ( selectedLight + 0.5f ) / textureSize( lightICDF, 0 ).y ) ).r;
-}
+// setup for preprocessor operation
+#define NODEBUFFER cwbvhNodes
+#define TRIBUFFER cwbvhTris
+#define TRAVERSALFUNC traverse_cwbvh
+#include "traverse.h" // all support code for CWBVH8 traversal
 
-// given a particular input vector, we basically need two perpendicular vectors to be able to freely place in 3 dimensions
-void createBasis ( in vec3 z, out vec3 x, out vec3 y ) {
-	x = cross( z, ( z.y > 0.999f ) ? vec3( 1.0f, 0.0f, 0.0f ) : vec3( 0.0f, 1.0f, 0.0f ) ); // prevent using an identical vector when taking the initial cross product
-	y = cross( x, z ); // y simply needs to be mutually perpendicular to these two vectors, which are themselves mutually perpendicular to one another
+// helpers for computing rD, reciprocal direction
+float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x < -1e-12f ? ( 1.0f / x ) : 1e30f ); }
+vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
+//=============================================================================================================================
+
+// keep some global state for hit color, normal, etc
+vec3 hitNormal = vec3( 0.0f );
+uint hitID = 0u;
+float hitAlbedo = 1.0f;
+float sceneIntersection( vec3 rO, vec3 rD ) {
+	// return value of this function has distance, 2d barycentrics, then uintBitsToFloat(triangleID)...
+		// I think the most straightforward way to get the normal will just be from the triangle buffer
+
+	vec4 result = traverse_cwbvh( rO, rD, tinybvh_safercp( rD ), 1e30f );
+
+	// placeholder
+	hitAlbedo = 0.9f;
+
+	hitID = floatBitsToUint( result.w );
+
+	vec3 a, b, c;
+	a = triangleData[ 3 * hitID ].xyz;
+	b = triangleData[ 3 * hitID + 1 ].xyz;
+	c = triangleData[ 3 * hitID + 2 ].xyz;
+
+	// cross product of the two edges gives us a potential normal vector
+	hitNormal = normalize( cross( a - c, b - c ) );
+
+	// need to invert if we created an opposite-facing normal
+	if ( dot( rD, hitNormal ) > 0.0f ) hitNormal = -hitNormal;
+
+	return result.r;
 }
 
 // buffer for tinyBVH... can we try doing the TLAS thing this time? I'm not sure what's involved...
