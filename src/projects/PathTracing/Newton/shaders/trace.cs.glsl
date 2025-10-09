@@ -14,6 +14,8 @@ layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 #include "random.h"
 uniform uint seedValue;
 //=============================================================================================================================
+const float epsilon = 0.00001f;
+//=============================================================================================================================
 float myWavelength = 0.0f;
 //=============================================================================================================================
 struct lightSpecGPU {
@@ -186,7 +188,6 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 	const bool hit = IntersectAABB( rO, rD, -blockSizeHalf, blockSizeHalf, tMin, tMax );
 	const bool behindOrigin = ( tMin < 0.0f && tMax < 0.0f );
 	const bool backface = ( tMin < 0.0f && tMax >= 0.0f );
-	const float epsilon = 0.000001f;
 
 	float dTravel = 1e30f;
 
@@ -237,9 +238,9 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 					// if you get a hit, fill out the details
 					spherePackFrontface = !( test.a.x < 0.0f && test.b.x >= 0.0f );
 					spherePackDTravel = ( spherePackFrontface ? test.a.x : test.b.x );
-					spherePackNormal = normalize( spherePackFrontface ? test.a.yzw : test.b.yzw );
+					spherePackNormal = normalize( spherePackFrontface ? test.a.yzw : -test.b.yzw );
 					spherePackMaterialID = SELLMEIER_BOROSILICATE_BK7;
-					spherePackAlbedo = 0.8f;
+					spherePackAlbedo = 0.9f;
 					spherePackRoughness = 0.0f;
 					break;
 				}
@@ -268,13 +269,12 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	// return value of this function has distance, 2d barycentrics, then uintBitsToFloat(triangleID)...
 		// I think the most straightforward way to get the normal will just be from the triangle buffer
 
-	/*
 	vec4 result = traverse_cwbvh( rO, rD, tinybvh_safercp( rD ), 1e30f );
 
 	// placeholder
 	hitAlbedo = 0.9f;
 	hitRoughness = 0.0f;
-	hitMaterial = SELLMEIER_BOROSILICATE_BK7;
+	hitMaterial = MIRROR;
 
 	hitID = floatBitsToUint( result.w );
 
@@ -284,10 +284,9 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	c = triangleData[ 3 * hitID + 2 ].xyz;
 	hitNormal = normalize( cross( a - c, b - c ) ); // cross product of the two edges gives us a potential normal vector
 	if ( dot( rD, hitNormal ) < 0.0f ) hitFrontface = false, hitNormal = -hitNormal; // need to invert if we created an opposite-facing normal
-	*/
 
-	// if ( SpherePackDDA( rO, rD, result.r ) ) {
-	if ( SpherePackDDA( rO, rD, 1e30f ) ) {
+	 if ( SpherePackDDA( rO, rD, result.r ) ) {
+//	if ( SpherePackDDA( rO, rD, 1e30f ) ) {
 		// we hit a sphere, closer than the BVH
 		hitAlbedo = spherePackAlbedo;
 		hitMaterial = spherePackMaterialID;
@@ -296,9 +295,10 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 		if ( dot( rD, spherePackNormal ) < 0.0f )
 			hitNormal = -spherePackNormal, hitFrontface = false;
 		return spherePackDTravel;
-//	} else {
-//		return result.r;
-	} else return 1e30f;
+	} else {
+		return result.r;
+		// return 1e30f;
+	}
 }
 //=============================================================================================================================
 uniform vec3 viewerPosition;
@@ -332,8 +332,8 @@ bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energ
 		const vec2 iShalf = iS / 2.0f;
 		if ( all( lessThanEqual( abs( pHitOffsetXY - iShalf ), iS ) ) ) {
 			// we hit a valid pixel... we need to apply an energy increment
-			for ( int i = 0; i < 8; i++ ) {
-				ivec2 pixelSelect = ivec2( 0.01f * rnd_disc_cauchy() + ( pHitOffsetXY + iShalf ) / filmScale );
+			for ( int i = 0; i < 32; i++ ) {
+				ivec2 pixelSelect = ivec2( 0.1f * rnd_disc_cauchy() + ( pHitOffsetXY + iShalf ) / filmScale );
 				vec3 XYZColor = 0.01f * RandomUnitVector() + rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect, uint( 256 * XYZColor.x ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 1, 0 ), uint( 256 * XYZColor.y ) );
@@ -417,7 +417,7 @@ void main () {
 			break;
 		} else {
 		// material evaluation, update r0, rD, if the ray is going to continue
-			rO = rO + dIntersection * rD + 0.00001f * hitNormal;
+			rO = rO + dIntersection * rD + epsilon * hitNormal;
 			energy *= hitAlbedo;
 
 			switch ( hitMaterial ) {
@@ -447,7 +447,7 @@ void main () {
 				default: { // all refractive materials
 
 					// additional correction for glass...
-					rO -= hitNormal * 0.001f;
+					rO -= hitNormal * 3.0f * epsilon;
 
 					float myIoR = getIORForMaterial( hitMaterial );
 					myIoR = hitFrontface ? ( myIoR ) : ( 1.0f / myIoR ); // "reverse" back to physical properties for IoR
