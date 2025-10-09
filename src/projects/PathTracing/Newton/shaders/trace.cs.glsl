@@ -195,15 +195,57 @@ void main () {
 		// scene intersection ( BVH, DDA maybe eventually )
 		float dIntersection = sceneIntersection( rO, rD );
 
-		if ( hitFilmPlane( rO, rD, dIntersection, energy, myWavelength ) ) {
-		// ray hits film plane? if so, it tallies energy contribution and dies
+		if ( hitFilmPlane( rO, rD, dIntersection, energy, myWavelength ) || energy == 0.0f ) {
+		// ray hits film plane? if so, it tallies energy contribution and dies... this also catches dead rays (fully attenuated)
 			break;
 		} else {
 		// material evaluation, update r0, rD, if the ray is going to continue
-			// placeholder mirror material
 			rO = rO + dIntersection * rD + 0.00001f * hitNormal;
-			rD = reflect( rD, hitNormal );
 			energy *= hitAlbedo;
+
+			switch ( hitMaterial ) {
+				case NOHIT: {
+				energy = 0.0f;
+				break;
+				}
+
+				case DIFFUSE: {
+				rD = RandomUnitVector();
+				// flip if it's the opposite direction from the normal
+				if ( dot( hitNormal, rD ) < 0.0f )
+					rD = -rD;
+				break;
+				}
+
+				case METALLIC: {
+				// todo
+				break;
+				}
+
+				case MIRROR: {
+				rD = reflect( rD, hitNormal );
+				break;
+				}
+
+				default: { // all refractive materials
+
+					// additional correction for glass...
+					rO -= hitNormal * 0.001f;
+
+					float myIoR = getIORForMaterial( hitMaterial );
+					myIoR = hitFrontface ? ( myIoR ) : ( 1.0f / myIoR ); // "reverse" back to physical properties for IoR
+
+					float cosTheta = min( dot( -normalize( rD ), hitNormal ), 1.0f );
+					float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
+					bool cannotRefract = ( myIoR * sinTheta ) > 1.0f; // accounting for TIR effects
+					if ( cannotRefract || Reflectance( cosTheta, myIoR ) > NormalizedRandomFloat() ) {
+						rD = normalize( mix( reflect( normalize( rD ), hitNormal ), RandomUnitVector(), hitRoughness ) );
+					} else {
+						rD = normalize( mix( refract( normalize( rD ), hitNormal, myIoR ), RandomUnitVector(), hitRoughness ) );
+					}
+					break;
+				}
+			}
 		}
 	}
 	// if we fall out without hitting the film plane... nothing special happens
