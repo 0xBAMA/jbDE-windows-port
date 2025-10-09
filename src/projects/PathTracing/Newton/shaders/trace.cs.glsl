@@ -55,6 +55,7 @@ layout( binding = 3, std430 ) readonly buffer triangleDataBuffer { vec4 triangle
 float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x < -1e-12f ? ( 1.0f / x ) : 1e30f ); }
 vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
 //=============================================================================================================================
+layout( binding = 4, rg32ui ) readonly uniform uimage3D SpherePack;
 
 // keep some global state for hit color, normal, etc
 vec3 hitNormal = vec3( 0.0f );

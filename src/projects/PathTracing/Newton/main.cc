@@ -202,6 +202,32 @@ public:
 
 				textureManager.Add( "Film Plane", opts );
 			}
+
+
+			{ // loading the spherePack buffer
+				Image_4U seedBlock( "seedBlock.png" );
+
+				vector< uint8_t > bufferData;
+				bufferData.resize( 2 * 4 * seedBlock.Width() * seedBlock.Height() );
+				for ( int i = 0; i < seedBlock.Width() * seedBlock.Height() * 4; i++ ) {
+					bufferData[ i ]	= seedBlock.GetImageDataBasePtr()[ i ];
+				}
+
+				// create the combined texture
+				textureOptions_t opts;
+				opts.width			= seedBlock.Width() / 2;
+				opts.height			= seedBlock.Height() / 64;
+				opts.depth			= 64;
+				opts.textureType	= GL_TEXTURE_3D;
+				opts.dataType		= GL_RG32UI;
+				opts.pixelDataType	= GL_UNSIGNED_INT;
+				opts.initialData	= &bufferData[ 0 ];
+				opts.wrap			= GL_CLAMP_TO_BORDER;
+
+				textureManager.Add( "SpherePack", opts );
+			}
+
+
 			// ================================================================================================================
 			{ // I want to do something to visualize the light distribution...
 				textureOptions_t opts;
@@ -634,11 +660,13 @@ public:
 		glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( basisZ ) );
 		glUniform1f( glGetUniformLocation( shader, "filmScale" ), filmScale );
 
-		textureManager.BindImageForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
-		textureManager.BindTexForShader( "iCDF", "lightICDF", shaders[ "Trace" ], 2 );
-		textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shaders[ "Trace" ], 3 );
+		textureManager.BindImageForShader( "iCDF", "lightICDF", shader, 2 );
+		textureManager.BindTexForShader( "iCDF", "lightICDF", shader, 2 );
+		textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shader, 3 );
+		textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
+		textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
 
-		glDispatchCompute( 16, 16, 1 );
+		glDispatchCompute( 16, 4, 1 );
 	}
 
 	void OnRender () {
