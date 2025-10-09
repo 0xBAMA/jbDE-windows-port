@@ -250,7 +250,7 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 		// otherwise, fall through with a default intersection result
 	}
 
-	return dTravel < maxDistance;
+	return spherePackDTravel < maxDistance;
 }
 
 
