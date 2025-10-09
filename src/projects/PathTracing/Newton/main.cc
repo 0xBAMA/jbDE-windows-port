@@ -242,11 +242,17 @@ public:
 			}
 
 			// some dummy lights...
-			lights[ 0 ].emitterParams[ 0 ].x += 1.0f;
+			lights[ 0 ].emitterParams[ 0 ].x += 2.0f;
+			lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
+			lights[ 0 ].emitterParams[ 1 ].xyz() = vec3( 0.0f, -1.0f, 0.0f );
 			lights[ 0 ].pickedLUT = 3;
+			lights[ 0 ].emitterType = 2;
 
-			lights[ 1 ].emitterParams[ 0 ].x -= 1.0f;
+			lights[ 1 ].emitterParams[ 0 ].x -= 2.0f;
+			lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
+			lights[ 1 ].emitterParams[ 1 ].xyz() = vec3( 0.0f, -1.0f, 0.0f );
 			lights[ 1 ].pickedLUT = 5;
+			lights[ 1 ].emitterType = 2;
 
 			{ // we need some colors to visualize the light buffer...
 				rng pick( 0.0f, 1.0f );
@@ -455,7 +461,7 @@ public:
 
 		{
 			ImGui::Begin( "Film Config" );
-			ImGui::SliderFloat( "powerScale", &powerScalar, 0.0f, 1000000.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			ImGui::SliderFloat( "powerScale", &powerScalar, 0.0f, 1000000000.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 			ImGui::SliderFloat( "slope", &slope, 0.0f, 64.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 			ImGui::SliderFloat( "thresh", &thresh, 0.0f, 1.0f, "%.5f" );
 			ImGui::SliderFloat( "filmScale", &filmScale, 0.0f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
@@ -666,7 +672,7 @@ public:
 		textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
 		textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
 
-		glDispatchCompute( 16, 4, 1 );
+		glDispatchCompute( 16, 16, 8 );
 	}
 
 	void OnRender () {

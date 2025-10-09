@@ -57,11 +57,12 @@ void main () {
 			// two clamps: inner clamp is for the boundary... outer clamp is enforcing a min and max radius
 
 		const float noise0 = perlinfbm( rot * newPointLocation * 2.4f, 1.8f / imageSize( bufferTextureDst ).x, 3 ) + 0.1f;
-		const bool otherRejectCriteria = noise0 > 0.0f;
+		const bool otherRejectCriteria = noise0 > 0.5f;
 		uvec4 writeValue = oldPointSample;
 
 		if ( !otherRejectCriteria ) {
-			const float noise = matWood( rot * newPointLocation * 0.001f ).r;
+			//			const float noise = matWood( rot * newPointLocation * 0.001f ).r;
+			const float noise = abs( perlinfbm( rot * newPointLocation, 1.0f / 500.0f, 6 ) );
 			const float newRadius = clamp( noise * 15.0f * saturate( 0.8f + NormalizedRandomFloat() ), minRadius, uintBitsToFloat( newPointSample.x ) );
 			const float oldDistance = uintBitsToFloat( oldPointSample.x );
 			const float newDistance = distance( location, newPointLocation ) - newRadius;
