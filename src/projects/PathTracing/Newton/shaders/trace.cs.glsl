@@ -56,7 +56,82 @@ float tinybvh_safercp( const float x ) { return x > 1e-12f ? ( 1.0f / x ) : ( x 
 vec3 tinybvh_safercp( const vec3 x ) { return vec3( tinybvh_safercp( x.x ), tinybvh_safercp( x.y ), tinybvh_safercp( x.z ) ); }
 //=============================================================================================================================
 layout( binding = 4, rg32ui ) readonly uniform uimage3D SpherePack;
+//=============================================================================================================================
+// copied straight from path2Dforward, will need to refine eventually
+#define NOHIT						0
+#define DIFFUSE						1
+#define METALLIC					2
+#define MIRROR						3
 
+// air reserve value
+#define AIR							5
+// below this point, we have specific forms of glass
+#define CAUCHY_FUSEDSILICA			6
+#define CAUCHY_BOROSILICATE_BK7		7
+#define CAUCHY_HARDCROWN_K5			8
+#define CAUCHY_BARIUMCROWN_BaK4		9
+#define CAUCHY_BARIUMFLINT_BaF10	10
+#define CAUCHY_DENSEFLINT_SF10		11
+// more coefficients available at https://web.archive.org/web/20151011033820/http://www.lacroixoptical.com/sites/default/files/content/LaCroix%20Dynamic%20Material%20Selection%20Data%20Tool%20vJanuary%202015.xlsm
+#define SELLMEIER_BOROSILICATE_BK7	12
+#define SELLMEIER_SAPPHIRE			13
+#define SELLMEIER_FUSEDSILICA		14
+#define SELLMEIER_MAGNESIUMFLOURIDE	15
+
+// getting the wavelength-dependent IoR for materials
+float evaluateCauchy ( float A, float B, float wms ) {
+	return A + B / wms;
+}
+
+float evaluateSellmeier ( vec3 B, vec3 C, float wms ) {
+	return sqrt( 1.0f + ( wms * B.x / ( wms - C.x ) ) + ( wms * B.y / ( wms - C.y ) ) + ( wms * B.z / ( wms - C.z ) ) );
+}
+
+// support for glass behavior
+float Reflectance ( const float cosTheta, const float IoR ) {
+	#if 0
+	// Use Schlick's approximation for reflectance
+	float r0 = ( 1.0f - IoR ) / ( 1.0f + IoR );
+	r0 = r0 * r0;
+	return r0 + ( 1.0f - r0 ) * pow( ( 1.0f - cosTheta ), 5.0f );
+	#else
+	// "Full Fresnel", from https://www.shadertoy.com/view/csfSz7
+	float g = sqrt( IoR * IoR + cosTheta * cosTheta - 1.0f );
+	float a = ( g - cosTheta ) / ( g + cosTheta );
+	float b = ( ( g + cosTheta ) * cosTheta - 1.0f ) / ( ( g - cosTheta ) * cosTheta + 1.0f );
+	return 0.5f * a * a * ( 1.0f + b * b );
+	#endif
+	//	another expression used here... https://www.shadertoy.com/view/wlyXzt - what's going on there?
+}
+
+float getIORForMaterial ( int material ) {
+	// There are a couple ways to get IoR from wavelength
+	float wavelengthMicrons = myWavelength / 1000.0f;
+	const float wms = wavelengthMicrons * wavelengthMicrons;
+
+	float IoR = 0.0f;
+	switch ( material ) {
+		// Cauchy second order approx
+		case CAUCHY_FUSEDSILICA:			IoR = evaluateCauchy( 1.4580f, 0.00354f, wms ); break;
+		case CAUCHY_BOROSILICATE_BK7:		IoR = evaluateCauchy( 1.5046f, 0.00420f, wms ); break;
+		case CAUCHY_HARDCROWN_K5:			IoR = evaluateCauchy( 1.5220f, 0.00459f, wms ); break;
+		case CAUCHY_BARIUMCROWN_BaK4:		IoR = evaluateCauchy( 1.5690f, 0.00531f, wms ); break;
+		case CAUCHY_BARIUMFLINT_BaF10:		IoR = evaluateCauchy( 1.6700f, 0.00743f, wms ); break;
+		case CAUCHY_DENSEFLINT_SF10:		IoR = evaluateCauchy( 1.7280f, 0.01342f, wms ); break;
+		// Sellmeier third order approx
+		case SELLMEIER_BOROSILICATE_BK7:	IoR = evaluateSellmeier( vec3( 1.03961212f, 0.231792344f, 1.01046945f ), vec3( 1.01046945f, 6.00069867e-3f, 2.00179144e-2f ), wms ); break;
+		case SELLMEIER_SAPPHIRE:			IoR = evaluateSellmeier( vec3( 1.43134930f, 0.650547130f, 5.34140210f ), vec3( 5.34140210f, 5.27992610e-3f, 1.42382647e-2f ), wms ); break;
+		case SELLMEIER_FUSEDSILICA:			IoR = evaluateSellmeier( vec3( 0.69616630f, 0.407942600f, 0.89747940f ), vec3( 0.89747940f, 0.00467914800f, 0.01351206000f ), wms ); break;
+		case SELLMEIER_MAGNESIUMFLOURIDE:	IoR = evaluateSellmeier( vec3( 0.48755108f, 0.398750310f, 2.31203530f ), vec3( 2.31203530f, 0.00188217800f, 0.00895188800f ), wms ); break;
+		default: IoR = 1.0f;
+	}
+
+	return IoR;
+}
+
+bool isRefractive ( int id ) {
+	return id >= CAUCHY_FUSEDSILICA;
+}
 // keep some global state for hit color, normal, etc
 vec3 hitNormal = vec3( 0.0f );
 uint hitID = 0u;
