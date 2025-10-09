@@ -132,18 +132,149 @@ float getIORForMaterial ( int material ) {
 bool isRefractive ( int id ) {
 	return id >= CAUCHY_FUSEDSILICA;
 }
+
+#include "intersect.h"
+vec3 spherePackNormal = vec3( 0.0f );
+float spherePackAlbedo = 0.0f;
+bool spherePackFrontface = false;
+float spherePackDTravel = -10000.0f;
+float spherePackRoughness = 0.0f;
+int spherePackMaterialID = AIR;
+
+//=============================================================================================================================
+//	explicit intersection primitives
+//		refactor this, or put it in a header, it's a bunch of ugly shit
+//=============================================================================================================================
+struct iqIntersect {
+	vec4 a;  // distance and normal at entry
+	vec4 b;  // distance and normal at exit
+};
+
+// false Intersection
+const iqIntersect kEmpty = iqIntersect(
+vec4(  1e20f, 0.0f, 0.0f, 0.0f ),
+vec4( -1e20f, 0.0f, 0.0f, 0.0f )
+);
+
+bool IsEmpty( iqIntersect i ) {
+	return i.b.x < i.a.x;
+}
+
+iqIntersect IntersectSphere ( in vec3 rO, in vec3 rD, in vec3 center, float radius ) {
+	// https://iquilezles.org/articles/intersectors/
+	vec3 oc = rO - center;
+	float b = dot( oc, rD );
+	float c = dot( oc, oc ) - radius * radius;
+	float h = b * b - c;
+	if ( h < 0.0f ) return kEmpty; // no intersection
+	h = sqrt( h );
+	// h is known to be positive at this point, b+h > b-h
+	float nearHit = -b - h; vec3 nearNormal = normalize( ( rO + rD * nearHit ) - center );
+	float farHit  = -b + h; vec3 farNormal  = normalize( ( rO + rD * farHit ) - center );
+	return iqIntersect( vec4( nearHit, nearNormal ), vec4( farHit, farNormal ) );
+}
+
+bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
+	// box intersection
+	float tMin, tMax;
+	const ivec3 iS = imageSize( SpherePack ).xyz;
+	const float scale = 0.01f;
+	const vec3 blockSize = vec3( iS ) * scale;
+	const vec3 blockSizeHalf = vec3( blockSize ) / 2.0f;
+
+	// then intersect with the AABB
+	const bool hit = IntersectAABB( rO, rD, -blockSizeHalf, blockSizeHalf, tMin, tMax );
+	const bool behindOrigin = ( tMin < 0.0f && tMax < 0.0f );
+	const bool backface = ( tMin < 0.0f && tMax >= 0.0f );
+	const float epsilon = 0.000001f;
+
+	float dTravel = 1e30f;
+
+	if ( hit && !behindOrigin ) { // texture sample
+		// get a sample point in grid space... start at ray origin if you see a backface, or at the closest positive hit
+		vec3 p = backface ? rO : ( rO + tMin * rD );
+		const vec3 pCache = p;
+		p = vec3(
+			RangeRemapValue( p.x, -blockSizeHalf.x, blockSizeHalf.x, epsilon, iS.x - epsilon ),
+			RangeRemapValue( p.y, -blockSizeHalf.y, blockSizeHalf.y, epsilon, iS.y - epsilon ),
+			RangeRemapValue( p.z, -blockSizeHalf.z, blockSizeHalf.z, epsilon, iS.z - epsilon )
+		);
+
+		const uvec4 read = imageLoad( SpherePack, ivec3( p ) );
+		float radius = uintBitsToFloat( read.r );
+		const uint seedCache = seed;
+		seed = read.g; // evaluating deterministic radii
+		vec3 center = vec3( 5.0f ) + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( iS - vec3( 10.0f ) );
+		seed = seedCache;
+
+		// do the traversal
+		// from https://www.shadertoy.com/view/7sdSzH
+		vec3 deltaDist = 1.0f / abs( rD );
+		ivec3 rayStep = ivec3( sign( rD ) );
+		bvec3 mask0 = bvec3( false );
+		ivec3 mapPos0 = ivec3( floor( p + 0.0f ) );
+		vec3 sideDist0 = ( sign( rD ) * ( vec3( mapPos0 ) - p ) + ( sign( rD ) * 0.5f ) + 0.5f ) * deltaDist;
+
+		for ( int i = 0; i < 1000 && ( all( greaterThanEqual( mapPos0, ivec3( 0 ) ) ) && all( lessThan( mapPos0, iS ) ) ); i++ ) {
+			// Core of https://www.shadertoy.com/view/4dX3zl Branchless Voxel Raycasting
+			bvec3 mask1 = lessThanEqual( sideDist0.xyz, min( sideDist0.yzx, sideDist0.zxy ) );
+			vec3 sideDist1 = sideDist0 + vec3( mask1 ) * deltaDist;
+			ivec3 mapPos1 = mapPos0 + ivec3( vec3( mask1 ) ) * rayStep;
+
+			// consider using distance to bubble hit, when bubble is enabled
+			uvec4 read = imageLoad( SpherePack, mapPos0 );
+			if ( read.g != 0 ) { // this might be a hit condition
+				float radius = uintBitsToFloat( read.r );
+				const uint seedCache = seed;
+				seed = read.g; // evaluating deterministic radii
+				vec3 center = vec3( 5.0f ) * scale + vec3( NormalizedRandomFloat(), NormalizedRandomFloat(), NormalizedRandomFloat() ) * ( blockSize - vec3( 10.0f ) * scale );
+				seed = seedCache;
+
+				iqIntersect test = IntersectSphere( rO, rD, center - blockSizeHalf, radius * scale );
+				const bool behindOrigin = ( test.a.x < 0.0f && test.b.x < 0.0f );
+
+				if ( !IsEmpty( test ) && !behindOrigin ) {
+					// if you get a hit, fill out the details
+					spherePackFrontface = !( test.a.x < 0.0f && test.b.x >= 0.0f );
+					spherePackDTravel = ( spherePackFrontface ? test.a.x : test.b.x );
+					spherePackNormal = normalize( spherePackFrontface ? test.a.yzw : test.b.yzw );
+					spherePackMaterialID = SELLMEIER_BOROSILICATE_BK7;
+					spherePackAlbedo = 0.8f;
+					spherePackRoughness = 0.0f;
+					break;
+				}
+			}
+			sideDist0 = sideDist1;
+			mapPos0 = mapPos1;
+		}
+		// otherwise, fall through with a default intersection result
+	}
+
+	return dTravel < maxDistance;
+}
+
+
+//=============================================================================================================================
 // keep some global state for hit color, normal, etc
 vec3 hitNormal = vec3( 0.0f );
 uint hitID = 0u;
 float hitAlbedo = 1.0f;
+int hitMaterial = MIRROR;
+float hitRoughness = 0.0f;
+bool hitFrontface = false;
+//=============================================================================================================================
+//=============================================================================================================================
 float sceneIntersection( vec3 rO, vec3 rD ) {
 	// return value of this function has distance, 2d barycentrics, then uintBitsToFloat(triangleID)...
 		// I think the most straightforward way to get the normal will just be from the triangle buffer
 
+	/*
 	vec4 result = traverse_cwbvh( rO, rD, tinybvh_safercp( rD ), 1e30f );
 
 	// placeholder
 	hitAlbedo = 0.9f;
+	hitRoughness = 0.0f;
+	hitMaterial = SELLMEIER_BOROSILICATE_BK7;
 
 	hitID = floatBitsToUint( result.w );
 
@@ -151,20 +282,30 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	a = triangleData[ 3 * hitID ].xyz;
 	b = triangleData[ 3 * hitID + 1 ].xyz;
 	c = triangleData[ 3 * hitID + 2 ].xyz;
+	hitNormal = normalize( cross( a - c, b - c ) ); // cross product of the two edges gives us a potential normal vector
+	if ( dot( rD, hitNormal ) < 0.0f ) hitFrontface = false, hitNormal = -hitNormal; // need to invert if we created an opposite-facing normal
+	*/
 
-	// cross product of the two edges gives us a potential normal vector
-	hitNormal = normalize( cross( a - c, b - c ) );
-
-	// need to invert if we created an opposite-facing normal
-	if ( dot( rD, hitNormal ) > 0.0f ) hitNormal = -hitNormal;
-
-	return result.r;
+	// if ( SpherePackDDA( rO, rD, result.r ) ) {
+	if ( SpherePackDDA( rO, rD, 1e30f ) ) {
+		// we hit a sphere, closer than the BVH
+		hitAlbedo = spherePackAlbedo;
+		hitMaterial = spherePackMaterialID;
+		hitRoughness = spherePackRoughness;
+		hitNormal = spherePackNormal;
+		if ( dot( rD, spherePackNormal ) < 0.0f )
+			hitNormal = -spherePackNormal, hitFrontface = false;
+		return spherePackDTravel;
+//	} else {
+//		return result.r;
+	} else return 1e30f;
 }
 //=============================================================================================================================
 uniform vec3 viewerPosition;
 uniform vec3 basisX;
 uniform vec3 basisY;
 uniform vec3 basisZ;
+uniform float filmScale;
 bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energy, in float wavelength ) {
 	// we are going to define basically an arbitrary plane location, for now... eventually we will need this to be more interactive
 		// the plane will only accept forward hits, closer than the max specified distance
