@@ -260,7 +260,7 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 vec3 hitNormal = vec3( 0.0f );
 uint hitID = 0u;
 float hitAlbedo = 1.0f;
-int hitMaterial = MIRROR;
+int hitMaterial = DIFFUSE;
 float hitRoughness = 0.0f;
 bool hitFrontface = false;
 //=============================================================================================================================
@@ -274,7 +274,7 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	// placeholder
 	hitAlbedo = 0.9f;
 	hitRoughness = 0.0f;
-	hitMaterial = MIRROR;
+	hitMaterial = DIFFUSE;
 
 	hitID = floatBitsToUint( result.w );
 
@@ -297,7 +297,7 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 		return spherePackDTravel;
 	} else {
 		return result.r;
-		// return 1e30f;
+//		 return 1e30f;
 	}
 }
 //=============================================================================================================================
