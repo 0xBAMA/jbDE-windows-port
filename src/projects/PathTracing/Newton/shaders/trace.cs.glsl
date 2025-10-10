@@ -333,8 +333,11 @@ bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energ
 		if ( all( lessThanEqual( abs( pHitOffsetXY - iShalf ), iS ) ) ) {
 			// we hit a valid pixel... we need to apply an energy increment
 			for ( int i = 0; i < 32; i++ ) {
-				ivec2 pixelSelect = ivec2( 0.1f * rnd_disc_cauchy() + ( pHitOffsetXY + iShalf ) / filmScale );
-				vec3 XYZColor = 0.01f * RandomUnitVector() + rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
+				float phiTerm = tau * NormalizedRandomFloat();
+				float tanTerm = tan( NormalizedRandomFloat() * pi / 2.0f );
+				ivec2 pixelSelect = ivec2( 0.1f * tanTerm * vec2( sin( phiTerm ), cos( phiTerm ) ) + ( pHitOffsetXY + iShalf ) / filmScale );
+
+				vec3 XYZColor = ( 1.0f / ( tanTerm + 0.001f ) ) * rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect, uint( 256 * XYZColor.x ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 1, 0 ), uint( 256 * XYZColor.y ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 2, 0 ), uint( 256 * XYZColor.z ) );
