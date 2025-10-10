@@ -244,13 +244,13 @@ public:
 			// some dummy lights...
 			lights[ 0 ].emitterParams[ 0 ].x += 2.0f;
 			lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
-			lights[ 0 ].emitterParams[ 1 ].xyz() = vec3( 0.0f, -1.0f, 0.0f );
+			lights[ 0 ].emitterParams[ 1 ].y = -1.0f;
 			lights[ 0 ].pickedLUT = 3;
 			lights[ 0 ].emitterType = 2;
 
 			lights[ 1 ].emitterParams[ 0 ].x -= 2.0f;
 			lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
-			lights[ 1 ].emitterParams[ 1 ].xyz() = vec3( 0.0f, -1.0f, 0.0f );
+			lights[ 1 ].emitterParams[ 1 ].y = -1.0f;
 			lights[ 1 ].pickedLUT = 5;
 			lights[ 1 ].emitterType = 2;
 
@@ -261,7 +261,6 @@ public:
 				}
 				PrepLightBuffer();
 			}
-
 		}
 	}
 
@@ -672,7 +671,7 @@ public:
 		textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
 		textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
 
-		glDispatchCompute( 16, 16, 8 );
+		glDispatchCompute( 16, 16, 4 );
 	}
 
 	void OnRender () {
