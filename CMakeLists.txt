@@ -781,3 +781,15 @@ target_link_libraries( Sudoku
 		PUBLIC
 		engineBase
 )
+
+# =================================================================================================
+# Crystal Viewer
+# =================================================================================================
+add_executable( CrystalViewer
+	src/projects/CrystalViewer/main.cc
+)
+
+target_link_libraries( CrystalViewer
+	PUBLIC
+	engineBase
+)
