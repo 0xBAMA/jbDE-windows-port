@@ -8,6 +8,7 @@ public:
 	GLuint pointBuffer;
 	int numPoints;
 	float scale = 1.0f;
+	int offset = 0;
 
 	void OnInit () {
 		ZoneScoped;
@@ -39,7 +40,7 @@ public:
 				constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
 				std::vector< vec4 > crystalPoints;
 
-				Image_4U matrixBuffer( "../Crystals/crystalModelTest7.png" );
+				Image_4U matrixBuffer( "../Crystals/crystalModelTest4.png" );
 				numPoints = ( matrixBuffer.Height() - 1 ) * ( matrixBuffer.Width() / 16 ); // 1024 mat4's per row, small crop of bottom row for safety
 				crystalPoints.resize( numPoints );
 
@@ -84,7 +85,6 @@ public:
 				glBufferData( GL_SHADER_STORAGE_BUFFER, crystalPoints.size() * sizeof( vec4 ), crystalPoints.data(), GL_DYNAMIC_COPY );
 				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, pointBuffer );
 			}
-
 		}
 	}
 
@@ -103,6 +103,11 @@ public:
 		}
 		if ( inputHandler.getState( KEY_EQUALS ) ) {
 			scale /= 0.99f;
+		}
+
+		if ( inputHandler.getState( KEY_T ) ) {
+			screenshotIndicated = true;
+			SDL_Delay( 10 );
 		}
 
 		if ( inputHandler.getState( KEY_Y ) ) {
@@ -133,6 +138,21 @@ public:
 		// draw some shit - need to add a hello triangle to this, so I have an easier starting point for raster stuff
 	}
 
+	bool screenshotIndicated = false;
+	void Screenshot () {
+		const GLuint tex = textureManager.Get( "Display Texture" );
+		uvec2 dims = textureManager.GetDimensions( "Display Texture" );
+		std::vector< float > imageBytesToSave;
+		imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+		glBindTexture( GL_TEXTURE_2D, tex );
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
+		Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+		screenshot.FlipVertical();
+		screenshot.RGBtoSRGB();
+		const string filename = string( "crystalFrame-" ) + timeDateString() + string( ".png" );
+		screenshot.Save( filename );
+	}
+
 	void ComputePasses () {
 		ZoneScoped;
 
@@ -161,11 +181,10 @@ public:
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
 
-		// shader to apply dithering
-			// ...
-
-		// other postprocessing
-			// ...
+		if ( screenshotIndicated ) {
+			screenshotIndicated = false;
+			Screenshot();
+		}
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );

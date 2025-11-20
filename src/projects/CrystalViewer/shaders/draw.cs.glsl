@@ -10,7 +10,7 @@ layout( binding = 2, r32ui ) uniform uimage3D SplatBuffer;
 uniform int wangSeed;
 
 float getDensity ( vec3 p ) {
-	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
+	return 0.003f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
 }
 
 void main () {
