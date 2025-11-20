@@ -135,9 +135,27 @@ public:
 		// application-specific update code
 
 		// we know if something happened and we need to redraw...
-		// if ( trident.needsRedraw ) {
+		// static int numDraws = 16;
+		// if ( trident.Dirty() || ( numDraws > 0 ) ) {
 			// we need to resplat points
+			// numDraws--;
 
+			if ( trident.Dirty() ) {
+				textureManager.ZeroTexture3D( "SplatBuffer" );
+				textureManager.ZeroTexture2D( "Accumulator" );
+			}
+
+			const GLuint shader = shaders[ "PointSplat" ];
+			glUseProgram( shader );
+			const int workgroupsRoundedUp = ( numPoints + 63 ) / 64;
+			glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( trident.basisX ) );
+			glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( trident.basisY ) );
+			glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( trident.basisZ ) );
+			static int n = numPoints;
+			glUniform1i( glGetUniformLocation( shader, "n" ), n );
+
+			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
+			glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
 		// }
 	}
 
