@@ -6,6 +6,7 @@ public:
 	~engineDemo () { Quit(); }
 
 	GLuint pointBuffer;
+	int numPoints;
 
 	void OnInit () {
 		ZoneScoped;
@@ -15,7 +16,7 @@ public:
 			// =============================================================================================================
 			// something to put some basic data in the accumulator texture
 			shaders[ "Draw" ] = computeShader( "../src/projects/CrystalViewer/shaders/draw.cs.glsl" ).shaderHandle;
-			// shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
+			shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
 			// =============================================================================================================
 
 			// texture(s) to splat into
@@ -23,7 +24,7 @@ public:
 				textureOptions_t opts;
 				opts.width = 1280;
 				opts.height = 720;
-				opts.depth = 128;
+				opts.depth = 256;
 				opts.dataType = GL_R32UI;
 				opts.textureType = GL_TEXTURE_3D;
 				textureManager.Add( "SplatBuffer", opts );
@@ -38,14 +39,47 @@ public:
 				constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
 				std::vector< vec4 > crystalPoints;
 
-				Image_4U matrixBuffer( "../Crystals/crystalModelTest.png" );
-				const int numPoints = ( matrixBuffer.Height() - 1 ) * 1024; // 1024 mat4's per row, small crop for safety
+				Image_4U matrixBuffer( "../Crystals/crystalModelTest5.png" );
+				numPoints = ( matrixBuffer.Height() - 1 ) * 1024; // 1024 mat4's per row, small crop of bottom row for safety
 				crystalPoints.resize( numPoints );
 
 				mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
 				for ( int i = 0; i < numPoints; ++i ) {
 					crystalPoints[ i ] = dataAsMat4s[ i ] * p0;
 				}
+
+				// additional conditioning step to scale this set of points to a manageable volume ahead of trying to splat it
+				vec3 minExtents = vec3( crystalPoints[ 0 ].xyz() );
+				vec3 maxExtents = vec3( crystalPoints[ 0 ].xyz() );
+				for ( const auto& crystalPoint : crystalPoints ) {
+					minExtents = glm::min( minExtents, crystalPoint.xyz() );
+					maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
+				}
+
+				// position + scaling based on this info
+				vec3 midpoint = ( minExtents + maxExtents ) / 2.0f;
+				float maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
+				mat4 transform = glm::translate( glm::scale( mat4( 1.0f ), vec3( 1.0f / maxSpan ) ), -midpoint );
+
+				cout << "Processed " << numPoints << " Points" << endl;
+				cout << "Detected Max Span: " << maxSpan << endl;
+				cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
+
+				minExtents = vec3( 1000.0f );
+				maxExtents = vec3( -1000.0f );
+				for ( auto& crystalPoint : crystalPoints ) {
+					crystalPoint = transform * crystalPoint;
+					minExtents = glm::min( minExtents, crystalPoint.xyz() );
+					maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
+				}
+
+				midpoint = ( minExtents + maxExtents ) / 2.0f;
+				maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
+				cout << "After Transform..." << endl;
+				cout << "Detected Max Span: " << maxSpan << endl;
+				cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
+				cout << "MinExtents: " << to_string( minExtents ) << endl;
+				cout << "MaxExtents: " << to_string( maxExtents ) << endl;
 
 				glBufferData( GL_SHADER_STORAGE_BUFFER, crystalPoints.size() * sizeof( vec4 ), crystalPoints.data(), GL_DYNAMIC_COPY );
 				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, pointBuffer );
@@ -91,6 +125,10 @@ public:
 			const GLuint shader = shaders[ "Draw" ];
 			glUseProgram( shader );
 			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
+			static rngi wangSeeder = rngi( 0, 10000000 );
+			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
