@@ -214,6 +214,7 @@ public:
 
 			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
 			glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		// }
 	}
 
