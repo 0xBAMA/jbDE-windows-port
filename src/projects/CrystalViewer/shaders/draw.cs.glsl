@@ -21,60 +21,106 @@ void main () {
 	ivec2 writeLoc = ivec2( gl_GlobalInvocationID.xy );
 	vec3 col = vec3( 0.0f );
 
-	// todo: weyl
-	const ivec3 iS = imageSize( SplatBuffer );
-	const float numSamples = 4.0f;
-	for ( int s = 0; s < numSamples; s++ ) {
-		vec2 uv = ( vec2( writeLoc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
-		const vec3 rO = vec3( uv, iS.z + 1.0f ); // start at the top of the volume
-		const vec3 rD = vec3( 0.0f, 0.0f, -1.0f );
+	const float ratio = ( 21.0f / 9.0f );
 
-		// delta tracking raymarch...
-		vec3 p = rO;
-		const int maxSteps = 10000;
-		float shadowTerm = 1.0f;
-		for ( int i = 0; i < maxSteps; i++ ) {
-			float t = -log( NormalizedRandomFloat() );
-			p += t * rD;
+	// width ( x ) is from 0 to 1... height ( y ) is based on the 21:9/~2.35:1 "cinematic" ratio
+	const vec2 lowThresh = vec2( 0, 0.5f / ratio );
+	const vec2 highThresh = vec2( 1, 1.0f - 0.5f / ratio );
 
-			if ( any( lessThan( ivec3( p ), ivec3( 0 ) ) ) ||
-				any( greaterThan( ivec3( p ), iS ) ) ) {
-				// oob
-				break;
-			}
+	const vec2 uvMask = vec2( writeLoc.x + 0.5f, writeLoc.y + 0.5f ) / vec2( imageSize( accumulatorTexture ).xy );
+	if ( all( lessThan( uvMask, highThresh ) ) &&
+		all( greaterThan( uvMask, lowThresh ) ) ) {
 
-			// if you hit
-			if ( ( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f ) > NormalizedRandomFloat() ) {
+		// todo: weyl
+		const ivec3 iS = imageSize( SplatBuffer );
+		const float numSamples = 4.0f;
+		for ( int s = 0; s < numSamples; s++ ) {
+			vec2 uv = ( vec2( writeLoc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
+	//		const vec3 rO = vec3( uv.x, iS.y - uv.y + 1, iS.z + 1.0f ); // start at the top of the volume
+			const vec3 rO = vec3( uv, iS.z + 1.0f );
+			const vec3 rD = vec3( 0.0f, 0.0f, -1.0f );
 
-	//			shadowTerm = distance( rO, p );
-	//			break;
+			// delta tracking raymarch...
+			vec3 p = rO;
+			const int maxSteps = 10000;
+			vec3 shadowTerm = vec3( 1.0f );
+			for ( int i = 0; i < maxSteps; i++ ) {
+				float t = -log( NormalizedRandomFloat() );
+				p += t * rD;
 
-				// raymarch towards the light
-				const vec3 lightDir = normalize( vec3( 1.0f, 1.0f, 1.0f ) ) ;
-	//			const vec3 lightP = vec3( 10.0f * NormalizedRandomFloat() + 240.0f, 720.0f, 60.0f + 10.0f * NormalizedRandomFloat() );
-	//			vec3 lightDir = lightP - p;
+				if ( any( lessThan( ivec3( p ), ivec3( 0 ) ) ) ||
+					any( greaterThan( ivec3( p ), iS ) ) ) {
+					// oob
+					break;
+				}
 
-				// shadow ray trace(s)
-				vec3 pShadow = p;
-				for ( int j = 0; j < 10000; j++ ) {
-					// light direction needs to go on renderconfig
-					pShadow += lightDir * -log( NormalizedRandomFloat() );
-					if ( ( float( imageLoad( SplatBuffer, ivec3( pShadow ) ).r ) / 64.0f ) > NormalizedRandomFloat() ) {
-						shadowTerm = 0.0f;
-						break;
+				// if you hit
+				if ( getDensity( p ) > NormalizedRandomFloat() ) {
+
+		//			shadowTerm = distance( rO, p );
+		//			break;
+
+					// raymarch towards the light
+					const vec3 lightP = vec3( 100.0f * NormalizedRandomFloat() + 240.0f, 0.0f, 60.0f );
+					const vec3 lightP2 = vec3( 200.0f, 400.0f, 300.0f * NormalizedRandomFloat() );
+
+					const vec3 lightDir = normalize( lightP - p );
+					const vec3 lightDir2 = normalize( vec3( 1.0f, 1.0f, 1.0f ) );
+					const vec3 lightDir3 = normalize( lightP2 - p );
+
+					// shadow ray trace(s)
+					vec3 pShadow = p;
+					for ( int j = 0; j < 10000; j++ ) {
+						// light direction needs to go on renderconfig
+						pShadow += lightDir * -log( NormalizedRandomFloat() );
+						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
+							shadowTerm.r = 0.0f;
+							break;
+						}
+						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
+							any( greaterThan( ivec3( pShadow ), iS ) ) ) {
+								// oob
+							break;
+						}
 					}
-					if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
+
+					pShadow = p;
+					for ( int j = 0; j < 10000; j++ ) {
+						// light direction needs to go on renderconfig
+						pShadow += lightDir2 * -log( NormalizedRandomFloat() );
+						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
+							shadowTerm.g = 0.0f;
+							break;
+						}
+						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
 						any( greaterThan( ivec3( pShadow ), iS ) ) ) {
 							// oob
-						break;
+							break;
+						}
 					}
+
+					pShadow = p;
+					for ( int j = 0; j < 10000; j++ ) {
+						// light direction needs to go on renderconfig
+						pShadow += lightDir3 * -log( NormalizedRandomFloat() );
+						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
+							shadowTerm.b = 0.0f;
+							break;
+						}
+						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
+						any( greaterThan( ivec3( pShadow ), iS ) ) ) {
+							// oob
+							break;
+						}
+					}
+					//	col = vec3( shadowTerm / 128.0f );
+					col += ( vec3( 0.01f ) + vec3( 0.3f ) * shadowTerm.r + vec3( 0.0f, 0.0f, 0.2f ) * shadowTerm.g + vec3( 0.9f, 0.2f, 0.0f ) * shadowTerm.b ) / numSamples;
+					break;
 				}
-				//	col = vec3( shadowTerm / 128.0f );
-				col += ( vec3( 0.01f ) + vec3( 0.5f, 0.1f, 0.0f ) * shadowTerm ) / numSamples;
-				break;
 			}
 		}
 	}
+
 
 
 	// write the data to the image (+blending... uniform input to wipe accumulation on trident dirty flag)
