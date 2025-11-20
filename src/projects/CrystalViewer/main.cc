@@ -15,8 +15,7 @@ public:
 
 			// =============================================================================================================
 			// something to put some basic data in the accumulator texture
-			shaders[ "Draw" ] = computeShader( "../src/projects/CrystalViewer/shaders/draw.cs.glsl" ).shaderHandle;
-			shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
+			ReloadShaders();
 			// =============================================================================================================
 
 			// texture(s) to splat into
@@ -86,6 +85,11 @@ public:
 			}
 
 		}
+	}
+
+	void ReloadShaders () {
+		shaders[ "Draw" ] = computeShader( "../src/projects/CrystalViewer/shaders/draw.cs.glsl" ).shaderHandle;
+		shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
 	}
 
 	void HandleCustomEvents () {
