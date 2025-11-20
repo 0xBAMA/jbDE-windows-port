@@ -7,6 +7,7 @@ public:
 
 	GLuint pointBuffer;
 	int numPoints;
+	float scale = 1.0f;
 
 	void OnInit () {
 		ZoneScoped;
@@ -38,8 +39,8 @@ public:
 				constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
 				std::vector< vec4 > crystalPoints;
 
-				Image_4U matrixBuffer( "../Crystals/crystalModelTest5.png" );
-				numPoints = ( matrixBuffer.Height() - 1 ) * 1024; // 1024 mat4's per row, small crop of bottom row for safety
+				Image_4U matrixBuffer( "../Crystals/crystalModelTest7.png" );
+				numPoints = ( matrixBuffer.Height() - 1 ) * ( matrixBuffer.Width() / 16 ); // 1024 mat4's per row, small crop of bottom row for safety
 				crystalPoints.resize( numPoints );
 
 				mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
