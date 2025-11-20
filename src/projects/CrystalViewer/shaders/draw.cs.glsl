@@ -9,6 +9,10 @@ layout( binding = 2, r32ui ) uniform uimage3D SplatBuffer;
 #include "random.h"
 uniform int wangSeed;
 
+float getDensity ( vec3 p ) {
+	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
+}
+
 void main () {
 	// seed value for RNG
 	seed = wangSeed + gl_GlobalInvocationID.x * 69420 + gl_GlobalInvocationID.y * 6181;
