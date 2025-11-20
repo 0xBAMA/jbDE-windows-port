@@ -17,6 +17,7 @@ uniform vec3 basisY;
 uniform vec3 basisZ;
 
 uniform int n;
+uniform float scale;
 
 // transform, number of points to consider
 void main () {
@@ -25,10 +26,13 @@ void main () {
 	if ( index < n ) {
 
 		vec4 pData = data[ index ];
-		vec3 p = -basisX * 0.5f * pData.x + -basisY * 0.5f * pData.y + -basisZ * 0.5f * pData.z;
+		vec3 p = basisX * scale * pData.x + -basisY * scale * pData.y + basisZ * scale * pData.z;
 
 		// probably do something to normalize on x
 		const vec3 iS = vec3( imageSize( SplatBuffer ).xyz );
+		p.x *= -iS.y / iS.x;
+		p.z *= 0.5f;
+
 		ivec3 pWrite = ivec3( p * iS + ( iS / 2.0f ) );
 	//	ivec3 pWrite = ivec3( gl_GlobalInvocationID.xyz ) + ivec3( abs( p.xyz ) );
 

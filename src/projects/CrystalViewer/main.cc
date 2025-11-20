@@ -91,6 +91,18 @@ public:
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
+
+		// zoom in and out with plus/minus
+		if ( inputHandler.getState( KEY_MINUS ) ) {
+			scale *= 0.99f;
+		}
+		if ( inputHandler.getState( KEY_EQUALS ) ) {
+			scale /= 0.99f;
+		}
+
+		if ( inputHandler.getState( KEY_Y ) ) {
+			ReloadShaders();
+		}
 	}
 
 	void ImguiPass () {
@@ -128,6 +140,8 @@ public:
 
 			static rngi wangSeeder = rngi( 0, 10000000 );
 			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
@@ -181,6 +195,7 @@ public:
 			if ( trident.Dirty() ) {
 				textureManager.ZeroTexture3D( "SplatBuffer" );
 				textureManager.ZeroTexture2D( "Accumulator" );
+				// numDraws = 16;
 			}
 
 			const GLuint shader = shaders[ "PointSplat" ];
@@ -191,6 +206,7 @@ public:
 			glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( trident.basisZ ) );
 			static int n = numPoints;
 			glUniform1i( glGetUniformLocation( shader, "n" ), n );
+			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
 
 			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
 			glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
