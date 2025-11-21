@@ -101,6 +101,10 @@ public:
 		needsRedraw = true;
 	}
 
+	void setDirty () {
+		needsRedraw = true;
+	}
+
 	void SetViewFront () {
 		InitBasis();
 	}
