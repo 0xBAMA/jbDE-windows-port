@@ -42,10 +42,16 @@ void main () {
 		const ivec3 iS = imageSize( SplatBuffer );
 		const float numSamples = 4.0f;
 		for ( int s = 0; s < numSamples; s++ ) {
-			vec2 uv = ( vec2( writeLoc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
+//			vec2 uv = ( vec2( writeLoc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
+			vec2 uv = ( vec2( writeLoc ) + ( ( 8.0f - 6.0f * animRatio ) * rnd_disc_cauchy() ) );
 	//		const vec3 rO = vec3( uv.x, iS.y - uv.y + 1, iS.z + 1.0f ); // start at the top of the volume
+
 			const vec3 rO = vec3( uv, iS.z + 1.0f );
 			const vec3 rD = vec3( 0.0f, 0.0f, -1.0f );
+
+			// DoF
+//			const vec3 rO = vec3( uv, iS.z + 1.0f );
+//			const vec3 rD = normalize( vec3( writeLoc, mix( iS.z / 3.0f, 2.0f * iS.z / 3.0f, animRatio ) ) - rO );
 
 			// delta tracking raymarch...
 			vec3 p = rO;
