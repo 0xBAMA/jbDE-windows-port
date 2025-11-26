@@ -358,6 +358,82 @@ public:
 			Screenshot();
 		}
 
+		{
+			// keepeing track of frames...
+			static int i = 0;
+			static int frame = 0;
+			const int numFrames = 100;
+			static int rotation = 0;
+			const int numRotations = 5;
+			static rngi crystalPick( 1, 23 );
+			static rng rotationG = rng( 0, jbDE::tau );
+			static rng scaleG = rng( 1.2f, 1.8f );
+			static rngN scaleR = rngN( 0.0f, 1.0f );
+			static bool firstTime = true;
+			static vec3 rotScale = vec3( 1.0f );
+
+			if ( frame == numFrames || firstTime ) {
+				rotation++;
+				firstTime = false;
+				frame = 0;
+				i = 0;
+
+				scale = scaleG();
+				rotScale = vec3( scaleR(), scaleR(), scaleR() );
+				trident.RotateX( rotationG() );
+				trident.RotateY( rotationG() );
+				trident.RotateZ( rotationG() );
+
+				// lets get some new colors...
+				static rng palettePick( 0.0f, 1.0f );
+				palette::PickRandomPalette();
+				// color1 = palette::paletteRef( palettePick() );
+				// color2 = palette::paletteRef( palettePick() );
+				color1 = color3;
+				color2 = color4;
+				color3 = palette::paletteRef( palettePick() );
+				color4 = palette::paletteRef( palettePick() );
+				LoadCrystal( crystalPick() );
+			}
+
+			// a frame is finished...
+			if ( i++ >= 100 ) {
+				frame++;
+				i = 0;
+				AddToGif();
+				trident.RotateX( 0.005f * rotScale.x );
+				trident.RotateY( 0.001f * rotScale.y );
+				trident.RotateZ( 0.001f * rotScale.z );
+
+				textureManager.ZeroTexture3D( "SplatBuffer" );
+				textureManager.ZeroTexture2D( "Accumulator" );
+
+				animRatio = float( frame ) / float( numFrames );
+				// n = ( animRatio ) * numPoints;
+				n = numPoints;
+
+				const GLuint shader = shaders[ "PointSplat" ];
+				glUseProgram( shader );
+				const int workgroupsRoundedUp = ( numPoints + 63 ) / 64;
+				glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( trident.basisX ) );
+				glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( trident.basisY ) );
+				glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( trident.basisZ ) );
+
+				glUniform1i( glGetUniformLocation( shader, "n" ), n );
+				glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+				glUniform1f( glGetUniformLocation( shader, "animRatio" ), ( animRatio ) );
+
+				textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
+
+				for ( int i = 0; i < 16; i++ ) {
+					glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+					glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				}
+
+				cout << "advancing to frame " << frame << " of " << numFrames << endl;
+			}
+		}
+
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
 			textRenderer.Clear();
