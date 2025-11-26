@@ -246,6 +246,16 @@ vec2 rnd_disc_cauchy() {
 	return h.y * vec2( sin( h.x ), cos( h.x ) );
 }
 
+vec3 RandomCauchyVector () {
+	float z = NormalizedRandomFloat() * 2.0f - 1.0f;
+	float a = NormalizedRandomFloat() * 2.0f * pi;
+	// float r = sqrt( 1.0f - z * z );
+	float r = tan( NormalizedRandomFloat() * 0.9f * ( pi / 2.0f ) );
+	float x = r * cos( a );
+	float y = r * sin( a );
+	return vec3( x, y, z * r );
+}
+
 // ======================================================================================================================
 #define BOKEHSHAPE_NONE				0
 #define BOKEHSHAPE_EDGEBIAS_DISK	1
