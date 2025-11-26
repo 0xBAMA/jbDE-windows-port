@@ -277,11 +277,12 @@ public:
 			// we need to resplat points
 			// numDraws--;
 
-			if ( trident.Dirty() ) {
-				textureManager.ZeroTexture3D( "SplatBuffer" );
-				textureManager.ZeroTexture2D( "Accumulator" );
+		if ( trident.Dirty() ) {
 				// numDraws = 16;
-			}
+			// }
+			textureManager.ZeroTexture3D( "SplatBuffer" );
+			textureManager.ZeroTexture2D( "Accumulator" );
+			// }
 
 			const GLuint shader = shaders[ "PointSplat" ];
 			glUseProgram( shader );
@@ -289,20 +290,24 @@ public:
 			glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( trident.basisX ) );
 			glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( trident.basisY ) );
 			glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( trident.basisZ ) );
-			static int n = numPoints;
-			glUniform1i( glGetUniformLocation( shader, "n" ), n );
+			glUniform1i( glGetUniformLocation( shader, "n" ), animRatio *  numPoints );
 			glUniform1f( glGetUniformLocation( shader, "scale" ), scale );
+			glUniform1f( glGetUniformLocation( shader, "animRatio" ), ( animRatio ) );
 
 			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
-			glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-		// }
+
+			static rngi wangSeeder = rngi( 0, 10000000 );
+			for ( int i = 0; i < 4; i++ ) {
+				glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+				glDispatchCompute( 64, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			}
+		}
 	}
 
 	void OnRender () {
 		ZoneScoped;
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
-		DrawAPIGeometry();			// draw any API geometry desired
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
 		{
