@@ -38,10 +38,16 @@ public:
 	vec3 color2 = vec3( 0.9f, 0.2f, 0.0f );
 	vec3 color3 = vec3( 0.0f ), color4 = vec3( 1.0f );
 
+	const int imageWidth = 1920;
+	const int imageHeight = 1080;
+
 	void OnInit () {
 		ZoneScoped;
 		{
 			Block Start( "Additional User Init" );
+
+			// config.width = imageWidth;
+			// config.height = imageHeight;
 
 			// =============================================================================================================
 			// something to put some basic data in the accumulator texture
@@ -51,9 +57,9 @@ public:
 			// texture(s) to splat into
 			{
 				textureOptions_t opts;
-				opts.width = 1280;
-				opts.height = 720;
-				opts.depth = 256;
+				opts.width = imageWidth;
+				opts.height = imageHeight;
+				opts.depth = 128;
 				opts.dataType = GL_R32UI;
 				opts.textureType = GL_TEXTURE_3D;
 				textureManager.Add( "SplatBuffer", opts );
