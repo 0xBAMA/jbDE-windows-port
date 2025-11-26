@@ -98,6 +98,8 @@ struct renderConfig_t {
 	bool cameraOriginJitter;
 	int maxBounces;
 
+	int maxSamples = -1;
+
 	bool render = true;
 
 	sceneConfig_t scene;
@@ -159,6 +161,9 @@ struct daedalusConfig_t {
 		render.FoV = 0.618f;
 		render.epsilon = 0.0001f;
 		render.maxDistance = 1000.0f;
+
+		// reserve value for infinite running
+		render.maxSamples = -1;
 
 		render.viewerPosition = vec3( 0.0f, 0.0f, -10.0f );
 		render.basisX = vec3( 1.0f, 0.0f, 0.0f );

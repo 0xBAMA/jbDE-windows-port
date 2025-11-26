@@ -423,51 +423,53 @@ public:
 			}
 		}
 
-		{ // do some tiles, update the buffer
-			scopedTimer Start( "Tiled Update" );
+		if ( daedalusConfig.tiles.SampleCount() < daedalusConfig.render.maxSamples ) {
+			{ // do some tiles, update the buffer
+				scopedTimer Start( "Tiled Update" );
 
-			const GLuint shader = shaders[ "Pathtrace" ];
-			glUseProgram( shader );
+				const GLuint shader = shaders[ "Pathtrace" ];
+				glUseProgram( shader );
 
-			// create OpenGL timery query objects - more reliable than std::chrono, at least in theory
-			GLuint t[ 2 ];
-			GLuint64 tStart;
-			glGenQueries( 2, t );
+				// create OpenGL timery query objects - more reliable than std::chrono, at least in theory
+				GLuint t[ 2 ];
+				GLuint64 tStart;
+				glGenQueries( 2, t );
 
-			// submit the first timer query, to determine tStart, outside the loop
-			tStart = SubmitTimerAndWait( t[ 0 ] );
+				// submit the first timer query, to determine tStart, outside the loop
+				tStart = SubmitTimerAndWait( t[ 0 ] );
 
-			// for monitoring number of completed tiles
-			uint32_t tilesThisFrame = 0;
-			SendBasePathtraceUniforms();
-			const uint32_t tileSize = daedalusConfig.tiles.tileSize;
-			while ( daedalusConfig.render.render && !quitConfirm ) {
-				for ( uint32_t tile = 0; tile < daedalusConfig.tiles.tilesBetweenQueries; tile++ ) {
-					SendInnerLoopPathtraceUniforms();
-					glDispatchCompute( tileSize / 16, tileSize / 16, 1 );
-					tilesThisFrame++;
+				// for monitoring number of completed tiles
+				uint32_t tilesThisFrame = 0;
+				SendBasePathtraceUniforms();
+				const uint32_t tileSize = daedalusConfig.tiles.tileSize;
+				while ( daedalusConfig.render.render && !quitConfirm ) {
+					for ( uint32_t tile = 0; tile < daedalusConfig.tiles.tilesBetweenQueries; tile++ ) {
+						SendInnerLoopPathtraceUniforms();
+						glDispatchCompute( tileSize / 16, tileSize / 16, 1 );
+						tilesThisFrame++;
+					}
+					float loopTime = ( SubmitTimerAndWait( t[ 1 ] ) - tStart ) / 1e6f; // convert ns -> ms
+					if ( loopTime > daedalusConfig.tiles.tileTimeLimitMS ) {
+						UpdatePerfMonitor( loopTime, tilesThisFrame );
+						break;
+					}
 				}
-				float loopTime = ( SubmitTimerAndWait( t[ 1 ] ) - tStart ) / 1e6f; // convert ns -> ms
-				if ( loopTime > daedalusConfig.tiles.tileTimeLimitMS ) {
-					UpdatePerfMonitor( loopTime, tilesThisFrame );
-					break;
-				}
-			}
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
-		}
-
-		{	// this is the tonemapping stage, on the result ( accumulator(s) -> tonemapped )
-			scopedTimer Start( "Prepare" );
-			const GLuint shader = shaders[ "Prepare" ];
-			glUseProgram( shader );
-			SendPrepareUniforms();
-
-			if ( daedalusConfig.render.grading.updateHistogram == true ) {
-				ClearColorGradingHistogramBuffer();
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
 
-			glDispatchCompute( ( daedalusConfig.targetWidth + 15 ) / 16, ( daedalusConfig.targetHeight + 15 ) / 16, 1 );
-			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			{	// this is the tonemapping stage, on the result ( accumulator(s) -> tonemapped )
+				scopedTimer Start( "Prepare" );
+				const GLuint shader = shaders[ "Prepare" ];
+				glUseProgram( shader );
+				SendPrepareUniforms();
+
+				if ( daedalusConfig.render.grading.updateHistogram == true ) {
+					ClearColorGradingHistogramBuffer();
+				}
+
+				glDispatchCompute( ( daedalusConfig.targetWidth + 15 ) / 16, ( daedalusConfig.targetHeight + 15 ) / 16, 1 );
+				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+			}
 		}
 
 		if ( daedalusConfig.render.grading.updateHistogram == true ) {	// prepping the image of the color/luminance histogram
