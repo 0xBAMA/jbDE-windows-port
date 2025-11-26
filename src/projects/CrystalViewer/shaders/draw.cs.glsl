@@ -8,9 +8,16 @@ layout( binding = 2, r32ui ) uniform uimage3D SplatBuffer;
 
 #include "random.h"
 uniform int wangSeed;
+uniform float animRatio;
+
+uniform vec3 color1;
+uniform vec3 color2;
 
 float getDensity ( vec3 p ) {
-	return 0.003f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
+//	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
+	 return 0.001f + pow( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / ( 4096.0f * 4096 * 4 ), 0.125f );
+//	return 0.001f + exp( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) );
+//	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 10000.0f;
 }
 
 void main () {
