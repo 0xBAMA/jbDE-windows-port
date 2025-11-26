@@ -43,6 +43,7 @@ void main () {
 			// delta tracking raymarch...
 			vec3 p = rO;
 			const int maxSteps = 10000;
+			const int maxStepsShadow = 10000;
 			vec3 shadowTerm = vec3( 1.0f );
 			for ( int i = 0; i < maxSteps; i++ ) {
 				float t = -log( NormalizedRandomFloat() );
@@ -61,20 +62,26 @@ void main () {
 		//			break;
 
 					// raymarch towards the light
-					const vec3 lightP = vec3( 100.0f * NormalizedRandomFloat() + 240.0f, 0.0f, 60.0f );
-					const vec3 lightP2 = vec3( 200.0f, 400.0f, 300.0f * NormalizedRandomFloat() );
+					const vec3 lightP = vec3( 100.0f * NormalizedRandomFloat() + 240.0f + 600.0f * animRatio, 0.0f, 160.0f + 300.0f * animRatio );
+					const vec3 lightP2 = vec3( 200.0f + 400.0f * animRatio, 400.0f + 30.0f * animRatio, 300.0f );
 
 					const vec3 lightDir = normalize( lightP - p );
-					const vec3 lightDir2 = normalize( vec3( 1.0f, 1.0f, 1.0f ) );
+					const vec3 lightDir2 = normalize( vec3( 1.0f, 1.0f - animRatio, 1.0f ) );
 					const vec3 lightDir3 = normalize( lightP2 - p );
+
+//					const vec3 lightDir = normalize( -vec3( 0.25f, 0.35f, -1.0f ) );
+//					const vec3 lightDir3 = normalize( vec3( 0.0f, 0.0f, -100.0f ) + vec3( iS / 2.0f ) - p );
+//					const float lightDist = length( vec3( iS / 2.0f ) - p );
 
 					// shadow ray trace(s)
 					vec3 pShadow = p;
-					for ( int j = 0; j < 10000; j++ ) {
+					float d1 = 0.0f;
+					for ( ; d1 < maxStepsShadow; ) {
 						// light direction needs to go on renderconfig
-						pShadow += lightDir * -log( NormalizedRandomFloat() );
+						d1 += -log( NormalizedRandomFloat() );
+						pShadow = p + d1 * lightDir;
 						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
-							shadowTerm.r = 0.0f;
+							shadowTerm.r = 0.01f;
 							break;
 						}
 						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
@@ -84,27 +91,16 @@ void main () {
 						}
 					}
 
-					pShadow = p;
-					for ( int j = 0; j < 10000; j++ ) {
-						// light direction needs to go on renderconfig
-						pShadow += lightDir2 * -log( NormalizedRandomFloat() );
-						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
-							shadowTerm.g = 0.0f;
-							break;
-						}
-						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
-						any( greaterThan( ivec3( pShadow ), iS ) ) ) {
-							// oob
-							break;
-						}
-					}
+					shadowTerm.g = 0.0f;
 
+					float d2 = 0.0f;
 					pShadow = p;
-					for ( int j = 0; j < 10000; j++ ) {
+					for ( ; d2 < maxStepsShadow; ) {
 						// light direction needs to go on renderconfig
-						pShadow += lightDir3 * -log( NormalizedRandomFloat() );
+						d2 += -log( NormalizedRandomFloat() );
+						pShadow = p + d2 * lightDir3;
 						if ( getDensity( pShadow ) > NormalizedRandomFloat() ) {
-							shadowTerm.b = 0.0f;
+							shadowTerm.b = 0.01f;
 							break;
 						}
 						if ( any( lessThan( ivec3( pShadow ), ivec3( 0 ) ) ) ||
@@ -114,7 +110,10 @@ void main () {
 						}
 					}
 					//	col = vec3( shadowTerm / 128.0f );
-					col += ( vec3( 0.01f ) + vec3( 0.3f ) * shadowTerm.r + vec3( 0.0f, 0.0f, 0.2f ) * shadowTerm.g + vec3( 0.9f, 0.2f, 0.0f ) * shadowTerm.b ) / numSamples;
+//					col += ( vec3( 0.01f ) + vec3( 0.3f ) * shadowTerm.r + vec3( 0.0f, 0.0f, 0.2f ) * shadowTerm.g + vec3( 0.9f, 0.2f, 0.0f ) * shadowTerm.b ) / numSamples;
+//					col += ( vec3( 0.01f ) + vec3( 0.99f ) * shadowTerm.r + mix( vec3( 0.0f, 0.5f + 0.24f * sin( animRatio * 33.0f ), 0.0f ), vec3( sin( animRatio * 10.0f ) * 0.3f + 0.4f, 0.0f, 0.0f ), vec3( animRatio ) ) * shadowTerm.b ) / numSamples;
+					col += ( vec3( 0.01f ) + color1 * shadowTerm.r + color2 * shadowTerm.b ) / numSamples;
+
 					break;
 				}
 			}
