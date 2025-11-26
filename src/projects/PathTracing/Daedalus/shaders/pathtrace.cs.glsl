@@ -1041,6 +1041,23 @@ float deRode( in vec3 p ) {
     return dt.x;
 }
 
+float deG(vec3 p){
+	float d = 1e5;
+	const int n = 3;
+	const float fn = float(n);
+	for(int i = 0; i < n; i++){
+		vec3 q = p;
+		float a = float(i)*fn*2.422; //*6.283/fn
+		a *= a;
+		q.z += float(i)*float(i)*1.67; //*3./fn
+		q.xy *= rot2(a);
+		float b = (length(length(sin(q.xy) + cos(q.yz))) - .15);
+		float f = max(0., 1. - abs(b - d));
+		d = min(d, b) - .25*f*f;
+	}
+	return d;
+}
+
 // Nikolay's water
 float sumWaves(float x){
 	float sumstuff = 0.;
@@ -2190,6 +2207,18 @@ float deBasket(vec3 p){
 	s*=e=max(1.,14./dot(p,p));
 	return max(q,min(1.,length(p.xz)-.3))/s;
 }
+float deBBB( vec3 p0 ){
+	vec4 p = vec4(p0, 1.);
+	for(int i = 0; i < 8; i++){
+		if(p.x > p.z)p.xz = p.zx;
+		if(p.z > p.y)p.zy = p.yz;
+		p = abs(p);
+		p.xyz = mod(p.xyz-1., 2.)-1.;
+		p*=1.23;
+	}
+	p/=p.w;
+	return abs(p.y)*0.25;
+}
 
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
@@ -2212,7 +2241,7 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	const vec3 bboxDim = vec3( 25.0f, 40.0f, 50.0f );
+	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f );
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
@@ -2221,7 +2250,6 @@ float de( in vec3 p ) {
 	const vec3 displacement2 = matWood( p * 3.8f );
 	const float noise1 = perlinfbm( p, 10.0f, 5 ) - 0.3f;
 	const float noise2 = sqrt( saturate( perlinfbm( p, 1.5f, 5 ) + 0.4f ) );
-
 
 	if ( false ) {
 		const float scale = 66.4f;
@@ -2390,35 +2418,63 @@ float de( in vec3 p ) {
 	}
 
 	if ( true ) {
-		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
-		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 69.0f, 0.2f, 0.5f ).yxz );
+		const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 1.0f ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = EMISSIVE_FRESNEL;
+			hitColor = vec3( 3.0f, 0.0f, 0.0f );
+		}
+	}
+
+	if ( true ) {
+		const float d = fBox( p - vec3( 0.0f, 0.0f, 10.0f ), vec3( 4.0f, 4.0f, 0.1f ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = EMISSIVE_FRESNEL;
+			hitColor = vec3( 0.618f * sapphire );
+		}
+	}
+
+	if ( true ) {
+//		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
+		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.5f ).yxz );
 
 	 	// const float d = deJeyko( p );
-	 	sceneDist = min( sceneDist, d );
-	 	if ( sceneDist == d && d < epsilon ) {
-	 		hitSurfaceType = EMISSIVE_FRESNEL;
-//	 		hitColor = vec3( 3.618f * honey );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = EMISSIVE_FRESNEL;
+			hitColor = vec3( 0.618f );
 
-			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
-			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
-			vec3 c;
-			if ( c0.z > 0.1f )
-				c = c0;
-			else
-				c = c1;
-			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.1f ) ), 0.25f ) * ( 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
-			hitColor = ( blood + honey ) * hitColor * smoothstep( c1.z, 0.0f, 0.01f );
-
-			if ( c == c1 ) {
-				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
-				hitRoughness = displacement.r;
-				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
-			}
+//			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
+//			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
+//			vec3 c;
+//			if ( c0.z > 0.1f )
+//				c = c0;
+//			else
+//				c = c1;
+//			hitColor = pow( saturate( smoothstep( c.z, 0.0f, 0.1f ) ), 0.25f ) * ( 1.8f * saturate( 0.5f + 0.5f * cos( c.y * 6.2831f + vec3( 0.0f, 1.0f, 2.0f ) ) ) );
+//			hitColor = ( blood + honey ) * hitColor * smoothstep( c1.z, 0.0f, 0.01f );
+//
+//			if ( c == c1 ) {
+//				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+//				hitRoughness = displacement.r;
+//				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
+//			}
 
 //			 hitColor = 3.0f * ( mod( i, 2 ) == 0 ? vec3( 0.99f ) : mix( blood, honey, 0.3f ) );
 //			hitColor = 2.0f * sapphire;
 	 	}
 	 }
+
+	if ( true ) {
+		const float d = max( dBounds, deBBB( p ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			hitRoughness = 0.1f;
+			hitColor = vec3( 0.9f );
+		}
+	}
 
 	return sceneDist;
 
