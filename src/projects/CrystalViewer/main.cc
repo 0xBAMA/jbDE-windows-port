@@ -85,48 +85,65 @@ public:
 		shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
 	}
 
-				// additional conditioning step to scale this set of points to a manageable volume ahead of trying to splat it
-				vec3 minExtents = vec3( crystalPoints[ 0 ].xyz() );
-				vec3 maxExtents = vec3( crystalPoints[ 0 ].xyz() );
-				for ( const auto& crystalPoint : crystalPoints ) {
-					minExtents = glm::min( minExtents, crystalPoint.xyz() );
-					maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
-				}
-
-				// position + scaling based on this info
-				vec3 midpoint = ( minExtents + maxExtents ) / 2.0f;
-				float maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
-				mat4 transform = glm::translate( glm::scale( mat4( 1.0f ), vec3( 1.0f / maxSpan ) ), -midpoint );
-
-				cout << "Processed " << numPoints << " Points" << endl;
-				cout << "Detected Max Span: " << maxSpan << endl;
-				cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
-
-				minExtents = vec3( 1000.0f );
-				maxExtents = vec3( -1000.0f );
-				for ( auto& crystalPoint : crystalPoints ) {
-					crystalPoint = transform * crystalPoint;
-					minExtents = glm::min( minExtents, crystalPoint.xyz() );
-					maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
-				}
-
-				midpoint = ( minExtents + maxExtents ) / 2.0f;
-				maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
-				cout << "After Transform..." << endl;
-				cout << "Detected Max Span: " << maxSpan << endl;
-				cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
-				cout << "MinExtents: " << to_string( minExtents ) << endl;
-				cout << "MaxExtents: " << to_string( maxExtents ) << endl;
-
-				glBufferData( GL_SHADER_STORAGE_BUFFER, crystalPoints.size() * sizeof( vec4 ), crystalPoints.data(), GL_DYNAMIC_COPY );
-				glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, pointBuffer );
-			}
-		}
+	void LoadCrystal ( int num = -1 ) {
+		static rngi pick( 1, 40 );
+		LoadCrystal( "../Crystals/crystal" + to_string( num == -1 ? pick() : num ) + ".png" );
 	}
 
-	void ReloadShaders () {
-		shaders[ "Draw" ] = computeShader( "../src/projects/CrystalViewer/shaders/draw.cs.glsl" ).shaderHandle;
-		shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
+	void LoadCrystal ( string path ) {
+		cout << "loading crystal: " << path << endl;
+		if ( !pointBuffer )
+			glCreateBuffers( 1, &pointBuffer );
+		glBindBuffer( GL_SHADER_STORAGE_BUFFER, pointBuffer );
+
+		// loading the data from disk... it's a linear array of mat4's, so let's go ahead and process it down to vec4's by transforming p0 by that mat4
+		constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
+		std::vector< vec4 > crystalPoints;
+
+		Image_4U matrixBuffer( path );
+		n = numPoints = ( matrixBuffer.Height() - 1 ) * ( matrixBuffer.Width() / 16 ); // 1024 mat4's per row, small crop of bottom row for safety
+		crystalPoints.resize( numPoints );
+
+		mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
+		for ( int i = 0; i < numPoints; ++i ) {
+			crystalPoints[ i ] = dataAsMat4s[ i ] * p0;
+		}
+
+		// additional conditioning step to scale this set of points to a manageable volume ahead of trying to splat it
+		vec3 minExtents = vec3( crystalPoints[ 0 ].xyz() );
+		vec3 maxExtents = vec3( crystalPoints[ 0 ].xyz() );
+		for ( const auto& crystalPoint : crystalPoints ) {
+			minExtents = glm::min( minExtents, crystalPoint.xyz() );
+			maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
+		}
+
+		// position + scaling based on this info
+		vec3 midpoint = ( minExtents + maxExtents ) / 2.0f;
+		float maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
+		mat4 transform = glm::translate( glm::scale( mat4( 1.0f ), vec3( 1.0f / maxSpan ) ), -midpoint );
+
+		cout << "Processed " << numPoints << " Points" << endl;
+		cout << "Detected Max Span: " << maxSpan << endl;
+		cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
+
+		minExtents = vec3( 1000.0f );
+		maxExtents = vec3( -1000.0f );
+		for ( auto& crystalPoint : crystalPoints ) {
+			crystalPoint = transform * crystalPoint;
+			minExtents = glm::min( minExtents, crystalPoint.xyz() );
+			maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
+		}
+
+		midpoint = ( minExtents + maxExtents ) / 2.0f;
+		maxSpan = std::max( std::max( maxExtents.y - minExtents.y, maxExtents.z - minExtents.z ), maxExtents.x - minExtents.x );
+		cout << "After Transform..." << endl;
+		cout << "Detected Max Span: " << maxSpan << endl;
+		cout << "Centering About Midpoint: " << to_string( midpoint ) << endl;
+		cout << "MinExtents: " << to_string( minExtents ) << endl;
+		cout << "MaxExtents: " << to_string( maxExtents ) << endl;
+
+		glBufferData( GL_SHADER_STORAGE_BUFFER, crystalPoints.size() * sizeof( vec4 ), crystalPoints.data(), GL_DYNAMIC_COPY );
+		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, pointBuffer );
 	}
 
 	void HandleCustomEvents () {
