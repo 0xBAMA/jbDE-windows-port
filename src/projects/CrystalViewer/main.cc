@@ -188,11 +188,67 @@ public:
 		QuitConf( &quitConfirm ); // show quit confirm window, if triggered
 
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
-	}
 
-	void DrawAPIGeometry () {
-		ZoneScoped; scopedTimer Start( "API Geometry" );
-		// draw some shit - need to add a hello triangle to this, so I have an easier starting point for raster stuff
+		ImGui::Begin( "Controls" );
+		ImGui::SliderFloat( "Percentage", &animRatio, 0.0f, 1.0f );
+		static std::vector< string > savesList;
+		if ( savesList.size() == 0 ) { // get the list
+			struct pathLeafString {
+				std::string operator()( const std::filesystem::directory_entry &entry ) const {
+					return entry.path().string();
+				}
+			};
+			// list of exrs, kept in Documents/EXRs/ (which is ../Crystals)
+			std::filesystem::path p( "../Crystals" );
+			std::filesystem::directory_iterator start( p );
+			std::filesystem::directory_iterator end;
+			std::transform( start, end, std::back_inserter( savesList ), pathLeafString() );
+			// std::sort( savesList.begin(), savesList.end() ); // sort these alphabetically
+		}
+
+#define LISTBOX_SIZE_MAX 256
+		const char *listboxItems[ LISTBOX_SIZE_MAX ];
+		uint32_t i;
+		for ( i = 0; i < LISTBOX_SIZE_MAX && i < savesList.size(); ++i ) {
+			listboxItems[ i ] = savesList[ i ].c_str();
+		}
+
+		ImGui::Text( "Crystals:" );
+		static int listboxSelected = 0;
+		ImGui::ListBox( " ", &listboxSelected, listboxItems, i, 24 );
+
+		if ( ImGui::Button( "Load Selected" ) ) {
+			LoadCrystal( savesList[ listboxSelected ] );
+			static rng palettePick( 0.0f, 1.0f );
+			palette::PickRandomPalette();
+			color1 = palette::paletteRef( palettePick() );
+			color2 = palette::paletteRef( palettePick() );
+			color3 = palette::paletteRef( palettePick() );
+			color4 = palette::paletteRef( palettePick() );
+
+			static rng rotationG = rng( 0, jbDE::tau );
+			trident.RotateX( rotationG() );
+			trident.RotateY( rotationG() );
+			trident.RotateZ( rotationG() );
+		}
+
+		ImGui::SameLine();
+		if ( ImGui::Button( "Random" ) ) {
+			LoadCrystal();
+			static rng palettePick( 0.0f, 1.0f );
+			palette::PickRandomPalette();
+			color1 = palette::paletteRef( palettePick() );
+			color2 = palette::paletteRef( palettePick() );
+			color3 = palette::paletteRef( palettePick() );
+			color4 = palette::paletteRef( palettePick() );
+
+			static rng rotationG = rng( 0, jbDE::tau );
+			trident.RotateX( rotationG() );
+			trident.RotateY( rotationG() );
+			trident.RotateZ( rotationG() );
+		}
+
+		ImGui::End();
 	}
 
 	bool screenshotIndicated = false;
