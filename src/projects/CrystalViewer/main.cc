@@ -1,9 +1,33 @@
 #include "../../engine/engine.h"
 
+//=================================================================================================
+#include "../utils/gif.h" // gif output lib - https://github.com/charlietangora/gif-h
+/* Basic Usage:
+#include <vector>
+#include <cstdint>
+#include <gif.h>
+int main() {
+	int width = 100;
+	int height = 200;
+	std::vector< uint8_t > black( width * height * 4, 0 );
+	std::vector< uint8_t > white( width * height * 4, 255 );
+
+	auto fileName = "bwgif.gif";
+	int delay = 100; // in 100th's of a second, not strictly enforced
+	GifWriter g;
+	GifBegin( &g, fileName, width, height, delay );
+	GifWriteFrame( &g, black.data(), width, height, delay );
+	GifWriteFrame( &g, white.data(), width, height, delay );
+	GifEnd( &g );
+
+	return 0;
+} */
+//=================================================================================================
+
 class engineDemo final : public engineBase { // sample derived from base engine class
 public:
 	engineDemo () { Init(); OnInit(); PostInit(); }
-	~engineDemo () { Quit(); }
+	~engineDemo () { EndGif(); Quit(); }
 
 	GLuint pointBuffer;
 	int numPoints;
@@ -139,20 +163,57 @@ public:
 	}
 
 	bool screenshotIndicated = false;
-	void Screenshot () {
+	Image_4F scratch;
+	Image_4U scratchU;
+	void CaptureDisplayIntoScratch () {
 		const GLuint tex = textureManager.Get( "Display Texture" );
 		uvec2 dims = textureManager.GetDimensions( "Display Texture" );
 		std::vector< float > imageBytesToSave;
 		imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
 		glBindTexture( GL_TEXTURE_2D, tex );
 		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave.data()[ 0 ] );
-		Image_4F screenshot( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
-		screenshot.FlipVertical();
-		screenshot.RGBtoSRGB();
-		const string filename = string( "crystalFrame-" ) + timeDateString() + string( ".png" );
-		screenshot.Save( filename );
+		scratch = Image_4F( dims.x, dims.y, &imageBytesToSave.data()[ 0 ] );
+		scratchU = Image_4U( dims.x, dims.y );
 	}
 
+	GifWriter g;
+	void InitGif () {
+		// initialize the gif
+		const string filename = string( "crystalAnim-" ) + timeDateString() + string( ".gif" );
+		GifBegin( &g, filename.c_str(), imageWidth, imageHeight, 4 );
+	}
+
+	void AddToGif () {
+		CaptureDisplayIntoScratch();
+		scratch.FlipVertical();
+		scratch.RGBtoSRGB();
+		// add to the running gif
+		for ( int y = 0; y < imageHeight; y++ )
+		for ( int x = 0; x < imageWidth; x++ ) {
+			color_4F colorF = scratch.GetAtXY( x, y );
+			color_4U color;
+			color[ red ] = uint8_t( 255 * colorF[ red ] );
+			color[ green ] = uint8_t( 255 * colorF[ green ] );
+			color[ blue ] = uint8_t( 255 * colorF[ blue ] );
+			color[ alpha ] = uint8_t( 255 * colorF[ alpha ] );
+			scratchU.SetAtXY( x, y, color );
+		}
+		GifWriteFrame( &g, scratchU.GetImageDataBasePtr(), imageWidth, imageHeight, 4 );
+	}
+
+	void EndGif () {
+		GifEnd( &g );
+	}
+
+	void Screenshot () {
+		CaptureDisplayIntoScratch();
+		scratch.FlipVertical();
+		scratch.RGBtoSRGB();
+		const string filename = string( "crystalFrame-" ) + timeDateString() + string( ".png" );
+		scratch.Save( filename );
+	}
+
+	float animRatio = 1.0f;
 	void ComputePasses () {
 		ZoneScoped;
 
