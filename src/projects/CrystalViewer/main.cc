@@ -29,10 +29,14 @@ public:
 	engineDemo () { Init(); OnInit(); PostInit(); }
 	~engineDemo () { EndGif(); Quit(); }
 
-	GLuint pointBuffer;
+	GLuint pointBuffer = 0;
 	int numPoints;
-	float scale = 1.0f;
+	float scale = 2.0f;
 	int offset = 0;
+	int n = 0; // number of points to show
+	vec3 color1 = vec3( 0.3f );
+	vec3 color2 = vec3( 0.9f, 0.2f, 0.0f );
+	vec3 color3 = vec3( 0.0f ), color4 = vec3( 1.0f );
 
 	void OnInit () {
 		ZoneScoped;
@@ -56,17 +60,19 @@ public:
 			}
 
 			// buffer for the points
-			{
-				glCreateBuffers( 1, &pointBuffer );
-				glBindBuffer( GL_SHADER_STORAGE_BUFFER, pointBuffer );
+			// LoadCrystal();
 
-				// loading the data from disk... it's a linear array of mat4's, so let's go ahead and process it down to vec4's by transforming p0 by that mat4
-				constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
-				std::vector< vec4 > crystalPoints;
+			static rng palettePick( 0.0f, 1.0f );
+			palette::PickRandomPalette();
+			color1 = palette::paletteRef( palettePick() );
+			color2 = palette::paletteRef( palettePick() );
+			color3 = palette::paletteRef( palettePick() );
+			color4 = palette::paletteRef( palettePick() );
 
-				Image_4U matrixBuffer( "../Crystals/crystalModelTest4.png" );
-				numPoints = ( matrixBuffer.Height() - 1 ) * ( matrixBuffer.Width() / 16 ); // 1024 mat4's per row, small crop of bottom row for safety
-				crystalPoints.resize( numPoints );
+			// start the gif process
+			InitGif();
+		}
+	}
 
 				mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
 				for ( int i = 0; i < numPoints; ++i ) {
@@ -129,6 +135,13 @@ public:
 			scale /= 0.99f;
 		}
 
+		if ( inputHandler.getState4( KEY_R ) == KEYSTATE_RISING ) {
+			static rng rotationG = rng( 0, jbDE::tau );
+			trident.RotateX( rotationG() );
+			trident.RotateY( rotationG() );
+			trident.RotateZ( rotationG() );
+		}
+
 		if ( inputHandler.getState( KEY_T ) ) {
 			screenshotIndicated = true;
 			SDL_Delay( 10 );
@@ -136,6 +149,20 @@ public:
 
 		if ( inputHandler.getState( KEY_Y ) ) {
 			ReloadShaders();
+		}
+
+		if ( inputHandler.getState( KEY_G ) ) {
+			EndGif();
+		}
+
+		if ( inputHandler.getState4( KEY_K ) == KEYSTATE_RISING ) {
+			static rng palettePick( 0.0f, 1.0f );
+			palette::PickRandomPalette();
+			color1 = palette::paletteRef( palettePick() );
+			color2 = palette::paletteRef( palettePick() );
+			color3 = palette::paletteRef( palettePick() );
+			color4 = palette::paletteRef( palettePick() );
+			textureManager.ZeroTexture2D( "Accumulator" );
 		}
 	}
 
@@ -226,6 +253,11 @@ public:
 
 			static rngi wangSeeder = rngi( 0, 10000000 );
 			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+			vec3 c1 = glm::mix( color1, color3, pow( animRatio, 0.5f ) );
+			vec3 c2 = glm::mix( color2, color4, pow( animRatio, 2.0f ) );
+			glUniform3fv( glGetUniformLocation( shader, "color1" ), 1, glm::value_ptr( c1 ) );
+			glUniform3fv( glGetUniformLocation( shader, "color2" ), 1, glm::value_ptr( c2 ) );
 
 			textureManager.BindImageForShader( "SplatBuffer", "SplatBuffer", shader, 2 );
 
