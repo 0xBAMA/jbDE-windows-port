@@ -8,6 +8,10 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 // film plane state - film plane is 3x as wide as it would be otherwise, to accomodate the separate channels
 layout( binding = 3, r32ui ) uniform uimage2D filmPlaneImage;
 
+
+layout( binding = 4, r32ui ) uniform uimage2D inputValueHistogram;
+layout( binding = 5, r32ui ) uniform uimage2D outputValueHistogram;
+
 #include "colorspaceConversions.glsl"
 #include "biasGain.h"
 
@@ -22,12 +26,14 @@ void main () {
 	// I want some additional UI drawn here... I'd like to see the current exposure level on something like a log scale...
 		// info about orientation... this kind of thing would be nice
 
+	ivec2 readLoc = writeLoc;
+
 
 	// grab the current state of the film plane... try to figure out how to map this to a color
 	vec3 tallySample = vec3(
-		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 0, 0 ) ).r / powerScalar ), slope, thresh ),
-		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 1, 0 ) ).r / powerScalar ), slope, thresh ),
-		biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * writeLoc + ivec2( 2, 0 ) ).r / powerScalar ), slope, thresh )
+	biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * readLoc + ivec2( 0, 0 ) ).r / powerScalar ), slope, thresh ),
+	biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * readLoc + ivec2( 1, 0 ) ).r / powerScalar ), slope, thresh ),
+	biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * readLoc + ivec2( 2, 0 ) ).r / powerScalar ), slope, thresh )
 	);
 
 	// write the data to the accumulator, which will then be postprocessed and presented

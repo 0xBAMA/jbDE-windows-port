@@ -88,6 +88,7 @@ public:
 			const string basePath = "../src/projects/PathTracing/Newton/shaders/";
 			shaders[ "Draw" ]	= computeShader( basePath + "draw.cs.glsl" ).shaderHandle;
 			shaders[ "Trace" ]	= computeShader( basePath + "trace.cs.glsl" ).shaderHandle;
+			shaders[ "Histogram" ]	= computeShader( basePath + "histogram.cs.glsl" ).shaderHandle;
 
 			// ================================================================================================================
 			// loading a model...
@@ -203,7 +204,7 @@ public:
 				textureManager.Add( "Film Plane", opts );
 			}
 
-
+			// ================================================================================================================
 			{ // loading the spherePack buffer
 				Image_4U seedBlock( "seedBlock.png" );
 
@@ -226,7 +227,6 @@ public:
 
 				textureManager.Add( "SpherePack", opts );
 			}
-
 
 			// ================================================================================================================
 			{ // I want to do something to visualize the light distribution...
@@ -254,12 +254,25 @@ public:
 			lights[ 1 ].pickedLUT = 5;
 			lights[ 1 ].emitterType = 2;
 
+			// ================================================================================================================
 			{ // we need some colors to visualize the light buffer...
 				rng pick( 0.0f, 1.0f );
 				for ( int x = 0; x < 1024; x++ ) {
 					visualizerColors[ x ] = vec4( pick(), pick(), pick(), 1.0f );
 				}
 				PrepLightBuffer();
+			}
+
+			{ // histogram texture setup
+				textureOptions_t opts;
+
+				opts.textureType = GL_TEXTURE_2D;
+				opts.dataType = GL_R32UI;
+				opts.height = 1;
+				opts.width = 1024;
+
+				textureManager.Add( "HistogramHDR", opts );
+				textureManager.Add( "HistogramLDR", opts );
 			}
 		}
 	}
@@ -651,27 +664,46 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
-		// run some rays
-		const GLuint shader = shaders[ "Trace" ];
-		glUseProgram( shader );
+		{
+			// run some rays
+			const GLuint shader = shaders[ "Trace" ];
+			glUseProgram( shader );
 
-		// environment setup
-		rngi wangSeeder = rngi( 0, 1000000 );
-		glUniform1ui( glGetUniformLocation( shader, "seedValue" ), wangSeeder() );
+			// environment setup
+			rngi wangSeeder = rngi( 0, 1000000 );
+			glUniform1ui( glGetUniformLocation( shader, "seedValue" ), wangSeeder() );
 
-		glUniform3fv( glGetUniformLocation( shader, "viewerPosition" ), 1, glm::value_ptr( viewerPosition ) );
-		glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( basisX ) );
-		glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( basisY ) );
-		glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( basisZ ) );
-		glUniform1f( glGetUniformLocation( shader, "filmScale" ), filmScale );
+			glUniform3fv( glGetUniformLocation( shader, "viewerPosition" ), 1, glm::value_ptr( viewerPosition ) );
+			glUniform3fv( glGetUniformLocation( shader, "basisX" ), 1, glm::value_ptr( basisX ) );
+			glUniform3fv( glGetUniformLocation( shader, "basisY" ), 1, glm::value_ptr( basisY ) );
+			glUniform3fv( glGetUniformLocation( shader, "basisZ" ), 1, glm::value_ptr( basisZ ) );
+			glUniform1f( glGetUniformLocation( shader, "filmScale" ), filmScale );
 
-		textureManager.BindImageForShader( "iCDF", "lightICDF", shader, 2 );
-		textureManager.BindTexForShader( "iCDF", "lightICDF", shader, 2 );
-		textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shader, 3 );
-		textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
-		textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
+			textureManager.BindImageForShader( "iCDF", "lightICDF", shader, 2 );
+			textureManager.BindTexForShader( "iCDF", "lightICDF", shader, 2 );
+			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shader, 3 );
+			textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
+			textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
 
-		glDispatchCompute( 16, 16, 4 );
+			glDispatchCompute( 16, 16, 4 );
+		}
+
+		static int frame = 0;
+		if ( frame++ % 3 == 0 ) {
+			// update histograms
+			GLuint shader = shaders[ "Histogram" ];
+			glUseProgram( shader );
+
+			glUniform1f( glGetUniformLocation( shader, "powerScalar" ), powerScalar );
+			glUniform1f( glGetUniformLocation( shader, "slope" ), slope );
+			glUniform1f( glGetUniformLocation( shader, "thresh" ), thresh );
+
+			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shader, 3 );
+			textureManager.BindTexForShader( "HistogramHDR", "inputValueHistogram", shader, 4 );
+			textureManager.BindTexForShader( "HistogramLDR", "outputValueHistogram", shader, 5 );
+
+			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
+		}
 	}
 
 	void OnRender () {

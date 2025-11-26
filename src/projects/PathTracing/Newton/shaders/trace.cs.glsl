@@ -254,13 +254,12 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 	return spherePackDTravel < maxDistance;
 }
 
-
 //=============================================================================================================================
 // keep some global state for hit color, normal, etc
 vec3 hitNormal = vec3( 0.0f );
 uint hitID = 0u;
 float hitAlbedo = 1.0f;
-int hitMaterial = DIFFUSE;
+int hitMaterial = MIRROR;
 float hitRoughness = 0.0f;
 bool hitFrontface = false;
 //=============================================================================================================================
@@ -274,7 +273,7 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	// placeholder
 	hitAlbedo = 0.9f;
 	hitRoughness = 0.0f;
-	hitMaterial = DIFFUSE;
+	hitMaterial = MIRROR;
 
 	hitID = floatBitsToUint( result.w );
 
@@ -285,8 +284,8 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	hitNormal = normalize( cross( a - c, b - c ) ); // cross product of the two edges gives us a potential normal vector
 	if ( dot( rD, hitNormal ) < 0.0f ) hitFrontface = false, hitNormal = -hitNormal; // need to invert if we created an opposite-facing normal
 
-	 if ( SpherePackDDA( rO, rD, result.r ) ) {
-//	if ( SpherePackDDA( rO, rD, 1e30f ) ) {
+	// if ( SpherePackDDA( rO, rD, result.r ) ) {
+	if ( false ) {
 		// we hit a sphere, closer than the BVH
 		hitAlbedo = spherePackAlbedo;
 		hitMaterial = spherePackMaterialID;
@@ -297,7 +296,6 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 		return spherePackDTravel;
 	} else {
 		return result.r;
-//		 return 1e30f;
 	}
 }
 //=============================================================================================================================
@@ -421,6 +419,7 @@ void main () {
 		} else {
 		// material evaluation, update r0, rD, if the ray is going to continue
 			rO = rO + dIntersection * rD + epsilon * hitNormal;
+//			rO = rO + dIntersection * rD;
 			energy *= hitAlbedo;
 
 			switch ( hitMaterial ) {
