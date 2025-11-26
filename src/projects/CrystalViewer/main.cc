@@ -80,10 +80,10 @@ public:
 		}
 	}
 
-				mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
-				for ( int i = 0; i < numPoints; ++i ) {
-					crystalPoints[ i ] = dataAsMat4s[ i ] * p0;
-				}
+	void ReloadShaders () {
+		shaders[ "Draw" ] = computeShader( "../src/projects/CrystalViewer/shaders/draw.cs.glsl" ).shaderHandle;
+		shaders[ "PointSplat" ] = computeShader( "../src/projects/CrystalViewer/shaders/pointSplat.cs.glsl" ).shaderHandle;
+	}
 
 				// additional conditioning step to scale this set of points to a manageable volume ahead of trying to splat it
 				vec3 minExtents = vec3( crystalPoints[ 0 ].xyz() );
