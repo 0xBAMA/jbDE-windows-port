@@ -68,7 +68,7 @@ public:
 					}
 				}
 
-				test.Save( "test" + to_string( rule ) + ".png" );
+				test.Save( "test" + to_string( int( rule ) ) + ".png" );
 			// }
 
 			config.oneShot = true;
