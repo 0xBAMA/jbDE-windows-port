@@ -21,8 +21,9 @@ struct icarusState_t {
 
 	// BVH management
 	SoftRast modelLoader;
-	//tinybvh::BVH bvh;
-	//tinybvh::bvhvec4 *vertices;
+	// tinybvh::BVH bvh;
+	tinybvh::bvhvec4 *vertices;
+	tinybvh::BVH_GPU gpubvh;
 	GLuint bvhNodeBuffer;
 	GLuint indexBuffer;
 	GLuint vertexBuffer;
@@ -48,7 +49,7 @@ struct icarusState_t {
 	#define SHUFFOCUS	4
 	#define FLEXTILE	5
 
-	int offsetFeedMode = FLEXTILE;
+	int offsetFeedMode = UNIFORM;
 	GLuint offsetsSSBO;
 	GLuint intersectionScratchSSBO;
 	bool forceUpdate = false;
@@ -120,147 +121,167 @@ void UnitCubeRefit( vector< vec4 > &pointPositions ) {
 	}
 }
 
-//void LoadBVH_ply ( icarusState_t &state ) {
-//
-//	unscopedTimer timer;
-//
-//	timer.tick();
-//
-//	// happly::PLYData plyDataIn( "../ply/hodou.ply" );
-//	// happly::PLYData plyDataIn( "../ply/nippon_wandering_tokyo_nights_001_10m_pts.ply" );
-//	// happly::PLYData plyDataIn( "../ply/tree_orange_big21.ply" );
-//	happly::PLYData plyDataIn( "../ply/grass1.ply" );
-//	// happly::PLYData plyDataIn( "../ply/every5.ply" );
-//
-//	vector< double > xValues = plyDataIn.getElement( "vertex" ).getProperty< double >( "x" );
-//	vector< double > yValues = plyDataIn.getElement( "vertex" ).getProperty< double >( "y" );
-//	vector< double > zValues = plyDataIn.getElement( "vertex" ).getProperty< double >( "z" );
-//
-//	const size_t numPoints = xValues.size();
-//
-//	vector< uint8_t > rValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "red" );
-//	vector< uint8_t > gValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "green" );
-//	vector< uint8_t > bValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "blue" );
-//
-//	// vector< uint8_t > rValues; rValues.resize( numPoints, 254 );
-//	// vector< uint8_t > gValues; gValues.resize( numPoints, 254 );
-//	// vector< uint8_t > bValues; bValues.resize( numPoints, 254 );
-//
-//	// processing positions to put them into a bounded range
-//	vector< vec4 > plySpherePreProcess;
-//	vector< vec3 > plySpherePreProcessColors;
-//	plySpherePreProcess.reserve( numPoints );
-//	plySpherePreProcessColors.reserve( numPoints );
-//
-//	rng reject = rng( 0.0f, 1.0f );
-//	rng radiusGen = rng( 0.0003f, 0.001f );
-//	for( size_t i = 0; i < numPoints; i++ ) {
-//		// if ( reject() < 0.01f ) { // decimating
-//			plySpherePreProcess.push_back( vec4( vec3( float( xValues[ i ] ), float( yValues[ i ] ), float( zValues[ i ] ) ).zxy(), radiusGen() ) );
-//			plySpherePreProcessColors.push_back( vec3( float( rValues[ i ] ) / 255.0f, float( gValues[ i ] ) / 255.0f, float( bValues[ i ] ) / 255.0f ) );
-//		// }
-//	}
-//	UnitCubeRefit( plySpherePreProcess );
-//
-//	timer.tock();
-//	cout << "ply loading done in " << timer.timeCPU << "ms" << newline;
-//
-//	timer.tick();
-//
-//	const int numTriangles = numPoints;
-//
-//	// allocate space for that many verts
-//	state.vertices = ( tinybvh::bvhvec4 * ) malloc( 3 * numTriangles * sizeof( tinybvh::bvhvec4 ) );
-//
-//	// copy from the loader to the bvh's list
-//	// const float radius = 0.0008f;
-//	// const float radius = 0.0008f;
-//	for ( size_t i = 0; i < numPoints; i++ ) {
-//		const int baseIdx = 3 * i;
-//
-//		// add a triangle to the BVH that will generate the same bounding box as the sphere
-//		const float radius = plySpherePreProcess[ i ].w;
-//		state.vertices[ baseIdx + 0 ].x = plySpherePreProcess[ i ].x + radius;
-//		state.vertices[ baseIdx + 0 ].y = plySpherePreProcess[ i ].y;
-//		state.vertices[ baseIdx + 0 ].z = plySpherePreProcess[ i ].z + radius;
-//
-//		state.vertices[ baseIdx + 1 ].x = plySpherePreProcess[ i ].x - radius;
-//		state.vertices[ baseIdx + 1 ].y = plySpherePreProcess[ i ].y + radius;
-//		state.vertices[ baseIdx + 1 ].z = plySpherePreProcess[ i ].z;
-//
-//		state.vertices[ baseIdx + 2 ].x = plySpherePreProcess[ i ].x;
-//		state.vertices[ baseIdx + 2 ].y = plySpherePreProcess[ i ].y - radius;
-//		state.vertices[ baseIdx + 2 ].z = plySpherePreProcess[ i ].z - radius;
-//	}
-//
-//	// build the bvh from the list of triangles
-//	state.bvh.Build( state.vertices, numTriangles );
-//	state.bvh.Convert( tinybvh::BVH::WALD_32BYTE, tinybvh::BVH::VERBOSE );
-//	state.bvh.Refit( tinybvh::BVH::VERBOSE );
-//
-//	state.bvh.Convert( tinybvh::BVH::WALD_32BYTE, tinybvh::BVH::AILA_LAINE );
-//
-//	// then have to build the buffer that's going to give us sphere positions + info ( radius, color, etc )
-//	vector< vec4 > plySphereData; // xyz, w is radius... then rgb, w is material id
-//	plySphereData.reserve( 2 * numPoints );
-//	for ( size_t i = 0; i < numPoints; i++ ) {
-//		plySphereData.push_back( plySpherePreProcess[ i ] );
-//		plySphereData.push_back( vec4( plySpherePreProcessColors[ i ], 0.0f ) );
-//	}
-//
-//	timer.tock();
-//	cout << "BVH build done in " << timer.timeCPU << "ms" << newline;
-//
-//
-//	// // testing rays against it
-//	// Image_4U test( 5000, 5000 );
-//	// for ( uint32_t y = 0; y < test.Height(); y++ ) {
-//	// 	for ( uint32_t x = 0; x < test.Width(); x++ ) {
-//	// 		color_4U col;
-//
-//	// 		// tinybvh::bvhvec3 O( RangeRemap( x + 0.5f, 0.0f, test.Width(), -1.0f, 1.0f ), RangeRemap( y + 0.5f, 0.0f, test.Height(), -1.0f, 1.0f ), 1.0f );
-//	// 		tinybvh::bvhvec3 O( 1.0f, RangeRemap( y + 0.5f, 0.0f, test.Width(), -1.0f, 1.0f ), RangeRemap( x + 0.5f, 0.0f, test.Height(), -1.0f, 1.0f ) );
-//	// 		tinybvh::bvhvec3 D( -1.0f, 0.0f, 0.0f );
-//	// 		tinybvh::Ray ray( O, D );
-//	// 		uint steps = uint( state.bvh.Intersect( ray ) );
-//	// 		printf( "%d %d: nearest intersection: %f (found in %i traversal steps).\n", x, y, ray.hit.t, steps );
-//
-//	// 		// if ( ray.hit.t < 1e5f ) {
-//	// 		// 	// cout << "hit" << endl;
-//	// 		// 	col = color_4U( { ( uint8_t ) ( 255 * ( ray.hit.t / 2.0f ) ), ( uint8_t ) steps * 3u, ( uint8_t ) 0, ( uint8_t ) 255 } );
-//	// 		// } else {
-//	// 		// 	col = color_4U( { ( uint8_t ) 16, ( uint8_t ) steps * 3u, ( uint8_t ) 0, ( uint8_t ) 255 } );
-//	// 		// }
-//
-//	// 		// col = color_4U( { ( uint8_t ) ( ( ray.hit.t < 1e5f ) ? ( 255 * ( ray.hit.t / 2.0f ) ) : steps * 3u ), ( uint8_t ) steps * 3u, ( uint8_t ) 0, 255 } );
-//
-//	// 		float stepTerm = ( steps * 3.f ) / 255.0f;
-//	// 		vec3 color = mix( plySphereData[ 2 * ray.hit.prim + 1 ].rgb(), vec3( stepTerm ), vec3( 0.5f ) ) * 255.0f;
-//	// 		col = color_4U( { ( uint8_t ) color.r, ( uint8_t ) color.g, ( uint8_t ) color.b, 255 } );
-//	// 		test.SetAtXY( x, y, col );
-//	// 	}
-//	// }
-//
-//	// test.Save( "test.png" ); 
-//
-//	// BVH Nodes buffer
-//	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.bvhNodeBuffer );
-//	glBufferData( GL_SHADER_STORAGE_BUFFER, state.bvh.usedAltNodes * sizeof( tinybvh::BVH::BVHNodeAlt ), ( GLvoid * ) state.bvh.altNode, GL_DYNAMIC_COPY );
-//	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, state.bvhNodeBuffer );
-//	glObjectLabel( GL_BUFFER, state.bvhNodeBuffer, -1, string( "BVH Nodes" ).c_str() );
-//
-//	// BVH vertex indices buffer
-//	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.indexBuffer );
-//	glBufferData( GL_SHADER_STORAGE_BUFFER, state.bvh.idxCount * sizeof( unsigned ), ( GLvoid * ) state.bvh.triIdx, GL_DYNAMIC_COPY );
-//	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, state.indexBuffer );
-//	glObjectLabel( GL_BUFFER, state.indexBuffer, -1, string( "BVH Vertex Indices" ).c_str() );
-//
-//	// specific geometry data buffer
-//	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.vertexBuffer );
-//	glBufferData( GL_SHADER_STORAGE_BUFFER, state.bvh.triCount * 2 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) plySphereData.data(), GL_DYNAMIC_COPY );
-//	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 5, state.vertexBuffer );
-//	glObjectLabel( GL_BUFFER, state.vertexBuffer, -1, string( "BVH Geometry Data" ).c_str() );
-//}
+void LoadBVH_ply ( icarusState_t &state, string path ) {
+
+	unscopedTimer timer;
+
+	timer.tick();
+
+	cout << "attempting load" << endl;
+
+	// happly::PLYData plyDataIn( "../ply/hodou.ply" );
+	// happly::PLYData plyDataIn( "../ply/nippon_wandering_tokyo_nights_001_10m_pts.ply" );
+	// happly::PLYData plyDataIn( "../ply/tree_orange_big21.ply" );
+	// happly::PLYData plyDataIn( "../ply/grass1.ply" );
+	// happly::PLYData plyDataIn( "../ply/every5.ply" );
+	happly::PLYData plyDataIn( path );
+	cout << "I handled the load" << endl;
+
+	for ( auto& e : plyDataIn.getElementNames() )
+		cout << e << endl;
+
+	for ( auto& p : plyDataIn.getElement( "vertex" ).getPropertyNames() )
+		cout << "  " << p << endl;
+
+	vector< float > xValues = plyDataIn.getElement( "vertex" ).getProperty< float >( "x" );
+	vector< float > yValues = plyDataIn.getElement( "vertex" ).getProperty< float >( "y" );
+	vector< float > zValues = plyDataIn.getElement( "vertex" ).getProperty< float >( "z" );
+
+	const size_t numPoints = xValues.size();
+
+	// vector< uint8_t > rValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "red" );
+	// vector< uint8_t > gValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "green" );
+	// vector< uint8_t > bValues = plyDataIn.getElement( "vertex" ).getProperty< uint8_t >( "blue" );
+
+	vector< uint8_t > rValues; rValues.resize( numPoints, 254 );
+	vector< uint8_t > gValues; gValues.resize( numPoints, 254 );
+	vector< uint8_t > bValues; bValues.resize( numPoints, 254 );
+	for ( size_t i = 0; i < numPoints; i++ ) {
+		xValues[ i ] = xValues[ i ] / 1000.0f;
+		yValues[ i ] = yValues[ i ] / 1000.0f;
+		zValues[ i ] = zValues[ i ] / 1000.0f;
+		rValues[ i ] = 254 * std::clamp( float( i ) / float( numPoints ), 0.0f, 1.0f );
+		gValues[ i ] = 254 * std::clamp( float( i ) / float( numPoints ), 0.0f, 1.0f );
+		bValues[ i ] = 254 * std::clamp( float( i ) / float( numPoints ), 0.0f, 1.0f );
+	}
+
+	// processing positions to put them into a bounded range
+	vector< vec4 > plySpherePreProcess;
+	vector< vec3 > plySpherePreProcessColors;
+	plySpherePreProcess.reserve( numPoints );
+	plySpherePreProcessColors.reserve( numPoints );
+
+	rng reject = rng( 0.0f, 1.0f );
+	// rng radiusGen = rng( 0.0003f, 0.0001f );
+	rng rGen = rng(  0.000618f, 0.0001f );
+	for( size_t i = 0; i < numPoints; i++ ) {
+		// if ( reject() < 0.01f ) { // decimating
+			plySpherePreProcess.emplace_back( vec4( vec3( float( xValues[ i ] ), float( yValues[ i ] ), float( zValues[ i ] ) ), rGen() ) );
+			plySpherePreProcessColors.emplace_back( vec3( float( rValues[ i ] ) / 255.0f, float( gValues[ i ] ) / 255.0f, float( bValues[ i ] ) / 255.0f ) );
+		// }
+	}
+	// UnitCubeRefit( plySpherePreProcess );
+
+	timer.tock();
+	cout << "ply loading done in " << timer.timeCPU << "ms" << newline;
+
+	timer.tick();
+
+	const int numTriangles = numPoints;
+
+	// allocate space for that many verts
+	state.vertices = ( tinybvh::bvhvec4 * ) malloc( 3 * numTriangles * sizeof( tinybvh::bvhvec4 ) );
+
+	// copy from the loader to the bvh's list
+	// const float radius = 0.0008f;
+	// const float radius = 0.001f;
+	for ( size_t i = 0; i < numPoints; i++ ) {
+		const int baseIdx = 3 * i;
+
+		// what if we actually just did the mesh of a box?
+
+		// add a triangle to the BVH that will generate the same bounding box as the sphere
+		const float radius = plySpherePreProcess[ i ].w;
+		state.vertices[ baseIdx + 0 ].x = plySpherePreProcess[ i ].x + radius;
+		state.vertices[ baseIdx + 0 ].y = plySpherePreProcess[ i ].y;
+		state.vertices[ baseIdx + 0 ].z = plySpherePreProcess[ i ].z + radius;
+
+		state.vertices[ baseIdx + 1 ].x = plySpherePreProcess[ i ].x - radius;
+		state.vertices[ baseIdx + 1 ].y = plySpherePreProcess[ i ].y + radius;
+		state.vertices[ baseIdx + 1 ].z = plySpherePreProcess[ i ].z;
+
+		state.vertices[ baseIdx + 2 ].x = plySpherePreProcess[ i ].x;
+		state.vertices[ baseIdx + 2 ].y = plySpherePreProcess[ i ].y - radius;
+		state.vertices[ baseIdx + 2 ].z = plySpherePreProcess[ i ].z - radius;
+	}
+
+	// build the bvh from the list of triangles
+	state.gpubvh.Build( state.vertices, numTriangles );
+	// state.bvh.Convert( tinybvh::BVH::WALD_32BYTE, tinybvh::BVH::VERBOSE );
+	// state.bvh.Refit( tinybvh::BVH::VERBOSE );
+
+	// state.bvh.Convert( tinybvh::BVH::WALD_32BYTE, tinybvh::BVH::AILA_LAINE );
+
+	// then have to build the buffer that's going to give us sphere positions + info ( radius, color, etc )
+	vector< vec4 > plySphereData; // xyz, w is radius... then rgb, w is material id
+	plySphereData.reserve( 2 * numPoints );
+	for ( size_t i = 0; i < numPoints; i++ ) {
+		plySphereData.push_back( plySpherePreProcess[ i ] );
+		plySphereData.push_back( vec4( plySpherePreProcessColors[ i ], 0.0f ) );
+	}
+
+	timer.tock();
+	cout << "BVH build done in " << timer.timeCPU << "ms" << newline;
+
+	// // testing rays against it
+	Image_4U test( 500, 500 );
+	for ( uint32_t y = 0; y < test.Height(); y++ ) {
+		for ( uint32_t x = 0; x < test.Width(); x++ ) {
+			color_4U col;
+
+			// tinybvh::bvhvec3 O( RangeRemap( x + 0.5f, 0.0f, test.Width(), -1.0f, 1.0f ), RangeRemap( y + 0.5f, 0.0f, test.Height(), -1.0f, 1.0f ), 1.0f );
+			tinybvh::bvhvec3 O( 1000.0f, RangeRemap( y + 0.5f, 0.0f, test.Width(), -300.0f, 300.0f ), RangeRemap( x + 0.5f, 0.0f, test.Height(), -300.0f, 300.0f ) );
+			tinybvh::bvhvec3 D( -1.0f, 0.0f, 0.0f );
+			tinybvh::Ray ray( O, D );
+			uint steps = uint( state.gpubvh.Intersect( ray ) );
+			// printf( "%d %d: nearest intersection: %f (found in %i traversal steps).\n", x, y, ray.hit.t, steps );
+
+			// if ( ray.hit.t < 1e5f ) {
+			// 	// cout << "hit" << endl;
+			// 	col = color_4U( { ( uint8_t ) ( 255 * ( ray.hit.t / 2.0f ) ), ( uint8_t ) steps * 3u, ( uint8_t ) 0, ( uint8_t ) 255 } );
+			// } else {
+			// 	col = color_4U( { ( uint8_t ) 16, ( uint8_t ) steps * 3u, ( uint8_t ) 0, ( uint8_t ) 255 } );
+			// }
+
+			// col = color_4U( { ( uint8_t ) ( ( ray.hit.t < 1e5f ) ? ( 255 * ( ray.hit.t / 2.0f ) ) : steps * 3u ), ( uint8_t ) steps * 3u, ( uint8_t ) 0, 255 } );
+
+			float stepTerm = ( steps * 3.f ) / 255.0f;
+			vec3 color = mix( plySphereData[ 2 * ray.hit.prim + 1 ].rgb(), vec3( stepTerm ), vec3( 0.5f ) ) * 255.0f;
+			col = color_4U( { ( uint8_t ) color.r, ( uint8_t ) color.g, ( uint8_t ) color.b, 255 } );
+			test.SetAtXY( x, y, col );
+		}
+	}
+
+	test.Save( "testImage.png" );
+
+	// BVH Nodes buffer
+	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.bvhNodeBuffer );
+	glBufferData( GL_SHADER_STORAGE_BUFFER, state.gpubvh.usedNodes * sizeof( tinybvh::BVH_GPU::BVHNode ), ( GLvoid * ) state.gpubvh.bvhNode, GL_DYNAMIC_COPY );
+	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 3, state.bvhNodeBuffer );
+	glObjectLabel( GL_BUFFER, state.bvhNodeBuffer, -1, string( "BVH Nodes" ).c_str() );
+
+	// BVH vertex indices buffer
+	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.indexBuffer );
+	glBufferData( GL_SHADER_STORAGE_BUFFER, state.gpubvh.idxCount * sizeof( unsigned ), ( GLvoid * ) state.gpubvh.bvh.primIdx, GL_DYNAMIC_COPY );
+	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 4, state.indexBuffer );
+	glObjectLabel( GL_BUFFER, state.indexBuffer, -1, string( "BVH Vertex Indices" ).c_str() );
+
+	// specific geometry data buffer
+	glBindBuffer( GL_SHADER_STORAGE_BUFFER, state.vertexBuffer );
+	glBufferData( GL_SHADER_STORAGE_BUFFER, state.gpubvh.triCount * 2 * sizeof( tinybvh::bvhvec4 ), ( GLvoid * ) plySphereData.data(), GL_DYNAMIC_COPY );
+	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 5, state.vertexBuffer );
+	glObjectLabel( GL_BUFFER, state.vertexBuffer, -1, string( "BVH Geometry Data" ).c_str() );
+}
 
 //void LoadBVH ( icarusState_t &state ) {
 //
@@ -503,7 +524,7 @@ void AllocateBuffers ( icarusState_t &state ) {
 
 	// buffers for the BVH
 	// LoadBVH( state );
-	// LoadBVH_ply( state );
+	LoadBVH_ply( state, "../Crystals/clean/crystal01.cleaned.ply" );
 
 	// setup for the Voraldo model in the volume renderer
 	// LoadVoraldoModel( state );
@@ -1029,11 +1050,11 @@ void RayUpdate ( icarusState_t &state ) {
 			glDispatchCompute( state.numRays / 256, 1, 1 );
 		}
 
-		//if ( state.runBVH ) { // intersect those rays with a triangle
-		//	const GLuint shader = state.RayIntersectShader_TinyBVH;
-		//	glUseProgram( shader );
-		//	glDispatchCompute( state.numRays / 256, 1, 1 );
-		//}
+		if ( state.runBVH ) { // intersect those rays with a triangle
+			const GLuint shader = state.RayIntersectShader_TinyBVH;
+			glUseProgram( shader );
+			glDispatchCompute( state.numRays / 256, 1, 1 );
+		}
 
 		if ( state.runVolume ) { // intersect those rays with the volume
 			const GLuint shader = state.RayIntersectShader_Volume;

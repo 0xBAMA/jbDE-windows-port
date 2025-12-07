@@ -32,6 +32,7 @@ layout( binding = 4, std430 ) readonly buffer indices { uint idx[]; };
 layout( binding = 5, std430 ) readonly buffer vertices { vec4 verts[]; }; // eventually extend to contain other material info
 
 #include "consistentPrimitives.glsl.h"
+#include "colorRamps.glsl.h"
 
 // ============================================================================
 //	T R A V E R S E _ A I L A L A I N E
@@ -90,6 +91,7 @@ vec4 traverse_ailalaine ( rayState_t rayState ) {
 						// you then test your ray against that sphere
 				const vec3 center = vec3( verts[ 2 * triIdx ].xyz );
 				const float radius = verts[ 2 * triIdx ].w;
+				// const float d = iSphereOffset( O, D, solvedNormal, radius, center );
 				const float d = iSphereOffset( O, D, solvedNormal, radius, center );
 				if ( d > 0.0f && d < hit.x ) {
 					hit = vec4( d, 0.0f, 0.0f, uintBitsToFloat( triIdx ) );
@@ -164,14 +166,16 @@ void main () {
 		const vec3 color = vec3( verts[ 2 * primitiveIdx + 1 ].xyz );
 		const float materialValue =  verts[ 2 * primitiveIdx + 1 ].w;
 
-		SetHitAlbedo( TinyBVHIntersection, color );
-		// SetHitAlbedo( TinyBVHIntersection, blood );
-		// SetHitAlbedo( TinyBVHIntersection, vec3( 0.8f ) );
+//		 SetHitAlbedo( TinyBVHIntersection, refPalette( 1.0f - color.r, BLUESR ).xyz );
+		SetHitAlbedo( TinyBVHIntersection, refPalette( color.r, 2 ).xyz );
+//		 SetHitAlbedo( TinyBVHIntersection, mix( blood, vec3( 0.1f ), sqrt( color.r ) ) );
+//		 SetHitAlbedo( TinyBVHIntersection, vec3( 0.3f ) );
+
 		SetHitDistance( TinyBVHIntersection, hit.x );
 		// SetHitMaterial( TinyBVHIntersection, ( NormalizedRandomFloat() > 0.33f ) ? DIFFUSE : MIRROR );
 		SetHitMaterial( TinyBVHIntersection, REFRACTIVE );
-		// SetHitMaterial( TinyBVHIntersection, DIFFUSE );
-		SetHitRoughness( TinyBVHIntersection, 0.0f );
+//		 SetHitMaterial( TinyBVHIntersection, MIRROR );
+		SetHitRoughness( TinyBVHIntersection, 0.01f * color.r );
 
 		float IoR = 1.3f;
 

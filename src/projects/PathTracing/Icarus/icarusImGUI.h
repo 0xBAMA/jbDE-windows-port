@@ -115,4 +115,43 @@ void IcarusImguiWindow ( icarusState_t &state ) {
 	}
 	ImGui::Unindent();
 	ImGui::End();
+
+	ImGui::Begin( "Crystals" );
+		static std::vector< string > savesList;
+		if ( savesList.size() == 0 ) { // get the list
+			struct pathLeafString {
+				std::string operator()( const std::filesystem::directory_entry &entry ) const {
+					return entry.path().string();
+				}
+			};
+			// list of exrs, kept in Documents/EXRs/ (which is ../Crystals)
+			std::filesystem::path p( "../Crystals/clean/" );
+			std::filesystem::directory_iterator start( p );
+			std::filesystem::directory_iterator end;
+			std::transform( start, end, std::back_inserter( savesList ), pathLeafString() );
+			// std::sort( savesList.begin(), savesList.end() ); // sort these alphabetically
+		}
+
+#define LISTBOX_SIZE_MAX 256
+		const char *listboxItems[ LISTBOX_SIZE_MAX ];
+		uint32_t i;
+		for ( i = 0; i < LISTBOX_SIZE_MAX && i < savesList.size(); ++i ) {
+			listboxItems[ i ] = savesList[ i ].c_str();
+		}
+
+		ImGui::Text( "Crystals:" );
+		static int listboxSelected = 0;
+		ImGui::ListBox( " ", &listboxSelected, listboxItems, i, 16 );
+
+		if ( ImGui::Button( "Load Selected" ) ) {
+			LoadBVH_ply( state, savesList[ listboxSelected ] );
+		}
+
+		static rngi pick( 0, 100000000 );
+		if ( ImGui::Button( "Random" ) ) {
+			listboxSelected = pick() % savesList.size();
+			LoadBVH_ply( state, savesList[ listboxSelected ] );
+		}
+
+		ImGui::End();
 }

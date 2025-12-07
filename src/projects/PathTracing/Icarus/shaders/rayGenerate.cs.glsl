@@ -120,7 +120,8 @@ cameraRay GetCameraRay ( vec2 uv ) {
 	if ( DoFRadius != 0.0f && temp.direction != vec3( 0.0f ) ) {
 		// thin lens adjustment
 		vec3 focuspoint = temp.origin + ( ( temp.direction * DoFFocusDistance ) / dot( temp.direction, basisZ ) );
-		vec2 diskOffset = DoFRadius * GetBokehOffset( DoFBokehMode );
+		// vec2 diskOffset = DoFRadius * GetBokehOffset( DoFBokehMode );
+		vec2 diskOffset = DoFRadius * GetBokehOffset( 18 );
 		temp.origin += diskOffset.x * basisX + diskOffset.y * basisY;
 		temp.direction = normalize( focuspoint - temp.origin );
 	}

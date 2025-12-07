@@ -46,12 +46,13 @@ void main () {
 	// location of the associated pixel
 	const ivec2 loc = GetPixelIndex( myState );
 	bool terminate = false;
-	const float epsilon = 0.0001f;
+	const float epsilon = 0.000001f;
 
-	seed = uint( loc.x ) * 10625 + uint( loc.y ) * 23624 + gl_GlobalInvocationID.x * 42069;
+	 seed = uint( loc.x ) * 19990625 + uint( loc.y ) * 2399624 + gl_GlobalInvocationID.x * 42069;
+//	seed = gl_GlobalInvocationID.x * 42069;
 
 	intersection_t closestIntersection;
-	closestIntersection.data1.x = 0.0f; // supressing warning
+//	closestIntersection.data1.x = 0.0f; // supressing warning
 	IntersectionReset( closestIntersection );
 
 	// We need to do a gather over the N intersection cantidates to find the closest, similar to the Daedalus impl
@@ -79,7 +80,7 @@ void main () {
 	const vec3 reflectedVector = reflect( direction, normal );
 
 	// update origin point + epsilon bump (need to exclude epsilon bump for volumetrics, refractive hits)
-	SetRayOrigin( myState, origin + dist * direction + ( ( materialID != REFRACTIVE ) ? ( 2.0f * epsilon * normal ) : vec3( 0.0f ) ) );
+	SetRayOrigin( myState, origin + dist * direction + ( 3.0f * epsilon * normal ) );
 
 	switch ( materialID ) {
 		case NONE: {
@@ -89,8 +90,8 @@ void main () {
 				terminate = true;
 				const float mixFactor = dot( normalize( vec3( -1.0f, -1.0f, -1.0f ) ), GetRayDirection( myState ) );
 				// const vec3 color = oklch_to_srgb( vec3( smoothstep( 0.8f, 0.9f, mixFactor ), 0.5f, atan( direction.x, direction.y ) ) );
-				const vec3 color = vec3( smoothstep( 0.8f, 0.9f, mixFactor ) * 9.0f );
-				// const vec3 color = vec3( 0.0f );
+				vec3 color = vec3( smoothstep( 0.5f, 0.9f, mixFactor ) * 6.0f ); // + vec3( smoothstep( -0.7f, -1.0f, mixFactor ) ) * vec3( 3.9f, 0.4f, 0.1f );
+//				 color += vec3( 0.5f );
 
 				AddEnergy( myState, GetTransmission( myState ) * color );
 			}
@@ -120,12 +121,12 @@ void main () {
 			float adjustedIOR = GetHitIoR( closestIntersection ); // initial value of IoR
 			vec3 adjustedNormal = normal;
 
-			SetRayOrigin( myState, GetRayOrigin( myState ) - 2.0f * epsilon * adjustedNormal );
+			SetRayOrigin( myState, GetRayOrigin( myState ) - 3.0f * epsilon * adjustedNormal );
 			if ( GetHitFrontface( closestIntersection ) ) {
 
 			} else { // backface has to handle things a little differently
-				// SetRayOrigin( myState, GetRayOrigin( myState ) + 2.0f * epsilon * adjustedNormal );
-				// adjustedNormal = -adjustedNormal;
+				SetRayOrigin( myState, GetRayOrigin( myState ) + 3.0f * epsilon * adjustedNormal );
+				adjustedNormal = -adjustedNormal;
 				adjustedIOR = 1.0f / adjustedIOR;
 			}
 			float cosTheta = min( dot( -normalize( direction ), adjustedNormal ), 1.0f );
