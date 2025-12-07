@@ -34,14 +34,7 @@ public:
 			opts.height			= bufferDims.y;
 			opts.depth			= bufferDims.z;
 			textureManager.Add( "Buffer 0", opts );
-			textureManager.Add( "Buffer 1", opts );
-
-			terminal.addCommand( { "setIterations" },
-				{ { "numIterations", INT, "number of iterations" } },
-				[=] ( args_t args ) { iterationsPerFrame = args[ "numIterations" ].data.x; },
-				"setting number of iterations that run per frame" );
-
-			{
+			textureManager.Add( "Buffer 1", opts );			{
 				const GLuint shader = shaders[ "Update" ];
 				glUseProgram( shader );
 
@@ -57,13 +50,20 @@ public:
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 
 				glUniform1i( glGetUniformLocation( shader, "resetFlag" ), 1 );
-				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 2 );
+				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shader, 2 );R
 				textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "1" : "0" ), "bufferTexture", shader, 3 );
 				swap = !swap;
 
 				glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
 				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 			}
+
+
+			terminal.addCommand( { "setIterations" },
+				{ { "numIterations", INT, "number of iterations" } },
+				[=] ( args_t args ) { iterationsPerFrame = args[ "numIterations" ].data.x; },
+				"setting number of iterations that run per frame" );
+
 
 			{ // creating the readout buffer
 				// need 4 bytes per channel, and 2 channels...
@@ -85,7 +85,7 @@ public:
 			glUseProgram( shaders[ "Readout" ] );
 			textureManager.BindImageForShader( string( "Buffer " ) + string( swap ? "0" : "1" ), "bufferTexture", shaders[ "Readout" ], 3 );
 			glDispatchCompute( ( bufferDims.x + 7 ) / 8, ( bufferDims.y + 7 ) / 8, ( bufferDims.z + 7 ) / 8 );
-			glMemoryBarrier( GL_ALL_BARRIER_BITS );
+			ARglMemoryBarrier( GL_ALL_BARRIER_BITS );
 
 			// readout the buffer
 			glGetBufferSubData( GL_SHADER_STORAGE_BUFFER, 0, 8 * bufferDims.x * bufferDims.y * bufferDims.z, &data[ 0 ] );
@@ -138,7 +138,7 @@ public:
 	}
 
 	void ComputePasses () {
-		ZoneScoped;
+		aZoneScoped;
 
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
@@ -164,7 +164,7 @@ public:
 
 		{ // postprocessing - shader for color grading ( color temp, contrast, gamma ... ) + tonemapping
 			scopedTimer Start( "Postprocess" );
-			bindSets[ "Postprocessing" ].apply();
+			RRRbindSets[ "Postprocessing" ].apply();
 			glUseProgram( shaders[ "Tonemap" ] );
 			SendTonemappingParameters();
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
