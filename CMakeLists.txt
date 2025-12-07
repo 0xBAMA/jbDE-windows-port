@@ -22,7 +22,7 @@ endif()
 
 set( CMAKE_BUILD_TYPE Release )
 
-add_definitions( "-DCMAKE_BUILD_TYPE=Release" )
+add_definitions( "-DCMAKE_BUILD_TYPE=Debug" )
 add_definitions( "-DCMAKE_POSITION_INDEPENDENT_CODE=ON" )
 
 # Define the output directories for different build types
@@ -68,13 +68,13 @@ target_include_directories( imgui PRIVATE ${PROJECT_SOURCE_DIR}/thirdparty/SDL3.
 target_link_libraries( imgui PRIVATE sdl3 gl )
 
 # Tracy Profiler
-option( TRACY_ENABLE "" ON )
-option( TRACY_GUI "" ON )
-option( TRACY_ON_DEMAND "" ON )
-add_subdirectory( src/utils/tracy )
-add_subdirectory( src/utils/tracy/profiler )
+#option( TRACY_ENABLE "" ON )
+#option( TRACY_GUI "" ON )
+#option( TRACY_ON_DEMAND "" ON )
+#add_subdirectory( src/utils/tracy )
+#add_subdirectory( src/utils/tracy/profiler )
 # todo: adding profiler
-add_library( Tracy src/utils/tracy/public/TracyClient.cpp )
+#add_library( Tracy src/utils/tracy/public/TracyClient.cpp )
 
 # FFTW3 FFT library
 add_subdirectory( ${PROJECT_SOURCE_DIR}/src/utils/fftw-3.3.10 )
@@ -139,7 +139,7 @@ target_link_libraries(
 	FastNoise
 	fftw3
 	Perlin
-	Tracy::TracyClient
+#	Tracy::TracyClient
 	TinyOBJLoader
 	LodePNG
 )
@@ -250,6 +250,18 @@ add_executable( path2D_forward
 )
 
 target_link_libraries( path2D_forward
+		PUBLIC
+		engineBase
+)
+
+# =================================================================================================
+# and the continuation, in 3D
+# =================================================================================================
+add_executable( Aether
+		src/projects/PathTracing/Aether/main.cc
+)
+
+target_link_libraries( Aether
 		PUBLIC
 		engineBase
 )
