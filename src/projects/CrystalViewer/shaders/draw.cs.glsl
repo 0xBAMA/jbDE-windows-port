@@ -15,7 +15,7 @@ uniform vec3 color2;
 
 float getDensity ( vec3 p ) {
 //	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 64.0f;
-	 return 0.001f + pow( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / ( 4096.0f * 4096 * 4 ), 0.125f );
+	 return 0.001f + pow( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / ( 4096.0f * 4096 * 3 ), 0.125f );
 //	return 0.001f + exp( float( imageLoad( SplatBuffer, ivec3( p ) ).r ) );
 //	return 0.001f + float( imageLoad( SplatBuffer, ivec3( p ) ).r ) / 10000.0f;
 }
@@ -43,7 +43,7 @@ void main () {
 		const float numSamples = 4.0f;
 		for ( int s = 0; s < numSamples; s++ ) {
 //			vec2 uv = ( vec2( writeLoc ) + vec2( NormalizedRandomFloat(), NormalizedRandomFloat() ) );
-			vec2 uv = ( vec2( writeLoc ) + ( ( 8.0f - 6.0f * animRatio ) * rnd_disc_cauchy() ) );
+			vec2 uv = ( vec2( writeLoc ) + ( 2.0f ) * rnd_disc_cauchy() );
 	//		const vec3 rO = vec3( uv.x, iS.y - uv.y + 1, iS.z + 1.0f ); // start at the top of the volume
 
 			const vec3 rO = vec3( uv, iS.z + 1.0f );

@@ -76,7 +76,14 @@ public:
 			color4 = palette::paletteRef( palettePick() );
 
 			// start the gif process
-			InitGif();
+			// InitGif();
+
+			for ( int i = 40; i < 49; ++i ) {
+				string numberstring = ( i < 10 ) ? ( "0" + to_string( i ) ) : to_string( i );
+				ProcessCrystal( "../Crystals/crystal" + numberstring + ".png", "../Crystals/crystal" + numberstring + ".ply" );
+			}
+
+			config.oneShot = true;
 		}
 	}
 
@@ -144,6 +151,145 @@ public:
 
 		glBufferData( GL_SHADER_STORAGE_BUFFER, crystalPoints.size() * sizeof( vec4 ), crystalPoints.data(), GL_DYNAMIC_COPY );
 		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, pointBuffer );
+	}
+
+	void ProcessCrystal ( string path, string outpath ) {
+		cout << "loading crystal: " << path << endl;
+
+		// loading the data from disk... it's a linear array of mat4's, so let's go ahead and process it down to vec4's by transforming p0 by that mat4
+		constexpr vec4 p0 = vec4( 0.0f, 0.0f, 0.0f, 1.0f );
+		std::vector< vec4 > crystalPoints;
+
+		Image_4U matrixBuffer( path );
+		n = numPoints = ( matrixBuffer.Height() - 1 ) * ( matrixBuffer.Width() / 16 ); // 1024 mat4's per row, small crop of bottom row for safety
+		crystalPoints.resize( numPoints );
+
+		mat4 *dataAsMat4s = ( mat4 * ) matrixBuffer.GetImageDataBasePtr();
+		for ( int i = 0; i < numPoints; ++i ) {
+			crystalPoints[ i ] = dataAsMat4s[ i ] * p0;
+			crystalPoints[ i ].w = i;
+		}
+
+/*
+		// additional conditioning step to scale this set of points to a manageable volume ahead of trying to splat it
+		vec3 minExtents = vec3( crystalPoints[ 0 ].xyz() );
+		vec3 maxExtents = vec3( crystalPoints[ 0 ].xyz() );
+		for ( const auto& crystalPoint : crystalPoints ) {
+			minExtents = glm::min( minExtents, crystalPoint.xyz() );
+			maxExtents = glm::max( maxExtents, crystalPoint.xyz() );
+		}
+
+		cout << "Solved extents: " << to_string( minExtents ) << ", " << to_string( maxExtents ) << endl;
+
+		// dump all data into the hashmap...
+		std::unordered_map< ivec3, std::shared_ptr< std::vector< vec4 > > > hashCollection;
+		uint32_t gridCellsCreated = 0;
+		for ( const auto& crystalPoint : crystalPoints ) {
+			const ivec3 iC = ivec3( crystalPoint.xyz() );
+			// cout << "Processing point " << to_string( crystalPoint.xyz() ) << endl;
+			// cout << "binned: " << to_string( iC ) << endl;
+			if ( hashCollection[ iC ] == nullptr) { // pointer is null, create the object
+				// cout << "Creating new gridcell..." << endl;
+				hashCollection[ iC ] = std::make_shared< std::vector< vec4 > >();
+				gridCellsCreated++;
+			} else {
+				// cout << "Gridcell exists." << endl;
+			}
+			hashCollection[ iC ]->emplace_back( crystalPoint );
+		}
+
+		// once we have all the data in the hashmap, we have a grid based acceleration structure to judge against
+			// we basically need to go over all the occupied cells in the hashmap...
+		std::vector< vec4 > locations;
+		uint32_t completed = 0;
+		uint32_t failed = 0;
+		for ( auto& ptr : hashCollection ) {
+			if ( ptr.second->size() == 0 ) { cout << "this is bad" << endl; continue; }
+			if ( ptr.second->size() == 1 ) { locations.emplace_back( ptr.second->at( 0 ) ); continue; }
+
+			const ivec3 iC = ivec3( ptr.first );
+			const auto& s = { -1, 0, 1 };
+			std::vector< vec4 > localList;
+			localList.reserve( 256 );
+			for ( int x : s )
+				for ( int y : s )
+					for ( int z : s ) {
+						if ( hashCollection[ iC + ivec3( x, y, z ) ] != nullptr ) {
+							for ( int i = 0; i < hashCollection[ iC + ivec3( x, y, z ) ]->size(); ++i ) {
+								// we need to collect all the local points
+								localList.push_back( hashCollection[ iC + ivec3( x, y, z ) ]->at( i ) );
+							}
+						}
+					}
+
+			cout << "constructed local list of : " << to_string( localList.size() ) << endl;
+			// once we have the local list sort by w, and let's see if the current point is the first one in the list within epsilon of this location
+			std::sort( localList.begin(), localList.end(), []( vec4 a, vec4 b ) { return a.w < b.w; } );
+
+			// this sucks and is slow, but the problem size is limited for each given particle, to the neighboring grid cells in the hashmap
+
+			// for the list of points in our current gridcell
+			shared_ptr< vector< vec4 > > pointsRef = ptr.second;
+			if ( pointsRef != nullptr ) {
+				for ( int i = 0; i < pointsRef->size(); i++ ) {
+					// for the local list... neighborhood points
+					for ( auto& p : localList ) {
+
+						// determine if p is already in the list...
+						for ( auto& loc : locations ) {
+							if ( int( loc.w ) == int( p.w ) ) {
+								continue; // no chance, pal
+							}
+						}
+
+						// if this point in the neighborhood comes before our point, we need to evaluate the distance
+						if ( p.w <= pointsRef->at( i ).w ) {
+							// if we're within this epsilon, let's only keep the one comes *first* that is, p - by now, we know p is not in the list
+							if ( glm::distance( p.xyz(), pointsRef->at( i ).xyz() ) < 0.0001f ) {
+								// if I'm first, I go in the list... if there is another point within epsilon, earlier in the list, continue without adding
+								if ( locations.size() % 10000 == 0 ) {
+									cout << "adding " << locations.size() << " locations" << endl;
+								}
+								locations.push_back( p );
+								// breaking out of local list check, we have decided we have a point to represent this point, sp
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			localList.clear();
+		}
+		std::sort( locations.begin(), locations.end(), []( vec4 a, vec4 b ) { return a.w < b.w; } );
+*/
+
+		happly::PLYData plyOut;
+
+		// convert to vector<vector<float>>
+		vector< float > dataX;
+		vector< float > dataY;
+		vector< float > dataZ;
+		vector< float > dataOrder;
+		// for ( auto& loc : locations ) {
+		for ( const auto& crystalPoint : crystalPoints ) {
+			dataX.push_back( crystalPoint.x );
+			dataY.push_back( crystalPoint.y );
+			dataZ.push_back( crystalPoint.z );
+			dataOrder.push_back( crystalPoint.w / float( crystalPoints.size() ) );
+		}
+
+		// Add elements
+		plyOut.addElement( "Points", dataX.size() );
+
+		// Add properties to those elements
+		plyOut.getElement( "Points" ).addProperty< float >( "X", dataX );
+		plyOut.getElement( "Points" ).addProperty< float >( "Y", dataY );
+		plyOut.getElement( "Points" ).addProperty< float >( "Z", dataZ );
+		plyOut.getElement( "Points" ).addProperty< float >( "Order", dataOrder );
+
+		// Write the object to file
+		plyOut.write( outpath, happly::DataFormat::Binary );
 	}
 
 	void HandleCustomEvents () {
@@ -358,7 +504,8 @@ public:
 			Screenshot();
 		}
 
-		{
+		static bool animate = false;
+		if ( animate ) {
 			// keepeing track of frames...
 			static int i = 0;
 			static int frame = 0;
