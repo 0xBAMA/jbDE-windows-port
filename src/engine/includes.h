@@ -100,7 +100,9 @@ namespace std {
 
 //// tracy profiler annotation
  // remove this when adding Tracy
-#include "../utils/tracy/public/tracy/Tracy.hpp"
+// #include "../utils/tracy/public/tracy/Tracy.hpp"
+#define FrameMark 0
+#define ZoneScoped 0
 
 // OpenGL function loading
 #include <glad/glad.h>
