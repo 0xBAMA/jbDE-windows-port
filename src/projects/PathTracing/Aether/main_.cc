@@ -1,7 +1,7 @@
 #include "../../../engine/engine.h"
 
 struct AetherConfig_t {
-	ivec2 dims = ivec2( 1280, 768 );
+	ivec3 dims = ivec3( 1280, 768, 128 );
 
 	uint32_t autoExposureBufferDim = 0;
 	uint32_t autoExposureMipLevels = 0;
@@ -44,9 +44,10 @@ public:
 			opts.dataType		= GL_R32I;
 			opts.width			= AetherConfig.dims.x;
 			opts.height			= AetherConfig.dims.y;
+			opts.depth			= AetherConfig.dims.z;
 			opts.minFilter		= GL_NEAREST;
 			opts.magFilter		= GL_NEAREST;
-			opts.textureType	= GL_TEXTURE_2D;
+			opts.textureType	= GL_TEXTURE_3D;
 			opts.wrap			= GL_CLAMP_TO_BORDER;
 			// parallel averaging via atomic adds in the line drawing function
 			textureManager.Add( "Field X Tally", opts );
@@ -54,6 +55,7 @@ public:
 			textureManager.Add( "Field Z Tally", opts );
 			textureManager.Add( "Field Count", opts );
 
+			/*
 		// additional buffer used for autoexposure
 			// round up the dimensions
 			AetherConfig.autoExposureBufferDim = nextPowerOfTwo( std::max( AetherConfig.dims.x, AetherConfig.dims.y ) );
@@ -75,6 +77,7 @@ public:
 				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
 			}
 			AetherConfig.autoExposureMipLevels = level;
+			*/
 
 			// setup the importance sampled emission spectra stuff
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
