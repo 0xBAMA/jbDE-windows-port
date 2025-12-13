@@ -1,7 +1,7 @@
 #include "../../../engine/engine.h"
 
 struct AetherConfig_t {
-	ivec3 dims = ivec3( 1280, 768, 128 );
+	ivec3 dims = ivec3( 1280, 768 );
 
 	uint32_t autoExposureBufferDim = 0;
 	uint32_t autoExposureMipLevels = 0;
@@ -55,7 +55,6 @@ public:
 			textureManager.Add( "Field Z Tally", opts );
 			textureManager.Add( "Field Count", opts );
 
-			/*
 		// additional buffer used for autoexposure
 			// round up the dimensions
 			AetherConfig.autoExposureBufferDim = nextPowerOfTwo( std::max( AetherConfig.dims.x, AetherConfig.dims.y ) );
@@ -77,7 +76,6 @@ public:
 				glTexImage2D( GL_TEXTURE_2D, level, GL_R32F, d, d, 0, getFormat( GL_R32F ), GL_FLOAT, ( void * ) zeroesF.GetImageDataBasePtr() );
 			}
 			AetherConfig.autoExposureMipLevels = level;
-			*/
 
 			// setup the importance sampled emission spectra stuff
 			string LUTPath = "../src/data/spectraLUT/Preprocessed/";
