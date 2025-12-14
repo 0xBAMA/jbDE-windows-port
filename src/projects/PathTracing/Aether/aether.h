@@ -340,8 +340,30 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 	glActiveTexture( GL_TEXTURE0 );
 	glBindTexture( GL_TEXTURE_2D, config.textureManager->Get( "Light Importance Visualizer" ) );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, importanceVisualizer.Width(), importanceVisualizer.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, importanceVisualizer.GetImageDataBasePtr() );
+
+	// then we also need some information for each individual light...
+	std::vector< vec4 > lightBufferDataB;
+	for ( int i = 0; i < config.numLights; i++ ) {
+		// the 3x vec4's specifying a light for the GPU process...
+		lightBufferDataB.push_back( vec4( config.lights[ i ].emitterType, config.lights[ i ].pickedLUT, 0.0f, 0.0f ) );
+		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 0 ] );
+		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 1 ] );
+		lightBufferDataB.push_back( vec4( 0.0f ) );
 	}
 
-	// using the current configuration of the lights...
+	std::vector< uint32_t > lightBufferDataConcat;
+	for ( int i = 0; i < config.maxLights; i++ ) {
+		lightBufferDataConcat.push_back( lightBufferDataA[ i ] );
+	}
+	for ( int i = 0; i < config.numLights * 4; i++ ) {
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].x ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].y ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].z ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].w ) );
+	}
 
+	// and sending the latest data to the GPU
+	glBindBuffer( GL_SHADER_STORAGE_BUFFER, config.lightBuffer );
+	glBufferData( GL_SHADER_STORAGE_BUFFER, 4 * lightBufferDataConcat.size(), ( GLvoid * ) &lightBufferDataConcat[ 0 ], GL_DYNAMIC_COPY );
+	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, config.lightBuffer );
 }
