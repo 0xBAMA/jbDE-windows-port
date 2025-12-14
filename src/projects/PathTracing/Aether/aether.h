@@ -82,7 +82,14 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	opts.initialData = inverseCDF.GetImageDataBasePtr();
 	config.textureManager->Add( "iCDF", opts );
 
-	inverseCDF.Save( "test.png" );
+	Image_1F::rangeRemapInputs_t remap;
+	remap.rangeStartLow = 380.0f;
+	remap.rangeStartHigh = 830.0f;
+	remap.rangeEndLow = 0.0f;
+	remap.rangeEndHigh = 1.0f;
+	remap.
+	inverseCDF.RangeRemap( {  } );
+	inverseCDF.Save( "testCDF.png" );
 }
 
 inline void LightConfigWindow ( AetherConfig &config ) {
