@@ -10,6 +10,7 @@ struct AetherConfig {
 
 	// for the tally buffers
 	ivec3 dimensions{ 1280, 720, 128 };
+	// ivec3 dimensions{ 1024, 512, 256 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;

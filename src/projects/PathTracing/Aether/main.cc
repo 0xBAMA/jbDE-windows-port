@@ -45,6 +45,9 @@ public:
 			TonemapControlsWindow();
 		}
 
+		// config window for the lights
+		LightConfigWindow( aetherConfig );
+
 		if ( showProfiler ) {
 			static ImGuiUtils::ProfilersWindow profilerWindow; // add new profiling data and render
 			profilerWindow.cpuGraph.LoadFrameData( &tasks_CPU[ 0 ], tasks_CPU.size() );
@@ -104,7 +107,7 @@ public:
 		// if we've changed the light setup
 		if ( aetherConfig.lightListDirty ) {
 			// we need to rebuild the importance sampling structure
-
+			SetupImportanceSampling_lights( aetherConfig );
 		}
 
 		// run the simulation...
