@@ -289,6 +289,29 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 			}
 		}
 	}
+
+// using the current configuration of the lights, we need to create an importance sampling structure
+	// total power helps us inform how the buffer is populated, based on the relative contribution of each light
+	float totalPower = 0.0f;
+	std::vector< float > powers;
+	for ( int l = 0; l < config.numLights; l++ ) {
+		totalPower += config.lights[ l ].power;
+		powers.push_back( totalPower );
+	}
+
+	// this only fires when the light list is edited, so I'm going to do this kind of a dumb way, using a uniform distribution to pick
+	rng pick = rng( 0.0f, totalPower );
+	std::vector< uint32_t > lightBufferDataA;
+	for ( int i = 0; i < config.maxLights; i++ ) {
+		float thresh = pick();
+		int j = 0;
+		for ( ; j < powers.size(); j++ ) {
+			if ( thresh <= powers[ j ] ) { // we threw a dart and now have run out to it and passed it. Take this result.
+				break; // because we are generating numbers 0.0f to totalPower, we will land in one of these bins, with frequency weighted by their relative magnitude in "power"
+			}
+		}
+		lightBufferDataA.push_back( j );
+	}
 	}
 
 	// using the current configuration of the lights...
