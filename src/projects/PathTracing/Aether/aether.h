@@ -128,6 +128,117 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 	ImGui::Begin( "Light Setup" );
 
 	// this is starting from the lighting config in Newton
+	static int flaggedForRemoval = -1; // this will run next frame when I want to remove an entry from the list, to avoid imgui confusion
+	if ( flaggedForRemoval != -1 && flaggedForRemoval < config.numLights ) {
+		// remove it from the list by bumping the remainder of the list up
+		for ( int i = flaggedForRemoval; i < config.numLights; i++ ) {
+			config.lights[ i ] = config.lights[ i + 1 ];
+		}
+
+		// reset trigger and decrement light count
+		flaggedForRemoval = -1;
+		config.numLights--;
+		if ( config.numLights < config.maxLights )
+			config.lights[ config.numLights ] = lightSpec(); // zero out the entry
+
+		config.lightListDirty = true;
+	}
+
+	// visualizer of the light buffer importance structure...
+	ImGui::Text( "" );
+	const int w = ImGui::GetContentRegionAvail().x;
+	ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( config.textureManager->Get( "Light Importance Visualizer" ) ), ImVec2( w, w * ( 16.0f * 5.0f + 1.0f ) / ( 64.0f * 5.0f + 1.0f ) ) );
+	ImGui::Text( "" );
+
+	// iterate through the list of lights, and allow manipulation of state on each one
+	for ( int l = 0; l < config.numLights; l++ ) {
+		const string lString = string( "##" ) + to_string( l );
+
+		ImGui::Text( "" );
+		// ImGui::Text( ( string( "Light " ) + to_string( l ) ).c_str() );
+		ImGui::Indent();
+
+		// color used for visualization
+		ImGui::ColorEdit4( ( string( "MyColor" ) + lString ).c_str(), ( float* ) &config.visualizerColors[ l ], ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel );
+		config.lightListDirty |= ImGui::IsItemEdited();
+
+		ImGui::SameLine();
+		ImGui::InputTextWithHint( ( string( "Light Name" ) + lString ).c_str(), "Enter a name for this light, if you would like. Not used for anything other than organization.", config.lights[ l ].label, 256 );
+		ImGui::SliderFloat( ( string( "Power" ) + lString ).c_str(), &config.lights[ l ].power, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+		// this will latch, so we basically get a big chained or that triggers if any of the conditionals like this one got triggered
+		config.lightListDirty |= ImGui::IsItemEdited();
+		ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &config.lights[ l ].pickedLUT, LUTFilenames, numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
+		config.lightListDirty |= ImGui::IsItemEdited();
+		ImGui::Combo( ( string( "Emitter Type" ) + lString ).c_str(), &config.lights[ l ].emitterType, emitterTypes, numEmitters );
+		config.lightListDirty |= ImGui::IsItemEdited();
+		ImGui::Text( "Emitter Settings:" );
+		switch ( config.lights[ l ].emitterType ) {
+		case 0: // point emitter
+
+			// need to set the 3D point location
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+
+		case 1: // cauchy beam emitter
+
+			// need to set the 3D emitter location
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			// need to set the 3D direction - tbd how this is going to go, euler angles?
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			// need to set the scale factor for the angular spread
+			ImGui::SliderFloat( ( string( "Angular Spread" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+
+		case 2: // laser disk
+
+			// need to set the 3D emitter location
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			// need to set the 3D direction (defining disk plane)
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			// need to set the radius of the disk being used
+			ImGui::SliderFloat( ( string( "Radius" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+
+		case 3: // uniform line emitter
+
+			// need to set the 3D location of points A and B
+			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+
+		default:
+			ImGui::Text( "Invalid Emitter Type" );
+			break;
+		}
+		if ( ImGui::Button( ( string( "Remove" ) + lString ).c_str() ) ) {
+			config.lightListDirty = true;
+			flaggedForRemoval = l;
+		}
+		ImGui::Text( "" );
+		ImGui::Unindent();
+		ImGui::Separator();
+	}
+
+	// option to add a new light
+	ImGui::Text( "" );
+	if ( ImGui::Button( " + Add Light " ) ) {
+		// add a new light with default settings
+		config.lightListDirty = true;
+		config.numLights++;
+	}
 
 	ImGui::End();
 }
