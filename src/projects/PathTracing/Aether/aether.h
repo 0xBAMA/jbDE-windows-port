@@ -1,4 +1,7 @@
+#pragma once
+
 #include "../../../engine/engine.h"
+#include "light.h"
 
 struct AetherConfig {
 	// handle for the texture manager
@@ -8,12 +11,13 @@ struct AetherConfig {
 	// for the tally buffers
 	ivec3 dimensions{ 1280, 720, 128 };
 
-	// the list of different light types
-	const std::vector< string > LUTFilenames = { "AmberLED", "2700kLED", "6500kLED", "Candle", "Flourescent1", "Flourescent2", "Flourescent3", "Halogen", "HPMercury",
-		"HPSodium1", "HPSodium2", "LPSodium", "Incandescent", "MetalHalide1", "MetalHalide2", "SkyBlueLED", "SulphurPlasma", "Sunlight", "Xenon" };
-
-	// the list of specific lights...
+	// managing the list of specific lights...
 	bool lightListDirty = true;
+	int numLights = 2;
+	static constexpr int maxLights = 1024;
+	lightSpec lights[ maxLights ];
+	vec4 visualizerColors[ maxLights ];
+	GLuint lightBuffer;
 
 };
 
@@ -22,16 +26,41 @@ inline void CompileShaders ( AetherConfig &config ) {
 }
 
 inline void CreateTextures ( AetherConfig &config ) {
+	// configuring the tally textures
+	textureOptions_t opts;
+	opts.dataType		= GL_R32I;
+	opts.minFilter		= GL_NEAREST;
+	opts.magFilter		= GL_NEAREST;
+	opts.textureType	= GL_TEXTURE_3D;
+	opts.wrap			= GL_CLAMP_TO_BORDER;
+	opts.width			= config.dimensions.x;
+	opts.height			= config.dimensions.y;
+	opts.depth			= config.dimensions.z;
 
+	// considering maybe switching to RGB... existing tonemapping, etc would be more effective
+	config.textureManager->Add( "XTally", opts );
+	config.textureManager->Add( "YTally", opts );
+	config.textureManager->Add( "ZTally", opts );
+	config.textureManager->Add( "Count", opts );
+
+	// displacement etc?
+}
+
+inline void ResetTextures ( AetherConfig &config ) {
+	config.textureManager->ZeroTexture3D( "XTally" );
+	config.textureManager->ZeroTexture3D( "YTally" );
+	config.textureManager->ZeroTexture3D( "ZTally" );
+	config.textureManager->ZeroTexture3D( "Count" );
+	config.textureManager->ZeroTexture2D( "Accumulator" );
 }
 
 inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	// setup the texture with rows for the specific light types, for the importance sampled emission spectra
 	const string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-	Image_1F inverseCDF( 1024, config.LUTFilenames.size() );
+	Image_1F inverseCDF( 1024, numLUTs );
 
-	for ( int i = 0; i < config.LUTFilenames.size(); i++ ) {
-		Image_4F pdfLUT( LUTPath + config.LUTFilenames[ i ] + ".png" );
+	for ( int i = 0; i < numLUTs; i++ ) {
+		Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
 
 		// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
 		std::vector< float > cdf;
@@ -73,7 +102,7 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	// we now have the solution for the LUT
 	textureOptions_t opts;
 	opts.width = 1024;
-	opts.height = config.LUTFilenames.size();
+	opts.height = numLUTs;
 	opts.dataType = GL_R32F;
 	opts.minFilter = GL_LINEAR;
 	opts.magFilter = GL_LINEAR;
@@ -82,14 +111,17 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	opts.initialData = inverseCDF.GetImageDataBasePtr();
 	config.textureManager->Add( "iCDF", opts );
 
-	Image_1F::rangeRemapInputs_t remap;
-	remap.rangeStartLow = 380.0f;
-	remap.rangeStartHigh = 830.0f;
-	remap.rangeEndLow = 0.0f;
-	remap.rangeEndHigh = 1.0f;
-	remap.
-	inverseCDF.RangeRemap( {  } );
+	/*
+	// for inspection, remap to visible range
+	Image_1F::rangeRemapInputs_t remap[ 1 ];
+	remap[ 0 ].rangeStartLow = 380.0f;
+	remap[ 0 ].rangeStartHigh = 830.0f;
+	remap[ 0 ].rangeEndLow = 0.0f;
+	remap[ 0 ].rangeEndHigh = 1.0f;
+	remap[ 0 ].rangeType = Image_1F::HARDCLIP;
+	inverseCDF.RangeRemap( remap );
 	inverseCDF.Save( "testCDF.png" );
+	*/
 }
 
 inline void LightConfigWindow ( AetherConfig &config ) {
