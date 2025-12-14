@@ -47,12 +47,16 @@ inline void CreateTextures ( AetherConfig &config ) {
 	// displacement etc?
 }
 
+inline void ResetAccumulator ( AetherConfig &config ) {
+	config.textureManager->ZeroTexture2D( "Accumulator" );
+}
+
 inline void ResetTextures ( AetherConfig &config ) {
 	config.textureManager->ZeroTexture3D( "XTally" );
 	config.textureManager->ZeroTexture3D( "YTally" );
 	config.textureManager->ZeroTexture3D( "ZTally" );
 	config.textureManager->ZeroTexture3D( "Count" );
-	config.textureManager->ZeroTexture2D( "Accumulator" );
+	ResetAccumulator( config );
 }
 
 inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
