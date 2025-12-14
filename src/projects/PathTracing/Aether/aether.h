@@ -244,10 +244,51 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 }
 
 inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
+	config.lightListDirty = false;
 	static bool firstTime = true;
 	if ( firstTime ) {
 		// create the texture
 		firstTime = false;
+
+		glGenBuffers ( 1, &config.lightBuffer );
+
+		// ================================================================================================================
+		{ // visualizing the light list importance structure
+			textureOptions_t opts;
+			opts.dataType = GL_RGBA8;
+			opts.minFilter = GL_LINEAR;
+			opts.magFilter = GL_LINEAR;
+			opts.width = 32;
+			opts.height = 32;
+			opts.textureType = GL_TEXTURE_2D;
+
+			config.textureManager->Add( "Light Importance Visualizer", opts );
+		}
+
+		// ================================================================================================================
+		// some dummy lights...
+		config.lights[ 0 ].emitterParams[ 0 ].x += 2.0f;
+		config.lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
+		config.lights[ 0 ].emitterParams[ 1 ].y = -1.0f;
+		config.lights[ 0 ].pickedLUT = 3;
+		config.lights[ 0 ].emitterType = 2;
+		sprintf( config.lights[ 0 ].label, "Example Light 1" );
+
+		config.lights[ 1 ].emitterParams[ 0 ].x -= 2.0f;
+		config.lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
+		config.lights[ 1 ].emitterParams[ 1 ].y = -1.0f;
+		config.lights[ 1 ].pickedLUT = 5;
+		config.lights[ 1 ].emitterType = 2;
+		sprintf( config.lights[ 1 ].label, "Example Light 2" );
+
+		// ================================================================================================================
+		{ // we need some colors to visualize the light buffer...
+			rng pick( 0.0f, 1.0f );
+			for ( int x = 0; x < 1024; x++ ) {
+				config.visualizerColors[ x ] = vec4( pick(), pick(), pick(), 1.0f );
+			}
+		}
+	}
 	}
 
 	// using the current configuration of the lights...
