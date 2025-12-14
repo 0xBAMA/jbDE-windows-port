@@ -104,6 +104,10 @@ public:
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
 
+		if ( trident.Dirty() ) {
+			ResetAccumulator( aetherConfig );
+		}
+
 		// if we've changed the light setup
 		if ( aetherConfig.lightListDirty ) {
 			// we need to rebuild the importance sampling structure
