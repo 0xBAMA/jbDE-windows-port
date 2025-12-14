@@ -66,8 +66,27 @@ public:
 		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			glUseProgram( shaders[ "Draw" ] );
-			glUniform1f( glGetUniformLocation( shaders[ "Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
+			const GLuint shader = shaders[ "Draw" ];
+			glUseProgram( shader );
+
+			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
+
+			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
+			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
+
+			static rngi wangSeeder( 0, 1000000 );
+			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+			static rngi blueSeeder( 0, 512 );
+			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
+
+			glUniform3i( glGetUniformLocation( shader, "dimensions" ), aetherConfig.dimensions.x, aetherConfig.dimensions.y, aetherConfig.dimensions.z );
+
+			textureManager.BindTexForShader( "XTally", "bufferImageX", shader, 2 );
+			textureManager.BindTexForShader( "YTally", "bufferImageY", shader, 3 );
+			textureManager.BindTexForShader( "ZTally", "bufferImageZ", shader, 4 );
+			textureManager.BindTexForShader( "Count", "bufferImageCount", shader, 5 );
+
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
