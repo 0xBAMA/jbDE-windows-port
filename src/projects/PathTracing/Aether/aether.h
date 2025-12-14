@@ -312,6 +312,34 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 		}
 		lightBufferDataA.push_back( j );
 	}
+
+	// this first part of the buffer, I want to visualize...
+	Image_4U importanceVisualizer( 64 * 5 + 1, 16 * 5 + 1 );
+	for ( uint32_t y = 0; y < 16; y++ ) {
+		for ( uint32_t x = 0; x < 64; x++ ) {
+			int index = y * 64 + x;
+			int pickedLight = lightBufferDataA[ index ];
+			color_4U color, black;
+			color[ red ] = config.visualizerColors[ pickedLight ].r * 255;
+			color[ green ] = config.visualizerColors[ pickedLight ].g * 255;
+			color[ blue ] = config.visualizerColors[ pickedLight ].b * 255;
+			black[ alpha ] = color[ alpha ] = 255;
+			black[ red ] = black[ green ] = black[ blue ] = 0;
+
+			for ( uint32_t bY = 0; bY < 4; bY++ ) {
+				for ( uint32_t bX = 0; bX < 6; bX++ ) {
+					if ( bY == 0 || bX == 0 || bY == 5 || bX == 5 ) {
+						importanceVisualizer.SetAtXY( 5 * x + bX, 5 * y + bY, black );
+					} else {
+						importanceVisualizer.SetAtXY( 5 * x + bX, 5 * y + bY, color );
+					}
+				}
+			}
+		}
+	}
+	glActiveTexture( GL_TEXTURE0 );
+	glBindTexture( GL_TEXTURE_2D, config.textureManager->Get( "Light Importance Visualizer" ) );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, importanceVisualizer.Width(), importanceVisualizer.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, importanceVisualizer.GetImageDataBasePtr() );
 	}
 
 	// using the current configuration of the lights...
