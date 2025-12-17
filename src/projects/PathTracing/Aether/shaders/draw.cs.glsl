@@ -16,7 +16,7 @@ vec4 blueNoiseRef ( ivec2 pos ) {
 	return imageLoad( blueNoiseTexture, pos ) / 255.0f;
 }
 
-// the field buffer image
+// the field buffer should probably use a texture interface
 //uniform isampler3D bufferImageX;
 //uniform isampler3D bufferImageY;
 //uniform isampler3D bufferImageZ;
@@ -32,31 +32,23 @@ layout( binding = 5, r32ui ) uniform uimage3D bufferImageCount;
 uniform mat3 invBasis;
 uniform ivec3 dimensions;
 
-#include "wood.h"
+ivec3 getRemappedPosition ( vec3 pos ) {
+	return ivec3( pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
+}
 
-
-//https://www.shadertoy.com/view/MtX3Ws // noise marble
-vec2 cmul( vec2 a, vec2 b )  { return vec2( a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x ); }
-vec2 csqr( vec2 a )  { return vec2( a.x*a.x - a.y*a.y, 2.*a.x*a.y  ); }
+const float scalar = 10000.0f;
 
 float getDensity ( vec3 pos ) {
-//	return 0.001f;
-	pos /= 500.0f;
-//	return clamp( cos( pos.x ) * cos( pos.y ) * sin( pos.z ), 0.0f, 1.0f );
-//	return matWood( pos ).r / 100.0f;
+	return imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar + 0.0001f;
+}
 
-	float res = 0.;
-
-	vec3 p = pos;
-	vec3 c = p;
-	for (int i = 0; i < 10; ++i) {
-		p =.7*abs(p)/dot(p,p) -.7;
-		p.yz= csqr(p.yz);
-		p=p.zxy;
-		res += exp(-19. * abs(dot(p,c)));
-
-	}
-	return res/200.;
+vec3 getColor ( vec3 pos ) {
+	ivec3 p = getRemappedPosition( pos );
+	return rgb_to_srgb( xyz_to_rgb( ( 0.1f / scalar ) * vec3( // these are tally sums + number of samples for averaging
+	( float( imageLoad( bufferImageX, p ).r ) / 16.0f ),
+	( float( imageLoad( bufferImageY, p ).r ) / 16.0f ),
+	( float( imageLoad( bufferImageZ, p ).r ) / 16.0f )
+	) ) ) + vec3( 0.01f );
 }
 
 void main () {
@@ -85,9 +77,6 @@ void main () {
 	vec3 blockSize = dimensions;
 	bool hit = IntersectAABB( origin, direction, -blockSize / 2.0f, blockSize / 2.0f, tMin, tMax );
 
-	// placeholder, we need to do a delta tracking process through the volume
-	//col = vec3( ( hit ? ( tMax - tMin ) / 1000.0f : 0.0f ) );
-
 	// delta tracking raymarch...
 	vec3 p = origin + tMin * direction;
 	const int maxSteps = 10000;
@@ -103,7 +92,7 @@ void main () {
 
 		// if you hit
 		if ( getDensity( p ) > NormalizedRandomFloat() ) {
-			col = vec3( 1.0f );
+			col = getColor( p );
 		}
 	}
 
