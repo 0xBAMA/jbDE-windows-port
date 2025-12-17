@@ -131,9 +131,11 @@ public:
 		if ( aetherConfig.lightListDirty ) {
 			// we need to rebuild the importance sampling structure
 			SetupImportanceSampling_lights( aetherConfig );
+			ResetTextures( aetherConfig );
 		}
 
 		// run the simulation...
+		AetherSimUpdate( aetherConfig );
 
 		// any autoexposure update?
 

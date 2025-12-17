@@ -9,8 +9,8 @@ struct AetherConfig {
 	unordered_map< string, GLuint > *shaders;
 
 	// for the tally buffers
-	ivec3 dimensions{ 1280, 720, 128 };
-	// ivec3 dimensions{ 1024, 512, 256 };
+	// ivec3 dimensions{ 1280, 720, 128 };
+	ivec3 dimensions{ 1024, 512, 256 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;
@@ -24,6 +24,7 @@ struct AetherConfig {
 
 inline void CompileShaders ( AetherConfig &config ) {
 	( *config.shaders )[ "Draw" ] = computeShader( "../src/projects/PathTracing/Aether/shaders/draw.cs.glsl" ).shaderHandle;
+	( *config.shaders )[ "Sim" ] = computeShader( "../src/projects/PathTracing/Aether/shaders/sim.cs.glsl" ).shaderHandle;
 }
 
 inline void CreateTextures ( AetherConfig &config ) {
@@ -181,7 +182,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 0: // point emitter
 
 			// need to set the 3D point location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
@@ -189,7 +190,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 1: // cauchy beam emitter
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction - tbd how this is going to go, euler angles?
 			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
@@ -203,7 +204,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 2: // laser disk
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction (defining disk plane)
 			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
@@ -217,9 +218,9 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 3: // uniform line emitter
 
 			// need to set the 3D location of points A and B
-			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
-			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
@@ -272,18 +273,18 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 
 		// ================================================================================================================
 		// some dummy lights...
-		config.lights[ 0 ].emitterParams[ 0 ].x += 2.0f;
+		config.lights[ 0 ].emitterParams[ 0 ].x += 200.0f;
 		config.lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
 		config.lights[ 0 ].emitterParams[ 1 ].y = -1.0f;
 		config.lights[ 0 ].pickedLUT = 3;
-		config.lights[ 0 ].emitterType = 2;
+		config.lights[ 0 ].emitterType = 0;
 		sprintf( config.lights[ 0 ].label, "Example Light 1" );
 
-		config.lights[ 1 ].emitterParams[ 0 ].x -= 2.0f;
+		config.lights[ 1 ].emitterParams[ 0 ].x -= 200.0f;
 		config.lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
 		config.lights[ 1 ].emitterParams[ 1 ].y = -1.0f;
 		config.lights[ 1 ].pickedLUT = 5;
-		config.lights[ 1 ].emitterType = 2;
+		config.lights[ 1 ].emitterType = 0;
 		sprintf( config.lights[ 1 ].label, "Example Light 2" );
 
 		// ================================================================================================================
@@ -371,4 +372,28 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 	glBindBuffer( GL_SHADER_STORAGE_BUFFER, config.lightBuffer );
 	glBufferData( GL_SHADER_STORAGE_BUFFER, 4 * lightBufferDataConcat.size(), ( GLvoid * ) &lightBufferDataConcat[ 0 ], GL_DYNAMIC_COPY );
 	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, config.lightBuffer );
+}
+
+inline void AetherSimUpdate ( AetherConfig &config ) {
+	const GLuint shader = ( *config.shaders )[ "Sim" ];
+	glUseProgram( shader );
+
+	// environment setup
+	rngi wangSeeder = rngi( 0, 1000000 );
+	glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+
+	static rngi blueSeeder( 0, 512 );
+	glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
+
+	glUniform3i( glGetUniformLocation( shader, "dimensions" ), config.dimensions.x, config.dimensions.y, config.dimensions.z );
+
+	config.textureManager->BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
+	config.textureManager->BindImageForShader( "XTally", "bufferImageX", shader, 2 );
+	config.textureManager->BindImageForShader( "YTally", "bufferImageY", shader, 3 );
+	config.textureManager->BindImageForShader( "ZTally", "bufferImageZ", shader, 4 );
+	config.textureManager->BindImageForShader( "Count", "bufferImageCount", shader, 5 );
+	config.textureManager->BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
+
+	glDispatchCompute( 1, 1, 4 );
+	glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 }
