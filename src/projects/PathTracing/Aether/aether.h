@@ -10,7 +10,7 @@ struct AetherConfig {
 
 	// for the tally buffers
 	// ivec3 dimensions{ 1280, 720, 128 };
-	ivec3 dimensions{ 1024, 512, 256 };
+	ivec3 dimensions{ 1024, 512, 512 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;
@@ -19,6 +19,8 @@ struct AetherConfig {
 	lightSpec lights[ maxLights ];
 	vec4 visualizerColors[ maxLights ];
 	GLuint lightBuffer;
+
+	float scale = 1000.0f;
 
 };
 
@@ -182,7 +184,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 0: // point emitter
 
 			// need to set the 3D point location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
@@ -190,7 +192,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 1: // cauchy beam emitter
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction - tbd how this is going to go, euler angles?
 			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
@@ -204,7 +206,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 2: // laser disk
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction (defining disk plane)
 			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
@@ -218,9 +220,9 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 3: // uniform line emitter
 
 			// need to set the 3D location of points A and B
-			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
-			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -1000.0f, 1000.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -400.0f, 400.0f, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
