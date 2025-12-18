@@ -39,16 +39,16 @@ ivec3 getRemappedPosition ( vec3 pos ) {
 const float scalar = 10000.0f;
 
 float getDensity ( vec3 pos ) {
-	return imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar + 0.0001f;
+	return imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar;//  + 0.0001f;
 }
 
 vec3 getColor ( vec3 pos ) {
 	ivec3 p = getRemappedPosition( pos );
-	return rgb_to_srgb( xyz_to_rgb( ( 0.1f / scalar ) * vec3( // these are tally sums + number of samples for averaging
+	return rgb_to_srgb( xyz_to_rgb( ( 1.0f / scalar ) * vec3( // these are tally sums + number of samples for averaging
 	( float( imageLoad( bufferImageX, p ).r ) / 16.0f ),
 	( float( imageLoad( bufferImageY, p ).r ) / 16.0f ),
 	( float( imageLoad( bufferImageZ, p ).r ) / 16.0f )
-	) ) ) + vec3( 0.01f );
+) ) );// + vec3( 0.01f );
 }
 
 void main () {
