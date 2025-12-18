@@ -37,6 +37,18 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
+		if ( inputHandler.getState( KEY_MINUS ) ) {
+			aetherConfig.scale *= 1.1f;
+		}
+
+		if ( inputHandler.getState( KEY_EQUALS ) ) {
+			aetherConfig.scale *= 0.9f;
+		}
+
+		if ( inputHandler.getState( KEY_Y ) ) {
+			CompileShaders( aetherConfig );
+		}
+
 	}
 
 	void ImguiPass () {
@@ -81,6 +93,8 @@ public:
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
 
 			glUniform3i( glGetUniformLocation( shader, "dimensions" ), aetherConfig.dimensions.x, aetherConfig.dimensions.y, aetherConfig.dimensions.z );
+
+			glUniform1f( glGetUniformLocation( shader, "scale" ), aetherConfig.scale );
 
 			textureManager.BindTexForShader( "XTally", "bufferImageX", shader, 2 );
 			textureManager.BindTexForShader( "YTally", "bufferImageY", shader, 3 );
