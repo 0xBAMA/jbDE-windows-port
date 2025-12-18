@@ -200,14 +200,14 @@ void main () {
 	float previousIoR = 1.0f;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene
-		intersectionResult intersection = sceneTrace( rO, rD );
+		intersectionResult intersection = sceneTrace( rO, rD, myWavelength );
 
 		// draw a line to the scene intersection point
-		drawLine( rO, rO + intersection.dist * rD, energyTotal );
+		drawLine( rO, rO + ( intersection.materialType == NOHIT ? maxDistance : intersection.dist ) * rD, energyTotal );
 
 		// russian roulette termination
-		if ( NormalizedRandomFloat() > energyTotal ) { break; }
-		energyTotal *= 1.0f / energyTotal; // rr compensation term
+//		if ( NormalizedRandomFloat() > energyTotal ) { break; }
+//		energyTotal *= 1.0f / energyTotal; // rr compensation term
 
 		// attenuate by the surface albedo
 		transmission *= intersection.albedo;
@@ -242,9 +242,6 @@ void main () {
 			default:
 			rO -= intersection.normal * epsilon * 5;
 			intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
-			//			float IoRCache = result.IoR;
-			//			result.IoR = result.IoR / previousIoR;
-
 			float cosTheta = min( dot( -normalize( rD ), intersection.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
 			bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
@@ -253,8 +250,6 @@ void main () {
 			} else {
 				rD = normalize( mix( refract( normalize( rD ), intersection.normal, intersection.IoR ), RandomUnitVector(), intersection.roughness ) );
 			}
-
-			//			previousIoR = IoRCache;
 			break;
 		}
 
