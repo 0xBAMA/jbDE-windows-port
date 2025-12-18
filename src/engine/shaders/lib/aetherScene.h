@@ -129,7 +129,7 @@ float de ( vec3 p ) {
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( ( ( k * l * m * 1000 ) % 2 ) != 0 ) ? ( distance( p, vec3( 0.0f ) ) - 10.0f ) : fDodecahedron( p, 10.0f ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( k % 2 == 0 ? ( distance( p, vec3( 0.0f ) ) - ( 8.0f ) ) : ( fDodecahedron( p, 5.0f ) ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( fDodecahedron( p, 45.0f ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec3( 0.0f ) ) - 15.0f );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec3( 0.0f ) ) - 8.0f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
