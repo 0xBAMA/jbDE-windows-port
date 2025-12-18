@@ -32,6 +32,8 @@ layout( binding = 5, r32ui ) uniform uimage3D bufferImageCount;
 uniform mat3 invBasis;
 uniform ivec3 dimensions;
 
+uniform float scale;
+
 ivec3 getRemappedPosition ( vec3 pos ) {
 	return ivec3( pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
 }
@@ -68,7 +70,7 @@ void main () {
 	// create a view ray...
 	vec2 uv = ( samplePoint - vec2( 0.5f ) );
 	uv.x *= ( float( imageSize( accumulatorTexture ).x ) / float( imageSize( accumulatorTexture ).y ) );
-	const vec3 origin = invBasis * vec3( 1000.0f * uv, -2000.0f );
+	const vec3 origin = invBasis * vec3( scale * uv, -2000.0f );
 	vec3 direction = invBasis * normalize( vec3( uv * 0.01f, 2.0f ) );
 	float tMin = -10000.0f;
 	float tMax = 10000.0f;
