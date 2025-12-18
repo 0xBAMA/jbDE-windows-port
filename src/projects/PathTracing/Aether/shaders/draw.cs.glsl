@@ -28,6 +28,9 @@ layout( binding = 5, r32ui ) uniform uimage3D bufferImageCount;
 
 #include "colorspaceConversions.glsl"
 
+#include "hg_sdf.glsl"
+#include "aetherScene.h"
+
 #include "intersect.h"
 uniform mat3 invBasis;
 uniform ivec3 dimensions;
@@ -76,25 +79,69 @@ void main () {
 	float tMax = 10000.0f;
 
 	// raymarching...
-	vec3 blockSize = dimensions;
-	bool hit = IntersectAABB( origin, direction, -blockSize / 2.0f, blockSize / 2.0f, tMin, tMax );
+	const vec3 blockSizeHalf = dimensions / 2.0f;
+	vec3 p = origin;
 
-	// delta tracking raymarch...
-	vec3 p = origin + tMin * direction;
-	const int maxSteps = 10000;
-	for ( int i = 0; i < maxSteps; i++ ) {
-		float t = -log( NormalizedRandomFloat() );
-		p += t * direction;
+	for ( int bounce = 0; bounce < 1; bounce++ ) {
+		// up to three bounces... I want to be able to refract, and also scatter in the volume...
+		bool hit = IntersectAABB( p, direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
 
-		if ( any( lessThan( p, -blockSize / 2.0f ) ) ||
-			any( greaterThan( p, blockSize / 2.0f ) ) ) {
-			// oob
-			break;
-		}
+		if ( !hit ) { break; } // if we are not inside the scatter volume, we're done
+		p = origin + tMin * direction;
 
-		// if you hit
-		if ( getDensity( p ) > NormalizedRandomFloat() ) {
-			col = getColor( p );
+		intersectionResult intersection = sceneTrace( p * 2.0f, direction, mix( 380.0f, 830.0f, NormalizedRandomFloat() ) );
+		intersection.dist /= 2.0f; // compensating for scaling
+//		if ( intersection.materialType != NOHIT ) {
+//			col = 0.5f * intersection.normal + vec3( 0.5f );
+//			break;
+//		}
+
+		// delta tracking raymarch...
+		const int maxSteps = 10000;
+		vec3 originCache = p;
+		for ( int i = 0; i < maxSteps; i++ ) {
+			float t = -log( NormalizedRandomFloat() );
+			p += t * direction;
+
+			if ( any( lessThan( p, -blockSizeHalf ) ) ||
+			any( greaterThan( p, blockSizeHalf ) ) ) {
+				// oob
+				break;
+			}
+
+			// if you hit glass before scattering...
+			if ( distance( originCache, p ) > intersection.dist ) {
+				p = originCache + intersection.dist * direction;
+				direction = refract( direction, intersection.normal, intersection.IoR );
+
+//				col = 0.5f * intersection.normal + vec3( 0.5f );
+//				i = 1000;
+//				bounce = 1000;
+//				break;
+
+				p -= intersection.normal * epsilon * 5;
+				intersection.IoR = !intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
+				float cosTheta = min( dot( -normalize( direction ), intersection.normal ), 1.0f );
+				float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
+				bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
+				if ( cannotRefract || Reflectance( cosTheta, intersection.IoR ) > NormalizedRandomFloat() ) {
+					direction = normalize( mix( reflect( normalize( direction ), intersection.normal ), RandomUnitVector(), intersection.roughness ) );
+				} else {
+					direction = normalize( mix( refract( normalize( direction ), intersection.normal, intersection.IoR ), RandomUnitVector(), intersection.roughness ) );
+				}
+
+				// state pump
+				originCache = p;
+				intersection = sceneTrace( p * 2.0f, direction, mix( 380.0f, 830.0f, NormalizedRandomFloat() )  );
+				intersection.dist /= 2.0f; // compensating for scaling
+
+			// else see if we scatter
+			} else if ( getDensity( p ) > NormalizedRandomFloat() ) {
+				col = getColor( p );
+				i = 1000;
+				bounce = 1000; // break out of loops
+				break;
+			}
 		}
 	}
 
@@ -105,5 +152,4 @@ void main () {
 
 	// write the data to the image
 	imageStore( accumulatorTexture, loc, vec4( mix( previousColor.rgb, col, vec3( mixFactor ) ), sampleCount ) );
-//	imageStore( accumulatorTexture, loc, vec4( col, 1.0f ) );
 }
