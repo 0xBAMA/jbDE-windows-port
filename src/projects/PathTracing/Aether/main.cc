@@ -96,10 +96,10 @@ public:
 
 			glUniform1f( glGetUniformLocation( shader, "scale" ), aetherConfig.scale );
 
-			textureManager.BindTexForShader( "XTally", "bufferImageX", shader, 2 );
-			textureManager.BindTexForShader( "YTally", "bufferImageY", shader, 3 );
-			textureManager.BindTexForShader( "ZTally", "bufferImageZ", shader, 4 );
-			textureManager.BindTexForShader( "Count", "bufferImageCount", shader, 5 );
+			textureManager.BindImageForShader( "XTally", "bufferImageX", shader, 2 );
+			textureManager.BindImageForShader( "YTally", "bufferImageY", shader, 3 );
+			textureManager.BindImageForShader( "ZTally", "bufferImageZ", shader, 4 );
+			textureManager.BindImageForShader( "Count", "bufferImageCount", shader, 5 );
 
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
