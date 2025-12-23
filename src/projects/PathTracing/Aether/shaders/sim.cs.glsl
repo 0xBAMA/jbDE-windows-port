@@ -88,10 +88,10 @@ void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight )
 
 		case 1: // cauchy beam
 		// emitting from a single point
-		rO = pickedLight.parameters0.xyz;
 		// we need to be able to place a jittered target position... it's a 2D offset in the plane whose normal is defined by the beam direction
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
 		c = rnd_disc_cauchy();
+		rO = pickedLight.parameters0.xyz + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x;
 		rD = normalize( pickedLight.parameters0.w * ( x * c.x + y * c.y ) + pickedLight.parameters1.xyz );
 		break;
 
@@ -99,7 +99,7 @@ void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight )
 		// similar to above, but using a constant direction value, and using the basis jitter for a scaled disk offset
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
 		c = CircleOffset();
-		rO = pickedLight.parameters0.xyz + pickedLight.parameters0.w * ( x * c.x + y * c.y );
+		rO = pickedLight.parameters0.xyz + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x + pickedLight.parameters0.w * ( x * c.x + y * c.y );
 		// emitting along a single direction vector
 		rD = normalize( pickedLight.parameters1.xyz );
 		break;
@@ -196,7 +196,7 @@ void main () {
 	float energyTotal = 1.0f;
 
 	// pathtracing loop
-	const int maxBounces = 64;
+	const int maxBounces = 128;
 	float previousIoR = 1.0f;
 	for ( int i = 0; i < maxBounces; i++ ) {
 		// trace the ray against the scene
@@ -206,8 +206,8 @@ void main () {
 		drawLine( rO, rO + ( intersection.materialType == NOHIT ? maxDistance : intersection.dist ) * rD, energyTotal );
 
 		// russian roulette termination
-//		if ( NormalizedRandomFloat() > energyTotal ) { break; }
-//		energyTotal *= 1.0f / energyTotal; // rr compensation term
+		if ( NormalizedRandomFloat() > energyTotal ) { break; }
+		energyTotal *= 1.0f / energyTotal; // rr compensation term
 
 		// attenuate by the surface albedo
 		transmission *= intersection.albedo;
@@ -235,6 +235,7 @@ void main () {
 
 			case MIRROR:
 			rD = reflect( rD, intersection.normal );
+//			rO += intersection.normal * epsilon * 3.0f;
 			break;
 
 			// below this point, we have to consider the IoR for the specific form of glass... because we precomputed all the

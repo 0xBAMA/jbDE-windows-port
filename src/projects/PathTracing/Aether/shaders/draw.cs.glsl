@@ -41,10 +41,11 @@ ivec3 getRemappedPosition ( vec3 pos ) {
 	return ivec3( pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
 }
 
-const float scalar = 10000.0f;
+const float scalar = 200000.0f;
 
 float getDensity ( vec3 pos ) {
-	return imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar;//  + 0.0001f;
+	 return pow( imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar, 2.0f );//  + 0.0001f;
+//	return 0.001f;
 }
 
 vec3 getColor ( vec3 pos ) {
@@ -82,7 +83,7 @@ void main () {
 	const vec3 blockSizeHalf = dimensions / 2.0f;
 	vec3 p = origin;
 
-	for ( int bounce = 0; bounce < 1; bounce++ ) {
+	for ( int bounce = 0; bounce < 16; bounce++ ) {
 		// up to three bounces... I want to be able to refract, and also scatter in the volume...
 		bool hit = IntersectAABB( p, direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
 
@@ -120,7 +121,7 @@ void main () {
 //				break;
 
 				p -= intersection.normal * epsilon * 5;
-				intersection.IoR = !intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
+				intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
 				float cosTheta = min( dot( -normalize( direction ), intersection.normal ), 1.0f );
 				float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
 				bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
