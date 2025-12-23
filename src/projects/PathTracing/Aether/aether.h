@@ -22,6 +22,7 @@ struct AetherConfig {
 
 	float scale = 1000.0f;
 
+	bool runSimToggle = true;
 };
 
 inline void CompileShaders ( AetherConfig &config ) {
@@ -134,6 +135,8 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 
 inline void LightConfigWindow ( AetherConfig &config ) {
 	ImGui::Begin( "Light Setup" );
+
+	ImGui::Checkbox( "Run Sim", &config.runSimToggle );
 
 	// this is starting from the lighting config in Newton
 	static int flaggedForRemoval = -1; // this will run next frame when I want to remove an entry from the list, to avoid imgui confusion
@@ -278,14 +281,14 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 		config.lights[ 0 ].emitterParams[ 0 ].x += 200.0f;
 		config.lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
 		config.lights[ 0 ].emitterParams[ 1 ].y = -1.0f;
-		config.lights[ 0 ].pickedLUT = 3;
+		config.lights[ 0 ].pickedLUT = 6;
 		config.lights[ 0 ].emitterType = 0;
 		sprintf( config.lights[ 0 ].label, "Example Light 1" );
 
 		config.lights[ 1 ].emitterParams[ 0 ].x -= 200.0f;
 		config.lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
 		config.lights[ 1 ].emitterParams[ 1 ].y = -1.0f;
-		config.lights[ 1 ].pickedLUT = 5;
+		config.lights[ 1 ].pickedLUT = 8;
 		config.lights[ 1 ].emitterType = 0;
 		sprintf( config.lights[ 1 ].label, "Example Light 2" );
 
@@ -377,25 +380,27 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 }
 
 inline void AetherSimUpdate ( AetherConfig &config ) {
-	const GLuint shader = ( *config.shaders )[ "Sim" ];
-	glUseProgram( shader );
+	if ( config.runSimToggle ) {
+		const GLuint shader = ( *config.shaders )[ "Sim" ];
+		glUseProgram( shader );
 
-	// environment setup
-	rngi wangSeeder = rngi( 0, 1000000 );
-	glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
+		// environment setup
+		rngi wangSeeder = rngi( 0, 1000000 );
+		glUniform1ui( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
 
-	static rngi blueSeeder( 0, 512 );
-	glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
+		static rngi blueSeeder( 0, 512 );
+		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
 
-	glUniform3i( glGetUniformLocation( shader, "dimensions" ), config.dimensions.x, config.dimensions.y, config.dimensions.z );
+		glUniform3i( glGetUniformLocation( shader, "dimensions" ), config.dimensions.x, config.dimensions.y, config.dimensions.z );
 
-	config.textureManager->BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
-	config.textureManager->BindImageForShader( "XTally", "bufferImageX", shader, 2 );
-	config.textureManager->BindImageForShader( "YTally", "bufferImageY", shader, 3 );
-	config.textureManager->BindImageForShader( "ZTally", "bufferImageZ", shader, 4 );
-	config.textureManager->BindImageForShader( "Count", "bufferImageCount", shader, 5 );
-	config.textureManager->BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
+		config.textureManager->BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
+		config.textureManager->BindImageForShader( "XTally", "bufferImageX", shader, 2 );
+		config.textureManager->BindImageForShader( "YTally", "bufferImageY", shader, 3 );
+		config.textureManager->BindImageForShader( "ZTally", "bufferImageZ", shader, 4 );
+		config.textureManager->BindImageForShader( "Count", "bufferImageCount", shader, 5 );
+		config.textureManager->BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
 
-	glDispatchCompute( 1, 1, 4 );
-	glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+		glDispatchCompute( 1, 4, 16 );
+		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+	}
 }
