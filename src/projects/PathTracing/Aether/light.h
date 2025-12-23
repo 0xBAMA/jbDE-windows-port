@@ -10,6 +10,9 @@ inline const int numEmitters = sizeof( emitterTypes ) / sizeof( emitterTypes[ 0 
 
 // specifying the LUT which will be used for selecting wavelengths
 inline const char* LUTFilenames[] = {
+	"RedLED",
+	"GreenLED",
+	"BlueLED",
 	/* 0 */ "AmberLED",
 	/* 1 */ "2700kLED",
 	/* 2 */ "6500kLED",
