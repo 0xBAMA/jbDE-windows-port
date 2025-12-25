@@ -10,8 +10,6 @@ layout( binding = 1, rgba16f ) uniform image2D accumulatorTexture;
 #include "random.h"
 uniform uint wangSeed;
 //=============================================================================================================================
-#include "mathUtils.h"
-//=============================================================================================================================
 // blue noise
 uniform ivec2 noiseOffset;
 vec4 blueNoiseRef ( ivec2 pos ) {
@@ -30,6 +28,8 @@ layout( binding = 3, r32ui ) uniform uimage3D bufferImageY;
 layout( binding = 4, r32ui ) uniform uimage3D bufferImageZ;
 layout( binding = 5, r32ui ) uniform uimage3D bufferImageCount;
 //=============================================================================================================================
+#include "hg_sdf.glsl"
+#include "aetherScene.h"
 //=============================================================================================================================
 float myWavelength = 0.0f;
 //=============================================================================================================================
@@ -66,10 +66,6 @@ layout( binding = 0, std430 ) readonly buffer lightBuffer {
 	int lightIStructure[ 1024 ]; // we uniformly sample an index out of this list of 1024 to know which light we want to pick...
 	lightSpecGPU lightList[]; // we do not need to know how many lights exist, because it is implicitly encoded in the importance structure's indexing
 };
-
-#include "hg_sdf.glsl"
-#include "aetherScene.h"
-
 //=============================================================================================================================
 void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight ) {
 	// let's figure out what wavelength we are
@@ -91,7 +87,8 @@ void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight )
 		// we need to be able to place a jittered target position... it's a 2D offset in the plane whose normal is defined by the beam direction
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
 		c = rnd_disc_cauchy();
-		rO = pickedLight.parameters0.xyz + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x;
+		// rO = pickedLight.parameters0.xyz + 2.0f * ( 16.18f * int( 10.0f * ( NormalizedRandomFloat() ) ) * y + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x );
+		rO = pickedLight.parameters0.xyz;
 		rD = normalize( pickedLight.parameters0.w * ( x * c.x + y * c.y ) + pickedLight.parameters1.xyz );
 		break;
 
@@ -99,7 +96,8 @@ void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight )
 		// similar to above, but using a constant direction value, and using the basis jitter for a scaled disk offset
 		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
 		c = CircleOffset();
-		rO = pickedLight.parameters0.xyz + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x + pickedLight.parameters0.w * ( x * c.x + y * c.y );
+		// rO = pickedLight.parameters0.xyz + 2.0f * ( 16.18f * int( 6.0f * ( NormalizedRandomFloat() ) ) * y + 20.0f * int( 4.0f * ( NormalizedRandomFloat() ) ) * x ) + pickedLight.parameters0.w * ( x * c.x + y * c.y );
+		rO = pickedLight.parameters0.xyz + pickedLight.parameters0.w * ( x * c.x + y * c.y );
 		// emitting along a single direction vector
 		rD = normalize( pickedLight.parameters1.xyz );
 		break;
