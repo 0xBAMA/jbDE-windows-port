@@ -41,20 +41,32 @@ ivec3 getRemappedPosition ( vec3 pos ) {
 	return ivec3( -pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
 }
 
-const float scalar = 200000.0f;
+const float scalar = 10000.0f;
 
 float getDensity ( vec3 pos ) {
-	 return pow( imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar, 2.0f );//  + 0.0001f;
+	ivec3 p = getRemappedPosition( pos );
+	// return pow( imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar, 2.0f );//  + 0.0001f;
+//	return exp( -imageLoad( bufferImageY, getRemappedPosition( pos ) ).r / scalar );//  + 0.0001f;
+	return  xyz_to_xyY(
+	( 1.0f / scalar ) * vec3( // these are tally sums + number of samples for averaging
+	( float( imageLoad( bufferImageX, p ).r ) / 16.0f ),
+	( float( imageLoad( bufferImageY, p ).r ) / 16.0f ),
+	( float( imageLoad( bufferImageZ, p ).r ) / 16.0f ) )
+	).b;
 //	return 0.001f;
 }
 
-vec3 getColor ( vec3 pos ) {
+#include "spectrumXYZ.h"
+
+vec3 getColor ( vec3 pos, float wavelength ) {
 	ivec3 p = getRemappedPosition( pos );
-	return rgb_to_srgb( xyz_to_rgb( ( 1.0f / scalar ) * vec3( // these are tally sums + number of samples for averaging
+	// return rgb_to_srgb( xyz_to_rgb(
+	return xyY_to_rgb( xyz_to_xyY(
+	( 1.0f / scalar ) * vec3( // these are tally sums + number of samples for averaging
 	( float( imageLoad( bufferImageX, p ).r ) / 16.0f ),
 	( float( imageLoad( bufferImageY, p ).r ) / 16.0f ),
-	( float( imageLoad( bufferImageZ, p ).r ) / 16.0f )
-) ) );// + vec3( 0.01f );
+	( float( imageLoad( bufferImageZ, p ).r ) / 16.0f ) ) * wavelengthColor( wavelength )
+	) );// + vec3( 0.01f );
 }
 
 void main () {
@@ -90,7 +102,7 @@ void main () {
 		if ( !hit ) { break; } // if we are not inside the scatter volume, we're done
 		p = origin + tMin * direction;
 
-		intersectionResult intersection = sceneTrace( p * 2.0f, direction, mix( 380.0f, 830.0f, NormalizedRandomFloat() ) );
+		intersectionResult intersection = sceneTrace( -p * 2.0f, -direction, wavelength );
 		intersection.dist /= 2.0f; // compensating for scaling
 //		if ( intersection.materialType != NOHIT ) {
 //			col = 0.5f * intersection.normal + vec3( 0.5f );
