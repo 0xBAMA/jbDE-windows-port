@@ -160,6 +160,8 @@ void main () {
 		}
 	}
 
+	col = clamp( col, vec3( 0.0f ), vec3( 3.0f ) );
+
 	// blending with the history
 	vec4 previousColor = imageLoad( accumulatorTexture, loc );
 	float sampleCount = max( 1.0f, previousColor.a + 1.0f );
