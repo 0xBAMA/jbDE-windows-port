@@ -184,6 +184,7 @@ intersectionResult sceneTrace ( vec3 rayOrigin, vec3 rayDirection, float wavelen
 				result.frontFacing = !invert; // for now, this will be sufficient to make decisions re: IoR
 				result.IoR = getIORForMaterial( hitSurfaceType, wavelength );
 				result.normal = SDFNormal( rayOrigin + result.dist * rayDirection, wavelength );
+				// if ( dot( rayDirection, result.normal ) < 0.0f ) result.normal = -result.normal;
 				result.roughness = hitRoughness;
 			} else if ( result.dist > maxDistance ) {
 				result.materialType = NOHIT;
