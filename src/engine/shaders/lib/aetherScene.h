@@ -123,26 +123,28 @@ float de ( vec3 p, float wavelength ) {
 
 	{
 		// const float scale = 0.01f;
-		pR( p.xy, 1.0f );
-		int l = int( pModInterval1( p.x, 5.0f, -5.0f, 5.0f ) );
-		int k = int( pModInterval1( p.y, 5.0f, -30.0f, 30.0f ) );
-		int m = int( pModInterval1( p.z, 5.0f, -30.0f, 30.0f ) );
+		// pR( p.xy, 1.0f );
+		int l = int( pModInterval1( p.x, 100.0f, -0.0f, 2.0f ) );
+		int k = int( pModInterval1( p.y, 100.0f, -1.0f, 1.0f ) );
+		int m = int( pModInterval1( p.z, 100.0f, -1.0f, 1.0f ) );
 		pR( p.xy, 1.4f + l * 1.4f * m * 33.0f + k * 4.0f );
 		pR( p.yz, -10.1f * l * m * k );
 
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( ( ( k * l * m * 1000 ) % 2 ) != 0 ) ? ( distance( p, vec3( 0.0f ) ) - 10.0f ) : fDodecahedron( p, 10.0f ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( k % 2 == 0 ? ( distance( p, vec3( 0.0f ) ) - ( 8.0f ) ) : ( fDodecahedron( p, 5.0f ) ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( fDodecahedron( p, 2.0f ) );
-		// const float d = ( invert ? -1.0f : 1.0f ) * ( fBox( p, vec3( 15.0f, 5.0f, 3.0f ) ) );
-		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( sin( l * m * k + l * m + l * k + m * k ) < 0.0f ) ? fBox( p, vec3( 5.0f, 7.0f, 3.0f ) ) : ( distance( p, vec3( 0.0f ) ) - 6.0f ) );
-		// const float d = ( invert ? -1.0f : 1.0f ) * ( length( p ) - 300.0f );
-		// const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec3( 0.0f ) ) - 2.4f );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( fDodecahedron( p, 3.0f + 0.5f * ( sin( l ) * cos( k ) * sin( m ) + sin( l * k ) * sin( l * m ) * cos( m * k ) ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( fBox( p, vec3( 7.0f, 5.0f, 3.0f ) ) );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( sin( l * m * k + l * m + l * k + m * k ) < 0.0f ) ? fBox( p, 5.1f * vec3( 5.0f, 7.0f, 3.0f ) ) : ( distance( p, vec3( 0.0f ) ) - 45.0f ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( length( p ) - 40.0f );
+		// const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec3( 0.0f ) ) - 10.4f );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;
 			// hitSurfaceType = MIRROR;
-			hitAlbedo = 0.999f;
 			// hitRoughness = 0.1f;
+			// hitAlbedo = 0.999f;
+			hitAlbedo = 1.0f;
+			// hitAlbedo = RangeRemapValue( wavelength, 380.0f, 830.0f, 1.0f, 0.9f );
 		}
 	}
 
