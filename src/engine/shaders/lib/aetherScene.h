@@ -21,6 +21,7 @@
 #define SELLMEIER_SAPPHIRE			13
 #define SELLMEIER_FUSEDSILICA		14
 #define SELLMEIER_MAGNESIUMFLOURIDE	15
+#include "mathUtils.h"
 
 // getting the wavelength-dependent IoR for materials
 float evaluateCauchy ( float A, float B, float wms ) {
@@ -100,9 +101,9 @@ intersectionResult getDefaultIntersection () {
 }
 
 // raymarch parameters
-const float maxDistance = 6000.0f;
-const int maxSteps = 200;
-const float epsilon = 0.001f;
+const float maxDistance = 4000.0f;
+const int maxSteps = 150;
+const float epsilon = 0.01f;
 
 // global state tracking
 int hitSurfaceType = 0;
@@ -110,7 +111,7 @@ float hitRoughness = 0.0f;
 float hitAlbedo = 0.0f;
 bool invert = false;
 
-float de ( vec3 p ) {
+float de ( vec3 p, float wavelength ) {
 	float sceneDist = 100000.0f;
 	const vec3 pOriginal = p;
 
@@ -150,9 +151,9 @@ float de ( vec3 p ) {
 }
 
 // function to get the normal
-vec3 SDFNormal ( vec3 p ) {
+vec3 SDFNormal ( vec3 p, float wavelength ) {
 	vec2 e = vec2( epsilon, 0.0f );
-	return normalize( vec3( de( p ) ) - vec3( de( p - e.xyy ), de( p - e.yxy ), de( p - e.yyx ) ) );
+	return normalize( vec3( de( p, wavelength ) ) - vec3( de( p - e.xyy, wavelength ), de( p - e.yxy, wavelength ), de( p - e.yyx, wavelength ) ) );
 }
 
 // trace against the scene
@@ -160,12 +161,12 @@ intersectionResult sceneTrace ( vec3 rayOrigin, vec3 rayDirection, float wavelen
 	intersectionResult result = getDefaultIntersection();
 
 	// is the initial sample point inside? -> toggle invert so we correctly handle refractive objects
-	if ( de( rayOrigin ) < 0.0f ) { // this is probably a solution for the same problem in Daedalus, too...
+	if ( de( rayOrigin, wavelength ) < 0.0f ) { // this is probably a solution for the same problem in Daedalus, too...
 		invert = !invert;
 	}
 
 	// if, after managing potential inversion, we still get a negative result back... we are inside solid scene geometry
-	if ( de( rayOrigin ) < 0.0f ) {
+	if ( de( rayOrigin, wavelength ) < 0.0f ) {
 		result.dist = -1.0f;
 		result.materialType = NOHIT;
 		result.albedo = hitAlbedo;
@@ -173,14 +174,14 @@ intersectionResult sceneTrace ( vec3 rayOrigin, vec3 rayDirection, float wavelen
 		// we're in a valid location and clear to do a raymarch
 		result.dist = 0.0f;
 		for ( int i = 0; i < maxSteps; i++ ) {
-			float d = de( rayOrigin + result.dist * rayDirection );
+			float d = de( rayOrigin + result.dist * rayDirection, wavelength );
 			if ( d < epsilon ) {
 				// we have a hit - gather intersection information
 				result.materialType = hitSurfaceType;
 				result.albedo = hitAlbedo;
 				result.frontFacing = !invert; // for now, this will be sufficient to make decisions re: IoR
 				result.IoR = getIORForMaterial( hitSurfaceType, wavelength );
-				result.normal = SDFNormal( rayOrigin + result.dist * rayDirection );
+				result.normal = SDFNormal( rayOrigin + result.dist * rayDirection, wavelength );
 				result.roughness = hitRoughness;
 			} else if ( result.dist > maxDistance ) {
 				result.materialType = NOHIT;
