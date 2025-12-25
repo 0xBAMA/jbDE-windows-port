@@ -38,7 +38,7 @@ uniform ivec3 dimensions;
 uniform float scale;
 
 ivec3 getRemappedPosition ( vec3 pos ) {
-	return ivec3( pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
+	return ivec3( -pos + vec3( imageSize( bufferImageY ).xyz / 2.0f ) );
 }
 
 const float scalar = 200000.0f;
@@ -85,7 +85,7 @@ void main () {
 
 	for ( int bounce = 0; bounce < 16; bounce++ ) {
 		// up to three bounces... I want to be able to refract, and also scatter in the volume...
-		bool hit = IntersectAABB( p, direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
+		bool hit = IntersectAABB( -p, -direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
 
 		if ( !hit ) { break; } // if we are not inside the scatter volume, we're done
 		p = origin + tMin * direction;
