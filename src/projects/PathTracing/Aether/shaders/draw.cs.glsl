@@ -76,6 +76,8 @@ void main () {
 	// initial wang state
 	seed = wangSeed + loc.x * 69696 + loc.y * 8675309;
 
+	float wavelength = mix( 380.0f, 700.0f, NormalizedRandomFloat() );
+
 	// jittered pixel UV
 	vec2 samplePoint = vec2( loc + blueNoiseRef( loc ).xy + 0.0618f * rnd_disc_cauchy() ) / imageSize( accumulatorTexture ).xy;
 	samplePoint.y = 1.0f - samplePoint.y;
@@ -145,12 +147,12 @@ void main () {
 
 				// state pump
 				originCache = p;
-				intersection = sceneTrace( p * 2.0f, direction, mix( 380.0f, 830.0f, NormalizedRandomFloat() )  );
+				intersection = sceneTrace( p * 2.0f, direction, wavelength );
 				intersection.dist /= 2.0f; // compensating for scaling
 
 			// else see if we scatter
 			} else if ( getDensity( p ) > NormalizedRandomFloat() ) {
-				col = getColor( p );
+				col += getColor( p, wavelength );
 				i = 1000;
 				bounce = 1000; // break out of loops
 				break;
