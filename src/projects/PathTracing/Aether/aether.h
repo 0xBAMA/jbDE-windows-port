@@ -23,6 +23,7 @@ struct AetherConfig {
 	float scale = 1000.0f;
 
 	bool runSimToggle = true;
+	bool runDrawToggle = true;
 };
 
 inline void CompileShaders ( AetherConfig &config ) {
@@ -137,6 +138,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 	ImGui::Begin( "Light Setup" );
 
 	ImGui::Checkbox( "Run Sim", &config.runSimToggle );
+	ImGui::Checkbox( "Run Draw", &config.runDrawToggle );
 
 	// this is starting from the lighting config in Newton
 	static int flaggedForRemoval = -1; // this will run next frame when I want to remove an entry from the list, to avoid imgui confusion

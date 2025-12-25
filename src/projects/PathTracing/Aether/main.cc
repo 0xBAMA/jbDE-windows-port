@@ -75,7 +75,7 @@ public:
 	void ComputePasses () {
 		ZoneScoped;
 
-		{ // dummy draw - draw something into accumulatorTexture
+		if ( aetherConfig.runDrawToggle ) { // draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			const GLuint shader = shaders[ "Draw" ];
