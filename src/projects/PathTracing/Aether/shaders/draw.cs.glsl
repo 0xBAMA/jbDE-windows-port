@@ -134,8 +134,10 @@ void main () {
 //				bounce = 1000;
 //				break;
 
-				p -= intersection.normal * epsilon * 5;
-				intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
+				intersection.normal *= -1.0f;
+
+				p -= intersection.normal * epsilon * 5.0f;
+				intersection.IoR = !intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
 				float cosTheta = min( dot( -normalize( direction ), intersection.normal ), 1.0f );
 				float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
 				bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
@@ -147,7 +149,7 @@ void main () {
 
 				// state pump
 				originCache = p;
-				intersection = sceneTrace( p * 2.0f, direction, wavelength );
+				intersection = sceneTrace( -p * 2.0f, -direction, wavelength );
 				intersection.dist /= 2.0f; // compensating for scaling
 
 			// else see if we scatter

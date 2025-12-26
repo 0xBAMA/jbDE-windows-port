@@ -239,7 +239,7 @@ void main () {
 			// below this point, we have to consider the IoR for the specific form of glass... because we precomputed all the
 			// varying behavior already, we can just treat it uniformly, only need to consider frontface/backface for inversion
 			default:
-			rO -= intersection.normal * epsilon * 5;
+			rO -= intersection.normal * epsilon * 5.0f;
 			intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
 			float cosTheta = min( dot( -normalize( rD ), intersection.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
