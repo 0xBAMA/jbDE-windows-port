@@ -13,6 +13,7 @@ public:
 			Block Start( "Additional User Init" );
 
 			// handles
+			aetherConfig.trident = &trident;
 			aetherConfig.textureManager = &textureManager;
 			aetherConfig.shaders = &shaders;
 
@@ -47,6 +48,10 @@ public:
 
 		if ( inputHandler.getState( KEY_Y ) ) {
 			CompileShaders( aetherConfig );
+		}
+
+		if  ( inputHandler.getState( KEY_G ) ) {
+			aetherConfig.AnimationTrigger();
 		}
 
 	}
@@ -150,6 +155,9 @@ public:
 
 		// run the simulation...
 		AetherSimUpdate( aetherConfig );
+
+		// this is basically recordkeeping
+		aetherConfig.AnimationUpdate();
 
 		// any autoexposure update?
 

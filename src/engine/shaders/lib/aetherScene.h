@@ -137,6 +137,7 @@ float de ( vec3 p, float wavelength ) {
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( sin( l * m * k + l * m + l * k + m * k ) < 0.0f ) ? fBox( p, 5.1f * vec3( 5.0f, 7.0f, 3.0f ) ) : ( distance( p, vec3( 0.0f ) ) - 45.0f ) );
 		const float d = ( invert ? -1.0f : 1.0f ) * ( length( p ) - 40.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec3( 0.0f ) ) - 10.4f );
+
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = SELLMEIER_BOROSILICATE_BK7;

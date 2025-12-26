@@ -3,14 +3,16 @@
 #include "../../../engine/engine.h"
 #include "light.h"
 
+
 struct AetherConfig {
 	// handle for the texture manager
 	textureManager_t *textureManager;
+	orientTrident *trident;
 	unordered_map< string, GLuint > *shaders;
 
 	// for the tally buffers
 	// ivec3 dimensions{ 1280, 720, 128 };
-	ivec3 dimensions{ 1024, 512, 512 };
+	ivec3 dimensions{ 1024, 768, 768 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;
@@ -24,6 +26,129 @@ struct AetherConfig {
 
 	bool runSimToggle = true;
 	bool runDrawToggle = true;
+
+	void ClearAccumulator () {
+		textureManager->ZeroTexture2D( "Accumulator" );
+	}
+
+	void ClearLightCache () {
+		textureManager->ZeroTexture3D( "XTally" );
+		textureManager->ZeroTexture3D( "YTally" );
+		textureManager->ZeroTexture3D( "ZTally" );
+		textureManager->ZeroTexture3D( "Count" );
+	}
+
+	void ScreenShot ( string filename ) {
+		const string label = "Display Texture";
+		const GLuint tex = textureManager->Get( label );
+		uvec2 dims = textureManager->GetDimensions( label );
+		std::vector< float > imageBytesToSave;
+		imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
+		glBindTexture( GL_TEXTURE_2D, tex );
+		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave[ 0 ] );
+		Image_4F screenshot( dims.x, dims.y, &imageBytesToSave[ 0 ] );
+		screenshot.RGBtoSRGB();
+		screenshot.FlipVertical();
+		screenshot.Save( filename, Image_4F::backend::LODEPNG );
+	}
+
+	// animation config
+	uint32_t frame = 0u;
+	uint32_t samples = 0u;
+	uint32_t simSteps = 0u;
+
+	const uint32_t numFrames = 24u;
+	const uint32_t numSamples = 161u;
+	const uint32_t numSimSteps = 800u;
+
+	// whipped-together 3-state FSM for animation control
+	int animState = 0;
+
+	// this is the state advance and transition function
+	void AnimationUpdate () {
+		switch ( animState ) {
+			case 0: // initial state, waiting
+				break;
+
+			case 1: // we are running the sim
+				runSimToggle = true;
+				runDrawToggle = false;
+				AdvanceSim();
+				break;
+
+			case 2: // we are rendering
+				runSimToggle = false;
+				runDrawToggle = true;
+				AdvanceSample();
+				break;
+
+			default: break;
+		}
+	}
+
+	// I don't want to double trigger, and don't want to get into threading here
+	bool lockout = false;
+	void AnimationTrigger () {
+		if ( !lockout ) {
+			// need to zero out the simulation state, keeping the current light config
+			lockout = true;
+			animState = 1;
+			ClearAccumulator();
+			ClearLightCache();
+		}
+	}
+
+	void AdvanceSim () {
+		simSteps++;
+		if ( simSteps == numSimSteps ) {
+			// time to render
+			animState = 2;
+		}
+	}
+
+	void AdvanceSample () {
+		++samples;
+		if ( samples >= numSamples ) {
+			// finished rendering, time to save
+			AdvanceFrame();
+		}
+	}
+
+	void AdvanceFrame () {
+	// need to do a couple things:
+		// save out this frame's prepared image
+		ScreenShot( "frames/" + fixedWidthNumberString( frame ) + ".png" );
+
+		// reset render sample count, simulation steps + increment frame counter
+		samples = 0u;
+		simSteps = 0u;
+		++frame;
+
+		// clear the framebuffer's accumulated image
+		ClearAccumulator();
+
+		// clear the light cache's accumulated image(s)
+		ClearLightCache();
+
+		// compute new light position/direction
+		lights[ 0 ].emitterParams[ 0 ].x += 0.00618;
+		lights[ 0 ].emitterParams[ 1 ].y += 0.00618;
+		lights[ 0 ].emitterParams[ 1 ].x += 0.001618;
+		lightListDirty = true;
+
+		// apply some kind of small rotation of the view
+		trident->RotateX( 0.00618f );
+		trident->RotateY( 0.001618f );
+
+		// and we are back in sim state
+		animState = 1;
+
+		// you can call it again
+		if ( frame == numFrames ) {
+			lockout = false;
+		}
+	}
+
 };
 
 inline void CompileShaders ( AetherConfig &config ) {
@@ -53,14 +178,11 @@ inline void CreateTextures ( AetherConfig &config ) {
 }
 
 inline void ResetAccumulator ( AetherConfig &config ) {
-	config.textureManager->ZeroTexture2D( "Accumulator" );
+	config.ClearAccumulator();
 }
 
 inline void ResetTextures ( AetherConfig &config ) {
-	config.textureManager->ZeroTexture3D( "XTally" );
-	config.textureManager->ZeroTexture3D( "YTally" );
-	config.textureManager->ZeroTexture3D( "ZTally" );
-	config.textureManager->ZeroTexture3D( "Count" );
+	config.ClearLightCache();
 	ResetAccumulator( config );
 }
 
