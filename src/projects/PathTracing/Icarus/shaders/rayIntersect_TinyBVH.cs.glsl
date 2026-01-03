@@ -167,15 +167,16 @@ void main () {
 		const float materialValue =  verts[ 2 * primitiveIdx + 1 ].w;
 
 //		 SetHitAlbedo( TinyBVHIntersection, refPalette( 1.0f - color.r, BLUESR ).xyz );
-		SetHitAlbedo( TinyBVHIntersection, refPalette( color.r, 2 ).xyz );
+//		SetHitAlbedo( TinyBVHIntersection, refPalette( ( color.r ), 3 ).rgb );
+		// SetHitAlbedo( TinyBVHIntersection, ( color.r < 0.8f ) ? blood * color.r : vec3( color.r ) );
 //		 SetHitAlbedo( TinyBVHIntersection, mix( blood, vec3( 0.1f ), sqrt( color.r ) ) );
-//		 SetHitAlbedo( TinyBVHIntersection, vec3( 0.3f ) );
+		 SetHitAlbedo( TinyBVHIntersection, vec3( pow( color.r, 0.5f ) ) );
 
 		SetHitDistance( TinyBVHIntersection, hit.x );
-		// SetHitMaterial( TinyBVHIntersection, ( NormalizedRandomFloat() > 0.33f ) ? DIFFUSE : MIRROR );
+		// SetHitMaterial( TinyBVHIntersection, ( NormalizedRandomFloat() < color.r ) ? DIFFUSE : REFRACTIVE );
 		SetHitMaterial( TinyBVHIntersection, REFRACTIVE );
-//		 SetHitMaterial( TinyBVHIntersection, MIRROR );
-		SetHitRoughness( TinyBVHIntersection, 0.01f * color.r );
+//		 SetHitMaterial( TinyBVHIntersection, DIFFUSE );
+		SetHitRoughness( TinyBVHIntersection, 0.1f * color.r );
 
 		float IoR = 1.3f;
 

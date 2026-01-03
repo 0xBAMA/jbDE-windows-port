@@ -173,7 +173,7 @@ void LoadBVH_ply ( icarusState_t &state, string path ) {
 
 	rng reject = rng( 0.0f, 1.0f );
 	// rng radiusGen = rng( 0.0003f, 0.0001f );
-	rng rGen = rng(  0.000618f, 0.0001f );
+	rng rGen = rng(  0.000618f, 0.000245f );
 	for( size_t i = 0; i < numPoints; i++ ) {
 		// if ( reject() < 0.01f ) { // decimating
 			plySpherePreProcess.emplace_back( vec4( vec3( float( xValues[ i ] ), float( yValues[ i ] ), float( zValues[ i ] ) ), rGen() ) );

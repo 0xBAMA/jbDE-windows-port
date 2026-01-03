@@ -90,10 +90,13 @@ void main () {
 				terminate = true;
 				const float mixFactor = dot( normalize( vec3( -1.0f, -1.0f, -1.0f ) ), GetRayDirection( myState ) );
 				// const vec3 color = oklch_to_srgb( vec3( smoothstep( 0.8f, 0.9f, mixFactor ), 0.5f, atan( direction.x, direction.y ) ) );
-				vec3 color = vec3( smoothstep( 0.5f, 0.9f, mixFactor ) * 6.0f ); // + vec3( smoothstep( -0.7f, -1.0f, mixFactor ) ) * vec3( 3.9f, 0.4f, 0.1f );
+//				vec3 color = vec3( smoothstep( 0.0f, 0.9f, mixFactor ) * 5.0f ) + vec3( smoothstep( -0.7f, -1.0f, mixFactor ) ) * vec3( 1.9f, 0.2f, 0.04f ).rrr;
 //				 color += vec3( 0.5f );
+				vec3 color = vec3( 0.01f );
 
-				AddEnergy( myState, GetTransmission( myState ) * color );
+				vec3 transmission = GetTransmission( myState );
+				if ( all( lessThan( transmission, vec3( 1.0f ) ) ) )
+					AddEnergy( myState, transmission * color );
 			}
 		}
 		break;

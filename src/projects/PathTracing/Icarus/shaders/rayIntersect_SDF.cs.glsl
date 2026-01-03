@@ -308,20 +308,23 @@ float deGAZ2(vec3 p){
   return tet(p,vec3(1),1.8);
 }
 
-  float detrimental(vec3 p){
-    float s=2., l=0.;
-    p=abs(p);
-    for(int j=0;j++<8;)
-      p=-sign(p)*(abs(abs(abs(p)-2.)-1.)-1.),
-      p*=l=-1.3/dot(p,p),
-      p-=.15, s*=l;
-    return length(p)/s;
-  }
+float  detroit(vec3 p){
+	float i,g,e=1.,s,l;
+	p.z-=9.; s=2.;
+	p=abs(p);
+	for(int j=0;j++<6;)
+	p=-sign(p)*(abs(abs(abs(p)-2.)-1.)-1.),
+	p*=l=-2./max(.3,sqrt(min(min(p.x,p.y),p.z))),
+	p-=2., s*=l;
+	return length(p)/s;
+}
+
+#include "wood.h"
 
 //=============================================================================================================================
-const float raymarchMaxDistance = 1000.0f;
+const float raymarchMaxDistance = 300.0f;
 const float raymarchUnderstep = 0.9f;
-const int raymarchMaxSteps = 300;
+const int raymarchMaxSteps = 600;
 const float epsilon = 0.001f;
 //=============================================================================================================================
 vec3 hitColor;
@@ -347,19 +350,22 @@ float de ( vec3 p ) {
 
 	// return sceneDist;
 
-	const vec3 bboxSize = vec3( 100.0f );
+	const vec3 bboxSize = vec3( 0.05f );
 
 	{
-		const float scale = 20.0f;
-		const float d = max( fBox( p, bboxSize ), detrimental( p * scale ) / scale );
+//		const float offset = GetLuma( matWood( p * 10.1f ) ).r;
+		const float scale = 1.0f;
+		// const float d = max( fBox( p, bboxSize ), deGAZ( p * scale + vec3( 0.0f, 0.0f, 15.0f ) ) / scale ) - 0.01f * offset;
+		const float d = fBox( p + vec3( -0.05f, 0.1f, 0.0f ), bboxSize );
 		// const float d = deGAZ( p * scale ) / scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = ( NormalizedRandomFloat() < 0.1f ) ? DIFFUSE : MIRROR;
-			// hitSurfaceType = MIRROR;
+//			hitSurfaceType = ( NormalizedRandomFloat() < 0.9f ) ? DIFFUSE : MIRROR;
+			 hitSurfaceType = EMISSIVE;
 			// hitColor = checkerBoard( 10.0f, p ) ? vec3( nvidia ) : mix( vec3( 0.618f ), blood * 0.5f, vec3( 0.5f ) + ( curlNoise( p ).r + 1.0f ) * 0.1f );
 			// hitColor = checkerBoard( 0.5f, p ) ? nvidia : carrot;
-			hitColor = nickel;
+//			hitColor = nickel;
+			hitColor = vec3( 2.98f * blood );
 	
 			// if ( mod( p.y, 0.75f ) < 0.1f ) {
 				// hitSurfaceType = EMISSIVE;

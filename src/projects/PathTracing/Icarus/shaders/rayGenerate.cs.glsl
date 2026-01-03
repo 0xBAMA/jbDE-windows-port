@@ -113,9 +113,6 @@ cameraRay GetCameraRay ( vec2 uv ) {
 		break;
 	}
 
-	// jittering the ray origin helps with some aliasing issues...
-	temp.origin -= ( Blue( ivec2( gl_GlobalInvocationID.x, gl_GlobalInvocationID.x % 512 ) ).z / 255.0f ) * 0.01f * temp.direction;
-
 	// if the DoF is on, we do some additional calculation...
 	if ( DoFRadius != 0.0f && temp.direction != vec3( 0.0f ) ) {
 		// thin lens adjustment
@@ -125,6 +122,9 @@ cameraRay GetCameraRay ( vec2 uv ) {
 		temp.origin += diskOffset.x * basisX + diskOffset.y * basisY;
 		temp.direction = normalize( focuspoint - temp.origin );
 	}
+
+	// jittering the ray origin helps with some aliasing issues...
+	temp.origin -= ( Blue( ivec2( gl_GlobalInvocationID.x, gl_GlobalInvocationID.x % 512 ) ).z / 255.0f ) * 0.05f * temp.direction;
 
 	return temp;
 }
