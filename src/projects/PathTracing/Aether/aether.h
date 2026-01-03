@@ -50,6 +50,28 @@ struct AetherConfig {
 		screenshot.RGBtoSRGB();
 		screenshot.FlipVertical();
 		screenshot.Save( filename, Image_4F::backend::LODEPNG );
+	void AddRandomLight () {
+		RandomizeIndexedLight( numLights );
+		numLights++;
+	}
+
+	void RandomizeIndexedLight ( int index ) {
+		rngi lightpick = rngi( 0, numLUTs - 1 );
+		rngi emitterpick = rngi( 0, numEmitters - 2 ); // disable image lights till I can get the importance sampling sorted out
+		rng placement = rng( -1024.0f, 1024.0f );
+		rng smallerpick = rng( 0.0f, 1.0f );
+		lights[ index ].emitterParams[ 0 ].x = placement();
+		lights[ index ].emitterParams[ 0 ].y = placement();
+		lights[ index ].emitterParams[ 0 ].z = placement();
+		lights[ index ].emitterParams[ 0 ].w = 0.4f;
+		lights[ index ].emitterParams[ 1 ] = -lights[ index ].emitterParams[ 0 ];
+		lights[ index ].emitterParams[ 1 ].w = smallerpick();
+		lights[ index ].cachedEmitterParams[ 0 ] = lights[ index ].emitterParams[ 0 ];
+		lights[ index ].cachedEmitterParams[ 1 ] = lights[ index ].emitterParams[ 1 ];
+		lights[ index ].pickedLUT = lightpick();
+		lights[ index ].emitterType = emitterpick();
+		lights[ index ].rotationAxis = normalize( vec3( placement(), placement(), placement() ) );
+		sprintf( lights[ index ].label, "example light label" );
 	}
 
 	// animation config
