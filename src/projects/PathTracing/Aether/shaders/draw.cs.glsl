@@ -97,7 +97,7 @@ void main () {
 	const vec3 blockSizeHalf = dimensions / 2.0f;
 	vec3 p = origin;
 
-	for ( int bounce = 0; bounce < 16; bounce++ ) {
+	for ( int bounce = 0; bounce < 32; bounce++ ) {
 		// up to three bounces... I want to be able to refract, and also scatter in the volume...
 		bool hit = IntersectAABB( -p, -direction, -blockSizeHalf, blockSizeHalf, tMin, tMax );
 
@@ -121,6 +121,8 @@ void main () {
 			if ( any( lessThan( p, -blockSizeHalf ) ) ||
 			any( greaterThan( p, blockSizeHalf ) ) ) {
 				// oob
+				bounce = 1000;
+				col += vec3( 0.001f );
 				break;
 			}
 
@@ -134,10 +136,11 @@ void main () {
 //				bounce = 1000;
 //				break;
 
+				// we need to do something about this... everything is mirrored, and it sucks
 				intersection.normal *= -1.0f;
 
-				p -= intersection.normal * epsilon * 5.0f;
-				intersection.IoR = !intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
+				p -= intersection.normal * epsilon * 3.0f;
+				intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
 				float cosTheta = min( dot( -normalize( direction ), intersection.normal ), 1.0f );
 				float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
 				bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
@@ -147,6 +150,14 @@ void main () {
 					direction = normalize( mix( refract( normalize( direction ), intersection.normal, intersection.IoR ), RandomUnitVector(), intersection.roughness ) );
 				}
 
+				if ( any( bvec3( isnan( p.x ), isnan( p.y ), isnan( p.z ) ) ) || any( bvec3( isnan( direction.x ), isnan( direction.y ), isnan( direction.z ) ) ) ) {
+					// we got in a bad situation
+					col = vec3( 0.001f );
+					i = 1000;
+					bounce = 1000; // break out of loops
+					break;
+				}
+
 				// state pump
 				originCache = p;
 				intersection = sceneTrace( -p * 2.0f, -direction, wavelength );
@@ -154,7 +165,7 @@ void main () {
 
 			// else see if we scatter
 			} else if ( getDensity( p ) > NormalizedRandomFloat() ) {
-				col += getColor( p, wavelength );
+				col = getColor( p, wavelength );
 				i = 1000;
 				bounce = 1000; // break out of loops
 				break;

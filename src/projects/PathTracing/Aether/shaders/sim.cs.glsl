@@ -48,7 +48,12 @@ struct lightSpecGPU {
 	vec4 typeVec;		// emitter type, LUT type, 0, 0
 	vec4 parameters0;	// varies
 	vec4 parameters1;	// varies
-	vec4 pad;			// zeroes
+	vec4 pad;
+
+	vec4 cachedTypeVec;
+	vec4 cachedParameters0;
+	vec4 cachedParameters1;
+	vec4 pad2;
 
 // so, everything we need to know:
 // type of light ( 1 float -> int )
@@ -76,35 +81,43 @@ void configureLightRay ( out vec3 rO, out vec3 rD, in lightSpecGPU pickedLight )
 	rO = vec3( 0.0f ), rD = vec3( 0.0f );
 	vec3 x, y;
 	vec2 c;
+	float frameF = fract( frame );
 	switch ( int( pickedLight.typeVec.x ) ) { // based on the type of emitter specified...
 		case 0: // point light
-		rO = pickedLight.parameters0.xyz;
+		rO = mix( pickedLight.cachedParameters0.xyz, pickedLight.parameters0.xyz, frameF );
 		rD = RandomUnitVector();
 		break;
 
 		case 1: // cauchy beam
 		// emitting from a single point
 		// we need to be able to place a jittered target position... it's a 2D offset in the plane whose normal is defined by the beam direction
-		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
+		createBasis( normalize( mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, frameF ) ), x, y );
 		c = rnd_disc_cauchy();
 		// rO = pickedLight.parameters0.xyz + 2.0f * ( 16.18f * int( 10.0f * ( NormalizedRandomFloat() ) ) * y + 20.0f * int( 10.0f * ( NormalizedRandomFloat() ) ) * x );
-		rO = pickedLight.parameters0.xyz;
-		rD = normalize( pickedLight.parameters0.w * ( x * c.x + y * c.y ) + pickedLight.parameters1.xyz );
+		rO = mix( pickedLight.cachedParameters0.xyz, pickedLight.parameters0.xyz, frameF );
+		rD = normalize( mix( pickedLight.cachedParameters0.w, pickedLight.parameters0.w, frameF ) * ( x * c.x + y * c.y ) + mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, frameF ) );
 		break;
 
 		case 2: // laser disk
 		// similar to above, but using a constant direction value, and using the basis jitter for a scaled disk offset
-		createBasis( normalize( pickedLight.parameters1.xyz ), x, y );
+		createBasis( normalize( mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, frameF ) ), x, y );
 		c = CircleOffset();
 		// rO = pickedLight.parameters0.xyz + 2.0f * ( 16.18f * int( 6.0f * ( NormalizedRandomFloat() ) ) * y + 20.0f * int( 4.0f * ( NormalizedRandomFloat() ) ) * x ) + pickedLight.parameters0.w * ( x * c.x + y * c.y );
-		rO = pickedLight.parameters0.xyz + pickedLight.parameters0.w * ( x * c.x + y * c.y );
+		rO = mix( pickedLight.cachedParameters0.xyz, pickedLight.parameters0.xyz, frameF ) + mix( pickedLight.cachedParameters0.w, pickedLight.parameters0.w, frameF ) * ( x * c.x + y * c.y );
 		// emitting along a single direction vector
-		rD = normalize( pickedLight.parameters1.xyz );
+		rD = normalize( mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, vec3( frameF ) ) );
 		break;
 
 		case 3: // uniform line emitter
-		rO = mix( pickedLight.parameters0.xyz, pickedLight.parameters1.xyz, NormalizedRandomFloat() );
+		rO = mix( mix( pickedLight.cachedParameters0.xyz, pickedLight.parameters0.xyz, frameF ), mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, vec3( frameF ) ), NormalizedRandomFloat() );
 		rD = RandomUnitVector();
+		break;
+
+		case 4: // line beam
+		createBasis( normalize( mix( pickedLight.parameters1.xyz, pickedLight.parameters1.xyz, frameF ) ), x, y );
+		rO = mix( pickedLight.cachedParameters0.xyz, pickedLight.parameters0.xyz, frameF ) + mix( pickedLight.cachedParameters0.w, pickedLight.parameters0.w, frameF ) * ( x * NormalizedRandomFloat() * mix( pickedLight.cachedParameters0.w, pickedLight.parameters0.w, frameF ) );
+		// emitting along a single direction vector
+		rD = normalize( mix( pickedLight.cachedParameters1.xyz, pickedLight.parameters1.xyz, frameF ) + c.y * 0.01f * rnd_disc_cauchy().y );
 		break;
 
 		default:
@@ -239,7 +252,7 @@ void main () {
 			// below this point, we have to consider the IoR for the specific form of glass... because we precomputed all the
 			// varying behavior already, we can just treat it uniformly, only need to consider frontface/backface for inversion
 			default:
-			rO -= intersection.normal * epsilon * 5.0f;
+			rO -= intersection.normal * epsilon * 3.0f;
 			intersection.IoR = intersection.frontFacing ? ( 1.0f / intersection.IoR ) : ( intersection.IoR ); // "reverse" back to physical properties for IoR
 			float cosTheta = min( dot( -normalize( rD ), intersection.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );

@@ -94,6 +94,9 @@ public:
 			static rngi wangSeeder( 0, 1000000 );
 			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
 
+			static rng frameJitter( 0.0f, 1.0f );
+			glUniform1f( glGetUniformLocation( shader, "frame" ), aetherConfig.frame + frameJitter() );
+
 			static rngi blueSeeder( 0, 512 );
 			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
 
@@ -118,6 +121,10 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
+
+		aetherConfig.AttemptScreenShot();
+		if ( aetherConfig.frame == aetherConfig.numFrames )
+			pQuit = true;
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );

@@ -5,7 +5,9 @@ inline const char* emitterTypes[] = {
 	/* 0 */ "Point",
 	/* 1 */ "Cauchy Beam",
 	/* 2 */ "Laser Disk",
-	/* 3 */ "Uniform Line Emitter" };
+	/* 3 */ "Uniform Line Emitter",
+	"Line Beam",
+	"Image Light" };
 inline const int numEmitters = sizeof( emitterTypes ) / sizeof( emitterTypes[ 0 ] );
 
 // specifying the LUT which will be used for selecting wavelengths
@@ -38,19 +40,31 @@ inline const int numLUTs = sizeof( LUTFilenames ) / sizeof( LUTFilenames[ 0 ] );
 struct lightSpec {
 	int emitterType;	// type of light emitter
 	int pickedLUT;		// type of light source
-
 	float power;		// 'power' - this is an arbitrary scale factor, and only matters relative to other light sources
+	vec4 emitterParams[ 2 ]; // emitter parameterization - 8 floats should be sufficient
 
-	// emitter parameterization - 8 floats should be sufficient
-	vec4 emitterParams[ 2 ];
+	int cachedEmitterType;
+	int cachedPickedLUT;
+	float cachedPower;		// unfortunately this will require rebuilding the importance sampling structure
+	vec4 cachedEmitterParams[ 2 ];
 
 	char label[ 256 ];
+
+	vec3 rotationAxis;
 
 	lightSpec() {
 		emitterType = 0;
 		pickedLUT = 4;
 		power = 1.0f;
 		emitterParams[ 0 ] = emitterParams[ 1 ] = vec4( 0.0f );
+
+		cachedEmitterParams[ 0 ] = cachedEmitterParams[ 1 ] = vec4( 0.0f );
+		cachedPower = 1.0f;
+		cachedEmitterType = 0;
+		cachedPickedLUT = 0;
+
+		rng axisPicker( -1.0f, 1.0f );
+		rotationAxis = glm::normalize( vec3( axisPicker(), axisPicker(), axisPicker() ) );
 
 		// reset the label string
 		sprintf( label, "Default Light Label" );

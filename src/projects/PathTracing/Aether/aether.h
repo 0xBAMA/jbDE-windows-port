@@ -3,6 +3,10 @@
 #include "../../../engine/engine.h"
 #include "light.h"
 
+// https://suricrasia.online/blog/shader-functions/
+vec3 erot ( vec3 p, vec3 ax, float ro ) {
+	return mix( dot( ax, p ) * ax, p, cos( ro ) ) + cross( ax,p ) * sin( ro );
+}
 
 struct AetherConfig {
 	// handle for the texture manager
@@ -12,11 +16,11 @@ struct AetherConfig {
 
 	// for the tally buffers
 	// ivec3 dimensions{ 1280, 720, 128 };
-	ivec3 dimensions{ 1024, 768, 768 };
+	ivec3 dimensions{ 2000, 1000, 500 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;
-	int numLights = 2;
+	int numLights = 0;
 	static constexpr int maxLights = 1024;
 	lightSpec lights[ maxLights ];
 	vec4 visualizerColors[ maxLights ];
@@ -46,10 +50,14 @@ struct AetherConfig {
 		imageBytesToSave.resize( dims.x * dims.y * sizeof( float ) * 4, 0 );
 		glBindTexture( GL_TEXTURE_2D, tex );
 		glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &imageBytesToSave[ 0 ] );
-		Image_4F screenshot( dims.x, dims.y, &imageBytesToSave[ 0 ] );
-		screenshot.RGBtoSRGB();
-		screenshot.FlipVertical();
-		screenshot.Save( filename, Image_4F::backend::LODEPNG );
+		auto imageSaveThread = std::jthread( [ dims, filename, imageBytesToSave ] () {
+			Image_4F screenshot( dims.x, dims.y, &imageBytesToSave[ 0 ] );
+			screenshot.RGBtoSRGB();
+			screenshot.FlipVertical();
+			screenshot.Save( filename, Image_4F::backend::LODEPNG );
+		} );
+	}
+
 	void AddRandomLight () {
 		RandomizeIndexedLight( numLights );
 		numLights++;
@@ -75,15 +83,15 @@ struct AetherConfig {
 	}
 
 	// animation config
-	uint32_t frame = 0u;
-	uint32_t samples = 0u;
-	uint32_t simSteps = 0u;
+	int32_t frame = 640;
+	int32_t samples = 0;
+	int32_t simSteps = 0;
 
-	const uint32_t numFrames = 24u;
-	const uint32_t numSamples = 161u;
-	const uint32_t numSimSteps = 800u;
+	const int32_t numFrames = 1200;
+	const int32_t numSamples = 175;
+	const int32_t numSimSteps = 250;
 
-	// whipped-together 3-state FSM for animation control
+	// whipped-together 4-state FSM for animation control
 	int animState = 0;
 
 	// this is the state advance and transition function
@@ -104,8 +112,25 @@ struct AetherConfig {
 				AdvanceSample();
 				break;
 
+			case 4: // we are waiting to take a screenshot
+				break;
+
 			default: break;
 		}
+	}
+
+	void AttemptScreenShot () {
+		if ( animState == 4 ) {
+			ScreenShot( "frames/" + fixedWidthNumberString( frame ) + ".png" );
+
+			// clear the framebuffer's accumulated image
+			ClearAccumulator();
+
+			// clear the light cache's accumulated image(s)
+			ClearLightCache();
+
+			animState = 1;
+		} // all other cases, fall through
 	}
 
 	// I don't want to double trigger, and don't want to get into threading here
@@ -115,8 +140,18 @@ struct AetherConfig {
 			// need to zero out the simulation state, keeping the current light config
 			lockout = true;
 			animState = 1;
-			ClearAccumulator();
 			ClearLightCache();
+		}
+	}
+
+	void CacheLights () {
+		for ( int i = 0 ; i < numLights; i++ ) {
+			// cache all prior values
+			lights[ i ].cachedEmitterParams[ 0 ] = lights[ i ].emitterParams[ 0 ];
+			lights[ i ].cachedEmitterParams[ 1 ] = lights[ i ].emitterParams[ 1 ];
+			lights[ i ].cachedEmitterType =  lights[ i ].emitterType;
+			lights[ i ].cachedPickedLUT = lights[ i ].pickedLUT;
+			lights[ i ].cachedPower = lights[ i ].power; // tbd
 		}
 	}
 
@@ -139,31 +174,36 @@ struct AetherConfig {
 	void AdvanceFrame () {
 	// need to do a couple things:
 		// save out this frame's prepared image
-		ScreenShot( "frames/" + fixedWidthNumberString( frame ) + ".png" );
 
 		// reset render sample count, simulation steps + increment frame counter
 		samples = 0u;
 		simSteps = 0u;
 		++frame;
 
-		// clear the framebuffer's accumulated image
-		ClearAccumulator();
+		cout << "Advancing to frame " << frame << endl;
 
-		// clear the light cache's accumulated image(s)
-		ClearLightCache();
+		CacheLights();
 
-		// compute new light position/direction
-		lights[ 0 ].emitterParams[ 0 ].x += 0.00618;
-		lights[ 0 ].emitterParams[ 1 ].y += 0.00618;
-		lights[ 0 ].emitterParams[ 1 ].x += 0.001618;
+		// compute new light position/directions
+		for ( int i = 0 ; i < numLights; i++ ) {
+			vec3 p = lights[ i ].emitterParams[ 0 ].xyz;
+			p = erot( p, lights[ i ].rotationAxis, 0.0000618f );
+			lights[ i ].emitterParams[ 0 ].x = p.x;
+			lights[ i ].emitterParams[ 0 ].y = p.y;
+			lights[ i ].emitterParams[ 0 ].z = p.z;
+			lights[ i ].emitterParams[ 1 ].x = -p.x;
+			lights[ i ].emitterParams[ 1 ].y = -p.y;
+			lights[ i ].emitterParams[ 1 ].z = -p.z;
+		}
+
 		lightListDirty = true;
 
 		// apply some kind of small rotation of the view
-		trident->RotateX( 0.00618f );
-		trident->RotateY( 0.001618f );
+		trident->RotateX( 0.001618f );
+		trident->RotateY( 0.000618f );
 
-		// and we are back in sim state
-		animState = 1;
+		// and we are in waiting state, image is ready to save
+		animState = 4;
 
 		// you can call it again
 		if ( frame == numFrames ) {
@@ -196,7 +236,44 @@ inline void CreateTextures ( AetherConfig &config ) {
 	config.textureManager->Add( "ZTally", opts );
 	config.textureManager->Add( "Count", opts );
 
-	// displacement etc?
+	// start filesystem crap
+	struct pathLeafString {
+		std::string operator()( const std::filesystem::directory_entry &entry ) const {
+			return entry.path().string();
+		}
+	};
+	std::vector< string > directoryStrings;
+	std::filesystem::path p( "../panels_final/" );
+	std::filesystem::directory_iterator start( p );
+	std::filesystem::directory_iterator end;
+	std::transform( start, end, std::back_inserter( directoryStrings ), pathLeafString() );
+	// std::sort( directoryStrings.begin(), directoryStrings.end() ); // sort alphabetically
+
+	/*
+	std::vector< Image_4F > textures;
+	ivec2 maxDims = ivec2( 0 );
+	for ( auto& s :  directoryStrings ) {
+		Image_4F image( s, Image_4F::backend::STB_IMG );
+		if ( image.Width() <= 640  || image.Height() <= 480 ) {
+			image.Crop( 640, 480 ); // fills with zeroes
+			textures.push_back( image );
+		}
+		maxDims = glm::max( maxDims, ivec2( textures[ textures.size() - 1 ].Width(), textures[ textures.size() - 1 ].Height() ) );
+	}
+	*/
+
+	// create the texture data on the GPU
+	textureOptions_t optsArray;
+	opts.dataType		= GL_RGBA32F;
+	opts.minFilter		= GL_NEAREST;
+	opts.magFilter		= GL_NEAREST;
+	opts.textureType	= GL_TEXTURE_2D_ARRAY;
+	opts.wrap			= GL_CLAMP_TO_BORDER;
+	opts.width			= config.dimensions.x;
+	opts.height			= config.dimensions.y;
+	opts.pixelDataType	= GL_FLOAT;
+
+	// std::vector< float >
 }
 
 inline void ResetAccumulator ( AetherConfig &config ) {
@@ -280,6 +357,7 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 
 inline void LightConfigWindow ( AetherConfig &config ) {
 	ImGui::Begin( "Light Setup" );
+	const float blockSizeMax = float( std::max( std::max( config.dimensions.x, config.dimensions.y ), config.dimensions.z ) );
 
 	ImGui::Checkbox( "Run Sim", &config.runSimToggle );
 	ImGui::Checkbox( "Run Draw", &config.runDrawToggle );
@@ -333,7 +411,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 0: // point emitter
 
 			// need to set the 3D point location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
@@ -341,13 +419,13 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 1: // cauchy beam emitter
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction - tbd how this is going to go, euler angles?
-			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the scale factor for the angular spread
-			ImGui::SliderFloat( ( string( "Angular Spread" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 1.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			ImGui::SliderFloat( ( string( "Angular Spread" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
@@ -355,10 +433,10 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 2: // laser disk
 
 			// need to set the 3D emitter location
-			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the 3D direction (defining disk plane)
-			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -10.0f, 10.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 			// need to set the radius of the disk being used
 			ImGui::SliderFloat( ( string( "Radius" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
@@ -369,12 +447,39 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		case 3: // uniform line emitter
 
 			// need to set the 3D location of points A and B
-			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position A" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
-			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			ImGui::SliderFloat3( ( string( "Position B" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
 			config.lightListDirty |= ImGui::IsItemEdited();
 
 			break;
+
+		case 4: // line beam
+
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -blockSizeMax, blockSizeMax, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			ImGui::SliderFloat( ( string( "Width" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+
+		/*
+		case 5: // image light
+
+			ImGui::SliderFloat3( ( string( "Position" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 0 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			ImGui::SliderFloat3( ( string( "Direction" ) + lString ).c_str(), ( float * ) &config.lights[ l ].emitterParams[ 1 ][ 0 ], -400.0f, 400.0f, "%.3f" );
+			config.lightListDirty |= ImGui::IsItemEdited();
+			ImGui::SliderFloat( ( string( "Width" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 0 ][ 3 ], 0.0001f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			ImGui::SliderFloat( ( string( "Image" ) + lString ).c_str(), &config.lights[ l ].emitterParams[ 1 ][ 3 ], 0.0f, 100.0f );
+			config.lightListDirty |= ImGui::IsItemEdited();
+
+			break;
+			*/
 
 		default:
 			ImGui::Text( "Invalid Emitter Type" );
@@ -383,6 +488,9 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		if ( ImGui::Button( ( string( "Remove" ) + lString ).c_str() ) ) {
 			config.lightListDirty = true;
 			flaggedForRemoval = l;
+		}
+		if ( ImGui::Button( ( string( "Randomize " ) + lString ).c_str() ) ) {
+			config.RandomizeIndexedLight( l );
 		}
 		ImGui::Text( "" );
 		ImGui::Unindent();
@@ -398,6 +506,47 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 	}
 
 	ImGui::End();
+
+	if ( config.lightListDirty ) {
+		config.CacheLights();
+	}
+}
+
+inline std::vector< uint32_t > lightBufferDataA;
+inline std::vector< vec4 > lightBufferDataB;
+
+inline void SetupLightBuffer ( AetherConfig &config ) {
+	lightBufferDataB.clear();
+	// then we also need some information for each individual light...
+	for ( int i = 0; i < config.numLights; i++ ) {
+		// the 3x vec4's specifying a light for the GPU process...
+		lightBufferDataB.push_back( vec4( config.lights[ i ].emitterType, config.lights[ i ].pickedLUT, 0.0f, 0.0f ) );
+		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 0 ] );
+		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 1 ] );
+		lightBufferDataB.emplace_back( 0.0f );
+
+		// and the cached previous frame values, so we can lerp (dumb lerp for this stuff probably fine)
+		lightBufferDataB.push_back( vec4( config.lights[ i ].cachedEmitterType, config.lights[ i ].cachedPickedLUT, 0.0f, 0.0f ) );
+		lightBufferDataB.push_back( config.lights[ i ].cachedEmitterParams[ 0 ] );
+		lightBufferDataB.push_back( config.lights[ i ].cachedEmitterParams[ 1 ] );
+		lightBufferDataB.emplace_back( 0.0f );
+	}
+
+	std::vector< uint32_t > lightBufferDataConcat;
+	for ( int i = 0; i < config.maxLights; i++ ) {
+		lightBufferDataConcat.push_back( lightBufferDataA[ i ] );
+	}
+	for ( int i = 0; i < config.numLights * 8; i++ ) {
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].x ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].y ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].z ) );
+		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].w ) );
+	}
+
+	// and sending the latest data to the GPU
+	glBindBuffer( GL_SHADER_STORAGE_BUFFER, config.lightBuffer );
+	glBufferData( GL_SHADER_STORAGE_BUFFER, 4 * lightBufferDataConcat.size(), ( GLvoid * ) &lightBufferDataConcat[ 0 ], GL_DYNAMIC_COPY );
+	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, config.lightBuffer );
 }
 
 inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
@@ -424,19 +573,9 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 
 		// ================================================================================================================
 		// some dummy lights...
-		config.lights[ 0 ].emitterParams[ 0 ].x += 200.0f;
-		config.lights[ 0 ].emitterParams[ 0 ].w = 0.4f;
-		config.lights[ 0 ].emitterParams[ 1 ].y = -1.0f;
-		config.lights[ 0 ].pickedLUT = 6;
-		config.lights[ 0 ].emitterType = 0;
-		sprintf( config.lights[ 0 ].label, "Example Light 1" );
-
-		config.lights[ 1 ].emitterParams[ 0 ].x -= 200.0f;
-		config.lights[ 1 ].emitterParams[ 0 ].w = 0.4f;
-		config.lights[ 1 ].emitterParams[ 1 ].y = -1.0f;
-		config.lights[ 1 ].pickedLUT = 8;
-		config.lights[ 1 ].emitterType = 0;
-		sprintf( config.lights[ 1 ].label, "Example Light 2" );
+		for ( int i = 0; i < 3; i++ ) {
+			config.AddRandomLight();
+		}
 
 		// ================================================================================================================
 		{ // we need some colors to visualize the light buffer...
@@ -457,8 +596,8 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 	}
 
 	// this only fires when the light list is edited, so I'm going to do this kind of a dumb way, using a uniform distribution to pick
+	lightBufferDataA.clear();
 	rng pick = rng( 0.0f, totalPower );
-	std::vector< uint32_t > lightBufferDataA;
 	for ( int i = 0; i < config.maxLights; i++ ) {
 		float thresh = pick();
 		int j = 0;
@@ -498,31 +637,7 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 	glBindTexture( GL_TEXTURE_2D, config.textureManager->Get( "Light Importance Visualizer" ) );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, importanceVisualizer.Width(), importanceVisualizer.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, importanceVisualizer.GetImageDataBasePtr() );
 
-	// then we also need some information for each individual light...
-	std::vector< vec4 > lightBufferDataB;
-	for ( int i = 0; i < config.numLights; i++ ) {
-		// the 3x vec4's specifying a light for the GPU process...
-		lightBufferDataB.push_back( vec4( config.lights[ i ].emitterType, config.lights[ i ].pickedLUT, 0.0f, 0.0f ) );
-		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 0 ] );
-		lightBufferDataB.push_back( config.lights[ i ].emitterParams[ 1 ] );
-		lightBufferDataB.push_back( vec4( 0.0f ) );
-	}
-
-	std::vector< uint32_t > lightBufferDataConcat;
-	for ( int i = 0; i < config.maxLights; i++ ) {
-		lightBufferDataConcat.push_back( lightBufferDataA[ i ] );
-	}
-	for ( int i = 0; i < config.numLights * 4; i++ ) {
-		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].x ) );
-		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].y ) );
-		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].z ) );
-		lightBufferDataConcat.push_back( bit_cast< uint32_t >( lightBufferDataB[ i ].w ) );
-	}
-
-	// and sending the latest data to the GPU
-	glBindBuffer( GL_SHADER_STORAGE_BUFFER, config.lightBuffer );
-	glBufferData( GL_SHADER_STORAGE_BUFFER, 4 * lightBufferDataConcat.size(), ( GLvoid * ) &lightBufferDataConcat[ 0 ], GL_DYNAMIC_COPY );
-	glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, config.lightBuffer );
+	SetupLightBuffer( config );
 }
 
 inline void AetherSimUpdate ( AetherConfig &config ) {
@@ -537,6 +652,8 @@ inline void AetherSimUpdate ( AetherConfig &config ) {
 		static rngi blueSeeder( 0, 512 );
 		glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
 
+		static rng frameJitter( 0.0f, 1.0f );
+		glUniform1f( glGetUniformLocation( shader, "frame" ), config.frame + frameJitter() );
 		glUniform3i( glGetUniformLocation( shader, "dimensions" ), config.dimensions.x, config.dimensions.y, config.dimensions.z );
 
 		config.textureManager->BindTexForShader( "Blue Noise", "blueNoise", shader, 0 );
@@ -546,7 +663,7 @@ inline void AetherSimUpdate ( AetherConfig &config ) {
 		config.textureManager->BindImageForShader( "Count", "bufferImageCount", shader, 5 );
 		config.textureManager->BindTexForShader( "iCDF", "iCDFtex", shader, 6 );
 
-		glDispatchCompute( 1, 4, 16 );
+		glDispatchCompute( 1, 16, 16 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
 }
