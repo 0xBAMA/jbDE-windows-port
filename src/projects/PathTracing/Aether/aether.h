@@ -15,8 +15,8 @@ struct AetherConfig {
 	unordered_map< string, GLuint > *shaders;
 
 	// for the tally buffers
-	// ivec3 dimensions{ 1280, 720, 128 };
-	ivec3 dimensions{ 2000, 1000, 500 };
+	ivec3 dimensions{ 1000, 400, 200 };
+	// ivec3 dimensions{ 2000, 1000, 500 };
 
 	// managing the list of specific lights...
 	bool lightListDirty = true;
@@ -28,8 +28,14 @@ struct AetherConfig {
 
 	float scale = 1000.0f;
 
-	bool runSimToggle = true;
-	bool runDrawToggle = true;
+	bool runSimToggle = false;
+	bool runDrawToggle = false;
+
+	json gelatinRecords;
+	void LoadGelatinRecords () {
+		ifstream i( "../src/data/LeeGelList.json" ); i >> gelatinRecords; i.close();
+		// config.windowTitle				= j[ "system" ][ "windowTitle" ];
+	}
 
 	void ClearAccumulator () {
 		textureManager->ZeroTexture2D( "Accumulator" );
@@ -83,7 +89,7 @@ struct AetherConfig {
 	}
 
 	// animation config
-	int32_t frame = 640;
+	int32_t frame = 0;
 	int32_t samples = 0;
 	int32_t simSteps = 0;
 
@@ -521,6 +527,303 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 	if ( config.lightListDirty ) {
 		config.CacheLights();
 	}
+}
+
+inline void GelatinConfigWindow ( AetherConfig &config ) {
+	// lambda utilities
+	auto normalizePDF = [] ( std::vector< float > &PDFVector ) {
+		// first establish the maximum value across the range
+		float max = 0.0f;
+		for ( auto& v : PDFVector )
+			max = std::max( max, v );
+
+		// and the normalize pass, remap all values to 0..1 based on the observed max
+		for ( auto& v : PDFVector )
+			v = v / max;
+	};
+
+	auto loadLUT = [] ( std::vector< float > &PDFVector, const int index ) {
+		const string LUTPath = "../src/data/spectraLUT/Preprocessed/";
+		Image_4F pdfLUT( LUTPath + LUTFilenames[ index ] + ".png" );
+
+		// almost the same as the other usage, but we need the
+		PDFVector.clear();
+		for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+			float sum = 0.0f;
+			for ( int y = 0; y < pdfLUT.Height(); y++ ) {
+				// invert because lut uses dark for positive indication... maybe fix that
+				sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
+			}
+			PDFVector.push_back( sum );
+		}
+	};
+
+	struct gel {
+		string label;
+		string description;
+		vec3 color;
+		vector< float > filter;
+	};
+
+	static vector< gel > gelList;
+
+	auto loadGels = [&] () {
+		for ( auto& e : config.gelatinRecords ) {
+			gel g;
+
+			// Replace non-breaking space with regular space
+			string text = e[ "text" ];
+
+			// Trim leading spaces
+			size_t firstPos = text.find_first_not_of( " \n" );
+
+			// Find first and second occurrence of the same number (extracted from first part)
+			size_t numEnd = text.find( ' ', firstPos );
+			std::string number = text.substr( firstPos, numEnd - firstPos );
+			size_t secondPos = text.find( number, numEnd );
+
+			// Output first part
+			g.label = text.substr( firstPos, secondPos - firstPos );
+
+			// Output second part
+			g.description = text.substr( secondPos );
+
+			// get the hex codes and convert to color
+			string c = e[ "color" ];
+			std::transform( c.begin(), c.end(), c.begin(), [] ( unsigned char cf ) { return std::tolower( cf ); } );
+			g.color = HexToVec3( c );
+
+			cout << g.label << endl;
+			cout << g.description << endl;
+			cout << to_string( g.color ) << endl;
+
+			// spectral data... need to reject the listing if we do not have this
+			vector< float > filter;
+			filter.clear();
+			if ( e.contains( "datatext" ) ) {
+				for ( int lambda = 405;; lambda += 5 ) {
+					if ( e[ "datatext" ].contains( to_string( lambda ) ) ) {
+						filter.push_back( std::stof( e[ "datatext" ][ to_string( lambda ) ].get< string >() ) / 100.0f );
+					} else {
+						filter.push_back( 0.0f );
+						filter.push_back( 0.0f );
+						break;
+					}
+				}
+			}
+
+			// if we made it through that loop without adding any data, we have to skip this entry
+			if ( filter.size() != 0 ) {
+				bool allZeroes = true;
+				for ( int i = 0; i < filter.size(); i++ ) {
+					if ( filter[ i ] != 0.0f ) {
+						allZeroes = false;
+					}
+				}
+				if ( allZeroes ) {
+					break;
+				}
+
+				// let's just go ahead and precompute a 1:1 representation
+				for ( int w = 380; w < 400; w++ ) {
+					g.filter.push_back( 0.0f );
+				}
+
+				// lerp out the transmission values
+				float vprev = 0.0f;
+				float v = filter[ 0 ];
+				for ( int wOffset = 1; wOffset < filter.size(); wOffset++ ) {
+					// each entry spawns 5 elements
+					for ( int i = 0; i < 5; i++ ) {
+						g.filter.push_back( glm::mix( vprev, v, ( i + 0.5f ) / 5.0f ) );
+					}
+					// cycle in the new values
+					vprev = v;
+					v = filter[ wOffset ];
+				}
+
+				// and the tail end, all zeroes
+				while ( g.filter.size() < 780 ) {
+					g.filter.push_back( 0.0f );
+				}
+
+				gelList.push_back( g );
+			}
+		}
+
+		// sort the gel list by label
+		std::sort( gelList.begin(), gelList.end(), [] ( gel g1, gel g2 ) { return g1.label < g2.label; } );
+
+		// ================================================================================================================
+		{
+			// visualizing the filtered light PDF
+			textureOptions_t opts;
+			opts.dataType = GL_RGBA8;
+			opts.minFilter = GL_LINEAR;
+			opts.magFilter = GL_LINEAR;
+			opts.width = 450;
+			opts.height = 256;
+			opts.textureType = GL_TEXTURE_2D;
+
+			config.textureManager->Add( "Filtered PDF Preview", opts );
+		}
+	};
+
+	auto applyGel = [&] ( std::vector< float > &PDFVector, const int index ) {
+		// over the range of PDF values... we need to multiply by %Y
+		for ( int i = 0; i < PDFVector.size(); i++ ) {
+			PDFVector[ i ] *= gelList[ index ].filter[ i ];
+		}
+	};
+
+	// current state value
+	static std::vector< float > myPDF;
+
+	struct gelState {
+		char name[ 1024 ];
+		int pickedLUT = 0;
+		std::vector< int > pickedGels{{ 0 }};
+	};
+
+	Image_4U preview( 450, 256 );
+	auto updateGelStack = [&] ( std::vector< float > &PDFVector, gelState state ) {
+		loadLUT( PDFVector, state.pickedLUT );
+		normalizePDF( PDFVector );
+
+		for ( int i = 0; i < state.pickedGels.size(); i++ ) {
+			applyGel( PDFVector, state.pickedGels[ i ] );
+			normalizePDF( PDFVector );
+		}
+
+		// this should then update the texture for the preview
+		// this first part of the buffer, I want to visualize...
+
+		for ( int i = 0; i < PDFVector.size(); i++ ) {
+			for ( int y = 0; y < 256; y++ ) {
+				float fractionalValue = ( y + 0.5f ) / 256.0f;
+
+				Image_4U::color c( { 0, 0, 0, 255 } );
+				if ( fractionalValue > PDFVector[ i ] ) {
+					c = Image_4U::color( { 255, 255, 255, 255 } );
+				}
+
+				preview.SetAtXY( i, y, c );
+			}
+		}
+		preview.FlipVertical();
+
+		glActiveTexture( GL_TEXTURE0 );
+		glBindTexture( GL_TEXTURE_2D, config.textureManager->Get( "Filtered PDF Preview" ) );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, preview.Width(), preview.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, preview.GetImageDataBasePtr() );
+	};
+
+	static const char ** gelStrings;
+	static gelState myState;
+	static bool firstTime = true;
+	if ( firstTime ) {
+		firstTime = false;
+
+		loadGels();
+		loadLUT( myPDF, 0 );
+		normalizePDF( myPDF );
+
+		// setup the list of strings for the menu
+		// gelStrings = new const char * [ gelList.size() ];
+		// for ( int i = 0; i < gelList.size(); i++ ) {
+		// 	char temp[ 1024 ];
+		//
+		// 	gelStrings[ i ] = new const char [ 1024 ]( temp );
+		// 	sprintf( gelStrings[ i ], "%s", gelList[ i ].label.c_str() );
+		// }
+
+		const size_t numStrings = gelList.size();
+		gelStrings = ( const char ** ) malloc( numStrings * sizeof( const char * ) );
+
+		// Loop through the list and copy each string
+		for ( size_t i = 0; i < numStrings; i++ ) {
+			// Allocate memory for each string and copy it
+			gelStrings[ i ] = ( const char * ) malloc( strlen( gelList[ i ].label.c_str() ) + 1 );
+			strcpy( ( char * ) gelStrings[ i ], gelList[ i ].label.c_str() );  // Copy the string
+			cout << "adding " << gelStrings[ i ] << endl;
+		}
+	}
+
+	// if we have flagged an entry for removal...
+	static int flaggedForRemoval = -1;
+	if ( flaggedForRemoval != -1 ) {
+		myState.pickedGels.erase( myState.pickedGels.begin() + flaggedForRemoval );
+		flaggedForRemoval = -1;
+	}
+
+	ImGui::Begin( "LightConstructor - Gel Filter Builder" );
+
+	// string edit for the label
+	ImGui::InputText( "filename", myState.name, sizeof( myState.name ) );
+
+	// save button
+	ImGui::SameLine();
+	if ( ImGui::Button( "Save" ) ) {
+		preview.Save( "../src/data/spectraLUT/Preprocessed/" + string( myState.name ) + ".png" );
+	}
+
+	// curve texture preview
+	ImGui::Text( "" );
+	const int w = ImGui::GetContentRegionAvail().x;
+	ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( config.textureManager->Get( "Filtered PDF Preview" ) ), ImVec2( w, w * ( 256.0f ) / ( 450.0f ) ) );
+	ImGui::Text( "" );
+
+	static bool needsUpdate = true;
+
+	// source distribution picker
+	ImGui::Combo( ( string( "Light Type" ) ).c_str(), &myState.pickedLUT, LUTFilenames, numLUTs );
+	needsUpdate |= ImGui::IsItemEdited();
+
+	// for gels
+	for ( int i = 0; i < myState.pickedGels.size(); i++ ) {
+		string iString = to_string( i );
+
+		ImGui::Separator();
+
+		// show gel picker
+		ImGui::Combo( ( "Gel##" + iString ).c_str(), &myState.pickedGels[ i ], gelStrings, gelList.size() );
+		needsUpdate |= ImGui::IsItemEdited();
+
+		ImGui::SameLine();
+		if ( ImGui::Button( ( "Randomize##" + iString  ).c_str() ) ) {
+			rngi gelPick = rngi( 0, gelList.size() - 1 );
+			myState.pickedGels[ i ] = gelPick();
+			needsUpdate = true;
+		}
+
+		ImGui::SameLine();
+		if ( ImGui::Button( ( "Remove##" + iString  ).c_str() ) ) {
+			flaggedForRemoval = i;
+			needsUpdate = true;
+		}
+
+		// show selected gel preview color
+		vec3 col = gelList[ myState.pickedGels[ i ] ].color;
+		if ( ImGui::ColorButton( ( "##ColorSquare" + iString ).c_str(), ImColor( col.r, col.g, col.b ), ImGuiColorEditFlags_NoAlpha, ImVec2(16, 16 ) ) ) {}
+		ImGui::SameLine();
+
+		// show selected gel description
+		// ImGui::SameLine();
+		ImGui::TextWrapped( "%s", gelList[ myState.pickedGels[ i ] ].description.c_str() );
+
+	}
+
+	// button to add a new gel to the stack
+	if ( ImGui::Button( "Add Gel" ) ) {
+		needsUpdate = true;
+		myState.pickedGels.emplace_back();
+	}
+
+	if ( needsUpdate ) {
+		updateGelStack( myPDF, myState );
+		needsUpdate = false;
+	}
+
+	ImGui::End();
 }
 
 inline std::vector< uint32_t > lightBufferDataA;

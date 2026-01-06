@@ -17,6 +17,9 @@ public:
 			aetherConfig.textureManager = &textureManager;
 			aetherConfig.shaders = &shaders;
 
+			// initial json data
+			aetherConfig.LoadGelatinRecords();
+
 			// something to put some basic data in the accumulator texture
 			CompileShaders( aetherConfig );
 
@@ -64,6 +67,8 @@ public:
 
 		// config window for the lights
 		LightConfigWindow( aetherConfig );
+
+		GelatinConfigWindow( aetherConfig );
 
 		if ( showProfiler ) {
 			static ImGuiUtils::ProfilersWindow profilerWindow; // add new profiling data and render
