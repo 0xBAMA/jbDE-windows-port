@@ -219,22 +219,31 @@ inline void CompileShaders ( AetherConfig &config ) {
 }
 
 inline void CreateTextures ( AetherConfig &config ) {
-	// configuring the tally textures
-	textureOptions_t opts;
-	opts.dataType		= GL_R32I;
-	opts.minFilter		= GL_NEAREST;
-	opts.magFilter		= GL_NEAREST;
-	opts.textureType	= GL_TEXTURE_3D;
-	opts.wrap			= GL_CLAMP_TO_BORDER;
-	opts.width			= config.dimensions.x;
-	opts.height			= config.dimensions.y;
-	opts.depth			= config.dimensions.z;
+	{
+		// configuring the tally textures
+		textureOptions_t opts;
+		opts.dataType		= GL_R32I;
+		opts.minFilter		= GL_NEAREST;
+		opts.magFilter		= GL_NEAREST;
+		opts.textureType	= GL_TEXTURE_3D;
+		opts.wrap			= GL_CLAMP_TO_BORDER;
+		opts.width			= config.dimensions.x;
+		opts.height			= config.dimensions.y;
+		opts.depth			= config.dimensions.z;
 
-	// considering maybe switching to RGB... existing tonemapping, etc would be more effective
-	config.textureManager->Add( "XTally", opts );
-	config.textureManager->Add( "YTally", opts );
-	config.textureManager->Add( "ZTally", opts );
-	config.textureManager->Add( "Count", opts );
+		// considering maybe switching to RGB... existing tonemapping, etc would be more effective
+		config.textureManager->Add( "XTally", opts );
+		config.textureManager->Add( "YTally", opts );
+		config.textureManager->Add( "ZTally", opts );
+		config.textureManager->Add( "Count", opts );
+	}
+
+	{
+		// array of illumination textures
+		textureOptions_t opts;
+
+	}
+
 
 	// start filesystem crap
 	struct pathLeafString {
@@ -262,8 +271,9 @@ inline void CreateTextures ( AetherConfig &config ) {
 	}
 	*/
 
+	/*
 	// create the texture data on the GPU
-	textureOptions_t optsArray;
+	textureOptions_t opts;
 	opts.dataType		= GL_RGBA32F;
 	opts.minFilter		= GL_NEAREST;
 	opts.magFilter		= GL_NEAREST;
@@ -274,6 +284,7 @@ inline void CreateTextures ( AetherConfig &config ) {
 	opts.pixelDataType	= GL_FLOAT;
 
 	// std::vector< float >
+	*/
 }
 
 inline void ResetAccumulator ( AetherConfig &config ) {
