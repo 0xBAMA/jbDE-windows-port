@@ -1,6 +1,11 @@
 
 	// memory associated with the xRite color chip reflectances
 	const float** xRiteReflectances = nullptr;
+
+	// memory associated with the source PDFs
+	int numSourcePDFs = 0;
+	const float** sourcePDFs = nullptr;
+	const char** sourcePDFLabels = nullptr;
 	void PrecomputesRGBReflectances () {
 		// populating the xRite color checker card
 		const vec3 sRGBConstants[] = {
@@ -52,6 +57,63 @@
 			for ( int l = 0; l < 450; l++ ) {
 				( float& ) xRiteReflectances[ i ][ l ] = rgb2spec_eval_precise( coeff, float( l + 380 ) );
 			}
+		}
+	}
+
+	void LoadPDFData () {
+		// setup the texture with rows for the specific light types, for the importance sampled emission spectra
+		const string LUTPath = "../src/data/spectraLUT/Preprocessed";
+
+		// need to populate the array of LUT filenames
+		if ( std::filesystem::exists( LUTPath ) && std::filesystem::is_directory( LUTPath ) ) {
+			// Iterate over the directory contents
+			std::vector< std::filesystem::path > paths;
+			for ( const auto& entry : std::filesystem::directory_iterator( LUTPath ) ) {
+				// Check if the entry is a regular file
+				if ( std::filesystem::is_regular_file( entry.status() ) ) {
+					paths.push_back( entry.path() );
+					cout << "adding " << entry.path().filename().stem() << endl;
+				}
+			}
+
+			// we have a list of filenames, now we need to create the buffers to hold the data + labels
+			sourcePDFs = ( const float ** ) malloc( paths.size() * sizeof( const float * ) );
+			sourcePDFLabels = ( const char ** ) malloc( paths.size() * sizeof( const char * ) );
+
+			for ( size_t i = 0u; i < paths.size(); i++ ) {
+				// populate the labels
+				sourcePDFLabels[ i ] = ( const char * ) malloc( strlen( paths[ i ].filename().stem().string().c_str() ) + 1 );
+				strcpy( ( char * ) sourcePDFLabels[ i ], paths[ i ].filename().stem().string().c_str() );
+
+				// we need to process each of the source distributions into a PDF
+				sourcePDFs[ i ] = ( const float * ) malloc( 450 * sizeof( float ) );
+
+				// load the referenced data to decode the emission spectra PDF
+				Image_4F pdfLUT( paths[ i ].string() );
+				for ( int x = 0; x < pdfLUT.Width(); x++ ) {
+					float sum = 0.0f;
+					for ( int y = 0; y < pdfLUT.Height(); y++ ) {
+						// invert because lut uses dark for positive indication... maybe fix that
+						sum += 1.0f - pdfLUT.GetAtXY( x, y ).GetLuma();
+					}
+					( float& ) sourcePDFs[ i ][ x ] = sum;
+				}
+
+				// and increment count
+				numSourcePDFs++;
+
+				/*
+				// and the debug dump
+				cout << "adding source distribution: " << endl << sourcePDFLabels[ i ] << endl;
+				for ( size_t x = 0; x < pdfLUT.Width(); x++ ) {
+					cout << " " << sourcePDFs[ i ][ x ];
+				}
+				cout << endl << endl;
+				*/
+			}
+
+		} else {
+			std::cerr << "Directory does not exist or is not a directory." << std::endl;
 		}
 	}
 public:
