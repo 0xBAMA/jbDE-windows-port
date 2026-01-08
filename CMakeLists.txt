@@ -102,6 +102,11 @@ add_library( TinyOBJLoader STATIC src/utils/ModelLoading/TinyOBJLoader/tiny_obj_
 # basic perlin noise implementation
 add_library( Perlin STATIC src/utils/noise/perlin.cc )
 
+add_library( JakobReflectance STATIC
+	src/data/Jakob2019Spectral/supplement/rgb2spec.cc
+#	src/data/Jakob2019Spectral/supplement/rgb2spec_test.c
+)
+
 # this is the bigint library to support the VAT code
 add_library( BigInt STATIC
 	src/utils/noise/VAT/BigInt/BigUnsigned.cc
@@ -129,6 +134,7 @@ target_link_libraries(
 	gl
 	fftw3
 	imgui
+	JakobReflectance
 	BigInt
 	tinyEXR
 	tinyXML2
