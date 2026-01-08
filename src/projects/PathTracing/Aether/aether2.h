@@ -1,3 +1,57 @@
+public:
+	void RecompileShaders() {
+		// called on init and at runtime if needed
+	}
+
+	// engine resource access
+	textureManager_t * textureManager;
+	std::unordered_map< string, GLuint >* shaders;
+	orientTrident* trident;
+
+	void Init ( textureManager_t* textureManager_in, std::unordered_map< string, GLuint >* shaders_in, orientTrident* trident_in ) {
+		// cache resource handles
+		textureManager = textureManager_in;
+		shaders = shaders_in;
+		trident = trident_in;
+
+	// intialize...
+		// load all data resources
+		LoadGelFilterData();
+		LoadPDFData();
+
+		// compile shaders
+		// create textures
+
+		// ================================================================================================================
+		{
+			// will be more later... currently just visualizing the filtered light PDF
+			textureOptions_t opts;
+			opts.dataType = GL_RGBA8;
+			opts.minFilter = GL_LINEAR;
+			opts.magFilter = GL_LINEAR;
+			opts.width = 450;
+			opts.height = 256;
+			opts.textureType = GL_TEXTURE_2D;
+
+			textureManager->Add( "Filtered PDF Preview", opts );
+		}
+
+		// simple testing
+		AddLight();
+		ComputeLightStack( 0 );
+
+		// create SSBOs
+
+	}
+
+	void Update ( /* some kind of parameter to scale workload */ ) {
+		// update the forward light transport simulation
+	}
+
+	void Draw () {
+		// draw the image into the accumulator
+	}
+
 	void ImGuiMenu () {
 		ImGui::Begin( "GelFilter" );
 
