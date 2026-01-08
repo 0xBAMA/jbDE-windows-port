@@ -29,8 +29,8 @@ public:
 			opts.dataType = GL_RGBA8;
 			opts.minFilter = GL_LINEAR;
 			opts.magFilter = GL_LINEAR;
-			opts.width = 450;
-			opts.height = 256;
+			opts.width = 450 + 104;
+			opts.height = 64;
 			opts.textureType = GL_TEXTURE_2D;
 
 			textureManager->Add( "Filtered PDF Preview", opts );
@@ -61,7 +61,7 @@ public:
 		// curve texture preview
 		ImGui::Text( "" );
 		const int w = ImGui::GetContentRegionAvail().x;
-		ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager->Get( "Filtered PDF Preview" ) ), ImVec2( w, w * ( 64.0f ) / ( 450.0f ) ) );
+		ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager->Get( "Filtered PDF Preview" ) ), ImVec2( w, w * ( 64.0f ) / ( 450.0f + 104 ) ) );
 		ImGui::Text( "" );
 
 		bool needsUpdate = false;
