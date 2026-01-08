@@ -526,7 +526,11 @@ inline vec3 TonemapUchimura2 ( vec3 v ) {
     return T * w0 + L * w1 + S * w2;
 }
 
-inline vec3 wavelengthColorLDR ( float wavelength ) { // units are nanometers, producing an LDR color
+inline vec3 wavelengthColorLinear ( float wavelength ) { // units are nanometers, producing an LDR color
     vec3 XYZconstant = mix( cie_1964( floor( wavelength ) ), cie_1964( ceil( wavelength ) ), fract( wavelength ) );
-    return TonemapUchimura2( XYZ_2_RGB * XYZconstant );
+    return ( XYZ_2_RGB * XYZconstant );
+}
+
+inline vec3 wavelengthColorLDR ( float wavelength ) { // units are nanometers, producing an LDR color
+    return TonemapUchimura2( wavelengthColorLinear( wavelength ) );
 }

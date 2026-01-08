@@ -335,6 +335,114 @@ class AetherConfig_t {
 		}
 
 	}
+
+	// Starting from the selected source PDF, with no filters applied.
+	// We need a curve out of this process representing the filtered light.
+	void ComputeLightStack ( int lightListIdx ) {
+		Light& light = lightList[ lightListIdx ];
+
+		auto LoadPDF = [&] ( Light &light, int idx ) {
+			light.PDFScratch.clear();
+			for ( int i = 0; i < 450; i++ ) {
+				light.PDFScratch.push_back( sourcePDFs[ idx ][ i ] );
+			}
+		};
+
+		auto ApplyFilter = [&] ( Light &light, int idx ) {
+			for ( int i = 0; i < 450; i++ ) {
+				light.PDFScratch[ i ] *= gelFilters[ idx ][ i ];
+			}
+		};
+
+		auto NormalizePDF	= [&] ( Light &light ) {
+			float max = 0.0f;
+			for ( int i = 0; i < 450; i++ ) {
+				// first pass, determine the maximum
+				max = std::max( max, light.PDFScratch[ i ] );
+			}
+			for ( int i = 0; i < 450; i++ ) {
+				// second pass we perform the normalization by the observed maximum
+				light.PDFScratch[ i ] /= max;
+			}
+		};
+
+		// load the selected source PDF
+		LoadPDF( light, light.sourcePDF );
+		NormalizePDF( light );
+
+		// for each selected gel filter
+		for ( int i = 0; i < light.gelStack.size(); i++ ) {
+			// apply selected gel filter
+			ApplyFilter( light, light.gelStack[ i ] );
+
+			// renormalize the PDF
+			NormalizePDF( light );
+		}
+
+		// at the end, you have the updated light PDF...
+			// let's go ahead and compute the preview...
+		int xOffset = 0;
+		for ( auto& freqBand : light.PDFScratch ) {
+			// we know the PDF value at this location...
+			for ( int y = 0; y < light.PDFPreview.Height(); y++ ) {
+				float fractionalPosition = 1.0f - float( y ) / float( light.PDFPreview.Height() );
+				if ( fractionalPosition < freqBand ) {
+					// we want to use a representative color for the frequency...
+					vec3 c = wavelengthColorLDR( xOffset + 380 ) * 255.0f;
+					light.PDFPreview.SetAtXY( xOffset, y, Image_4U::color( { uint8_t( c.x ), uint8_t( c.y ), uint8_t( c.z ), 255 } ) );
+				} else {
+					// write clear... maybe a grid pattern?
+					float xWave = sin( xOffset * 0.5f );
+					float yWave = sin( y * 0.5f );
+					const float p = 40.0f;
+					uint8_t v = std::max( 32.0f * pow( ( 16 + 15 * xWave ) / 32.0f, p ), 32.0f * pow( ( 16 + 15 * yWave ) / 32.0f, p ) );
+					light.PDFPreview.SetAtXY( xOffset, y, Image_4U::color( { v, v, v, 255 } ) );
+				}
+			}
+			xOffset++;
+		}
+
+		// we know the sRGB xRite color chip reflectances, and the light emission... we need to convolve to get the color result
+		vec3 color[ 24 ];
+		for ( int chip = 0; chip < 24; chip++ ) {
+			// initial accumulation value
+			color[ chip ] = vec3( 0.0f );
+
+			// we need to iterate over wavelengths and get an average color value under this illuminant
+			for ( int y = 0; y < 450; y++ ) {
+				// color[ chip ] += ( wavelengthColorLinear( 380 + y ) * light.PDFScratch[ y ] ) / 450.0f;
+				color[ chip ] += 3.5f * glm::clamp( wavelengthColorLinear( 380 + y ) * xRiteReflectances[ chip ][ y ] * light.PDFScratch[ y ], vec3( 0.0f ), vec3( 1.0f ) ) / 450.0f;
+			}
+		}
+
+		for ( int x = 0; x < 6; x++ ) {
+			for ( int y = 0; y < 4; y++ ) {
+				int i = x + 6 * y;
+				int bx = 455;
+				int by = 5;
+				int xS = 14;
+				int yS = 12;
+				int xM = 1;
+				int yM = 1;
+
+				for ( int xo = 0; xo < xS; xo++ ) {
+					for ( int yo = 0; yo < yS; yo++ ) {
+						light.PDFPreview.SetAtXY( bx + ( xS + xM ) * x + xo, by + ( yS + yM ) * y + yo, Image_4U::color( { uint8_t( color[ i ].r * 255 ), uint8_t( color[ i ].g * 255 ), uint8_t( color[ i ].b * 255 ), 255 } ) );
+					}
+				}
+			}
+		}
+
+		// debug
+		// light.PDFPreview.FlipVertical();
+		// light.PDFPreview.Save( "TestPDF.png" );
+
+		glActiveTexture( GL_TEXTURE0 );
+		glBindTexture( GL_TEXTURE_2D, textureManager->Get( "Filtered PDF Preview" ) );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, light.PDFPreview.Width(), light.PDFPreview.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, light.PDFPreview.GetImageDataBasePtr() );
+	}
+
+// light interface is not public, managed internally
 public:
 	void RecompileShaders() {
 		// called on init and at runtime if needed
