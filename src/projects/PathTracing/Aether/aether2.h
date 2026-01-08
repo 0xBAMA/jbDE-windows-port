@@ -6,6 +6,14 @@
 	int numSourcePDFs = 0;
 	const float** sourcePDFs = nullptr;
 	const char** sourcePDFLabels = nullptr;
+
+	// information about the gel filters
+	int numGelFilters = 0;
+	const float** gelFilters = nullptr;
+	const char** gelFilterLabels = nullptr;
+	const char** gelFilterDescriptions = nullptr;
+	const vec3* gelPreviewColors = nullptr;
+
 	void PrecomputesRGBReflectances () {
 		// populating the xRite color checker card
 		const vec3 sRGBConstants[] = {
@@ -115,6 +123,161 @@
 		} else {
 			std::cerr << "Directory does not exist or is not a directory." << std::endl;
 		}
+	}
+
+	void LoadGelFilterData () {
+		// loading the initial data from the JSON records
+		json gelatinRecords;
+		ifstream i( "../src/data/LeeGelList.json" );
+		i >> gelatinRecords; i.close();
+
+		struct gelRecord {
+			string label;
+			string description;
+			vec3 previewColor;
+			std::vector< float > filterData;
+		};
+
+		std::vector< gelRecord > gelRecords;
+
+		// iterating through and finding all the gel filters that have nonzero ("valid") spectral data
+		for ( auto& e : gelatinRecords ) {
+			// getting the data we need... problem is we don't know ahead of time, how many there are
+
+			// Need to do some processing to separate label and description
+			string text = e[ "text" ];
+			size_t firstPos = text.find_first_not_of( " \n" );
+			size_t numEnd = text.find( ' ', firstPos );
+			std::string number = text.substr( firstPos, numEnd - firstPos );
+			size_t secondPos = text.find( number, numEnd );
+
+			// also some processing in anticipation of needing the color, too
+			string c = e[ "color" ];
+			std::transform( c.begin(), c.end(), c.begin(), [] ( unsigned char cf ) { return std::tolower( cf ); } );
+			vec3 color = HexToVec3( c );
+
+			// going through the filter is where we will be able to determine if this entry is valid or not
+			bool valid = true;
+			vector< float > filter;
+			vector< float > filterScratch;
+			filter.clear();
+			if ( e.contains( "datatext" ) ) {
+				for ( int lambda = 405;; lambda += 5 ) {
+					if ( e[ "datatext" ].contains( to_string( lambda ) ) ) {
+						filter.push_back( std::stof( e[ "datatext" ][ to_string( lambda ) ].get< string >() ) / 100.0f );
+					} else {
+						// loop exit
+						if ( filter.size() != 0 )
+							filter.push_back( filter[ filter.size() - 1 ] );
+						break;
+					}
+				}
+			}
+
+			// we want to dismiss under two conditions:
+				// zero length filter (filter data was not included)
+				// filter is all zeroes (filter data was replaced with placeholder)
+			if ( filter.size() != 0 ) {
+				// let's also determine that we have valid coefficients:
+				bool allZeroes = true;
+				for ( int f = 0; f < filter.size(); f++ ) {
+					if ( filter[ f ] != 0.0f ) {
+						allZeroes = false;
+					}
+				}
+				// all zeroes means invalid
+				if ( allZeroes ) {
+					valid = false;
+				} else {
+					// great - we have valid filter data...
+						// let's pad out the edges and interpolate from 400-700 by 5's to 380-830 by 1's for the engine
+
+					// low side pad with value in index 0 (optionally you could make this 1's or 0's, as desired)
+					for ( int w = 380; w < 400; w++ ) {
+						filterScratch.push_back( filter[ 0 ] );
+					}
+
+					// interpolate the middle section, 400-700nm
+					float vprev = filter[ 0 ];
+					float v = filter[ 1 ];
+					for ( int wOffset = 1; wOffset < filter.size(); wOffset++ ) {
+						// each entry spawns 5 elements
+						for ( int j = 0; j < 5; j++ ) {
+							filterScratch.push_back( glm::mix( vprev, v, ( j + 0.5f ) / 5.0f ) );
+						}
+						// cycle in the new values
+						vprev = v;
+						if ( wOffset < filter.size() ) {
+							v = filter[ wOffset ];
+						}
+					}
+
+					// high side pad with value in final index (also optionally force 1's or 0's, if you want)
+					while ( filterScratch.size() < 450 ) {
+						filterScratch.push_back( filter[ filter.size() - 1 ] );
+					}
+				}
+			} else {
+				// empty filter means invalid
+				valid = false;
+			}
+
+			if ( valid ) {
+				gelRecord g;
+
+				// we can split now labels and description strings
+				g.label = text.substr( firstPos, secondPos - firstPos );
+				g.description = text.substr( secondPos );
+
+				// also want to extract color from the hex codes
+				g.previewColor = color;
+
+				// and of course the filter data
+				g.filterData = filterScratch;
+
+				// we are going to collect these together to make it easier to sort
+				numGelFilters++;
+				gelRecords.push_back( g );
+			}
+		}
+
+		// we have now constructed a list of filter datapoints... sort by labels, so we have basically ascending color codes
+		std::sort( gelRecords.begin(), gelRecords.end(), [] ( gelRecord g1, gelRecord g2 ) { return g1.label < g2.label; } );
+
+		// now we need to do the allocations for the menus - this is separated out for labels and descriptions, preview colors and filter coefficients
+		gelFilters = ( const float ** ) malloc( numGelFilters * sizeof( const float * ) );
+		gelFilterLabels = ( const char ** ) malloc( numGelFilters * sizeof( const char * ) );
+		gelFilterDescriptions = ( const char ** ) malloc( numGelFilters * sizeof( const char * ) );
+		gelPreviewColors = ( const vec3* ) malloc( numGelFilters * sizeof( const vec3 ) );
+
+		for ( size_t i = 0; i < numGelFilters; i++ ) {
+			// Allocate memory for each string and copy it
+			gelFilterLabels[ i ] = ( const char * ) malloc( strlen( gelRecords[ i ].label.c_str() ) + 1 );
+			strcpy( ( char * ) gelFilterLabels[ i ], gelRecords[ i ].label.c_str() );  // Copy the string
+
+			gelFilterDescriptions[ i ] = ( const char * ) malloc( strlen( gelRecords[ i ].description.c_str() ) + 1 );
+			strcpy( ( char * ) gelFilterDescriptions[ i ], gelRecords[ i ].description.c_str() );
+
+			( vec3& ) gelPreviewColors[ i ] = gelRecords[ i ].previewColor;
+
+			// filter coefficients slightly more
+			gelFilters[ i ] = ( const float * ) malloc( 450 * sizeof( const float ) );
+			for ( size_t j = 0; j < 450; j++ ) {
+				( float& ) gelFilters[ i ][ j ] = gelRecords[ i ].filterData[ j ];
+			}
+
+			/*
+			// debug dump would be useful here
+			cout << "Created Record: " << endl << gelFilterLabels[ i ] << endl;
+			cout << gelFilterDescriptions[ i ] << endl;
+			cout << to_string( gelPreviewColors[ i ] ) << endl;
+			for ( size_t j = 0; j < 450; j++ ) {
+				cout << gelFilters[ i ][ j ];
+			}
+			cout << endl << endl;
+			*/
+		}
+
 	}
 public:
 	void RecompileShaders() {
