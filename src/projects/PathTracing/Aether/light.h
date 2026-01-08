@@ -10,32 +10,6 @@ inline const char* emitterTypes[] = {
 	"Image Light" };
 inline const int numEmitters = sizeof( emitterTypes ) / sizeof( emitterTypes[ 0 ] );
 
-// specifying the LUT which will be used for selecting wavelengths
-inline const char* LUTFilenames[] = {
-	"RedLED",
-	"GreenLED",
-	"BlueLED",
-	/* 0 */ "AmberLED",
-	/* 1 */ "2700kLED",
-	/* 2 */ "6500kLED",
-	/* 3 */ "Candle",
-	/* 4 */ "Flourescent1",
-	/* 5 */ "Flourescent2",
-	/* 6 */ "Flourescent3",
-	/* 7 */ "Halogen",
-	/* 8 */ "HPMercury",
-	/* 9 */ "HPSodium1",
-	/* 10 */ "HPSodium2",
-	/* 11 */ "LPSodium",
-	/* 12 */ "Incandescent",
-	/* 13 */ "MetalHalide1",
-	/* 14 */ "MetalHalide2",
-	/* 15 */ "SkyBlueLED",
-	/* 16 */ "SulphurPlasma",
-	/* 17 */ "Sunlight",
-	/* 18 */ "Xenon" };
-inline const int numLUTs = sizeof( LUTFilenames ) / sizeof( LUTFilenames[ 0 ] );
-
 // struct defining the state for the data-driven interaction with a user-specified light
 struct lightSpec {
 	int emitterType;	// type of light emitter
