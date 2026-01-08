@@ -19,6 +19,7 @@ public:
 		LoadGelFilterData();
 		LoadPDFData();
 
+
 		// compile shaders
 		// create textures
 
@@ -71,16 +72,16 @@ public:
 		ImGui::Combo( ( string( "Light Type" ) ).c_str(), &lightList[ 0 ].sourcePDF, sourcePDFLabels, numSourcePDFs );
 		needsUpdate |= ImGui::IsItemEdited();
 
-
+		ImGui::SameLine();
+		if ( ImGui::Button( "Randomize" ) ) {
+			RandomizeLight( 0 );
+		}
 
 		// for gels
 		for ( int i = 0; i < lightList[ 0 ].gelStack.size(); i++ ) {
 			string iString = to_string( i );
 
 			ImGui::Separator();
-
-			// for removing gels
-			int flaggedForRemoval = -1;
 
 			// show gel picker
 			ImGui::Combo( ( "Gel##" + iString ).c_str(), &lightList[ 0 ].gelStack[ i ], gelFilterLabels, numGelFilters );
@@ -95,7 +96,7 @@ public:
 
 			ImGui::SameLine();
 			if ( ImGui::Button( ( "Remove##" + iString  ).c_str() ) ) {
-				flaggedForRemoval = i;
+				lightList[ 0 ].gelStack.erase( lightList[ 0 ].gelStack.begin() + i );
 				needsUpdate = true;
 			}
 
@@ -112,7 +113,7 @@ public:
 			// show selected gel description
 			// ImGui::SameLine();
 			ImGui::TextWrapped( "%s", gelFilterDescriptions[ lightList[ 0 ].gelStack[ i ] ] );
-			ImGui::PopID();
+			// ImGui::PopID();
 		}
 
 		// button to add a new gel to the stack
