@@ -379,6 +379,9 @@ class AetherConfig_t {
 			NormalizePDF( light );
 		}
 
+		// clearing the image
+		light.PDFPreview.Swizzle( "0001" );
+
 		// at the end, you have the updated light PDF...
 			// let's go ahead and compute the preview...
 		int xOffset = 0;
@@ -422,8 +425,8 @@ class AetherConfig_t {
 				int by = 5;
 				int xS = 14;
 				int yS = 12;
-				int xM = 1;
-				int yM = 1;
+				int xM = 2;
+				int yM = 2;
 
 				for ( int xo = 0; xo < xS; xo++ ) {
 					for ( int yo = 0; yo < yS; yo++ ) {
