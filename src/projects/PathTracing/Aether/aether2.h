@@ -1,3 +1,59 @@
+#pragma once
+
+#include "../../../engine/engine.h"
+#include "spectralToolkit.h"
+
+class AetherConfig_t {
+
+// light class used for:
+	// imgui interaction
+	// preparation of GPU data
+	class Light {
+	public:
+	// parameters for the emitter
+
+		// basic parameterization
+		vec3 position, direction;
+		vec2 spread;
+
+		// describing the source distribution
+		int maskSelect;
+		vec2 maskScale;
+
+	// parameters for the light
+		int sourcePDF = 0;
+		std::vector< int > gelStack;
+		std::vector< float > PDFScratch;
+		Image_4U PDFPreview{ 450 + 104, 64 };
+
+	// later, we need to be able to get:
+		// access to the parameter data
+		// the SSBO representation ( 14 floats, pad to 16 )
+		// iCDF strip representation, with filter stack applied
+	};
+
+	// current list of lights
+	std::vector< Light > lightList;
+
+	// add a default constructed light
+	void AddLight () {
+		lightList.emplace_back();
+	}
+
+	// remove this one from the list
+	void RemoveLight ( int idx ) {
+		// todo
+	}
+
+	// randomize the parameters for a given light
+	void RandomizeLight ( int idx ) {
+		// todo, need to determine parameter ranges
+
+		// pick a new light
+		rngi lightPick = rngi( 0, numSourcePDFs - 1 );
+		lightList[ idx ].sourcePDF = lightPick();
+		ComputeLightStack( idx );
+	}
 
 	// memory associated with the xRite color chip reflectances
 	const float** xRiteReflectances = nullptr;
