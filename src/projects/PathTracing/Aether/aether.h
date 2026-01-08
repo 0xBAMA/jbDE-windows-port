@@ -31,7 +31,13 @@ struct AetherConfig {
 	bool runSimToggle = false;
 	bool runDrawToggle = false;
 
+	// populated with the names of the files in the folder
+	int numLUTs = 0;
+	const char ** LUTFilenames;
+
 	json gelatinRecords;
+	const char ** gelStrings;
+
 	void LoadGelatinRecords () {
 		ifstream i( "../src/data/LeeGelList.json" ); i >> gelatinRecords; i.close();
 		// config.windowTitle				= j[ "system" ][ "windowTitle" ];
@@ -304,11 +310,34 @@ inline void ResetTextures ( AetherConfig &config ) {
 
 inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	// setup the texture with rows for the specific light types, for the importance sampled emission spectra
-	const string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-	Image_1F inverseCDF( 1024, numLUTs );
+	const string LUTPath = "../src/data/spectraLUT/Preprocessed";
 
-	for ( int i = 0; i < numLUTs; i++ ) {
-		Image_4F pdfLUT( LUTPath + LUTFilenames[ i ] + ".png" );
+	// need to populate the array of LUT filenames
+	if ( std::filesystem::exists( LUTPath ) && std::filesystem::is_directory( LUTPath ) ) {
+		// Iterate over the directory contents
+		std::vector< std::filesystem::path > paths;
+		for ( const auto& entry : std::filesystem::directory_iterator( LUTPath ) ) {
+			// Check if the entry is a regular file
+			if ( std::filesystem::is_regular_file( entry.status() ) ) {
+				paths.push_back( entry.path() );
+				cout << "adding " << entry.path().filename().stem() << endl;
+			}
+		}
+		// we have a list of filenames, now
+		config.LUTFilenames = ( const char ** ) malloc( paths.size() * sizeof( const char * ) );
+		for ( size_t i = 0u; i < paths.size(); i++ ) {
+			config.LUTFilenames[ i ] = ( const char * ) malloc( strlen( paths[ i ].filename().stem().string().c_str() ) + 1 );
+			strcpy( ( char * ) config.LUTFilenames[ i ], paths[ i ].filename().stem().string().c_str() );
+			config.numLUTs++;
+		}
+	} else {
+		std::cerr << "Directory does not exist or is not a directory." << std::endl;
+	}
+
+	Image_1F inverseCDF( 1024, config.numLUTs );
+
+	for ( int i = 0; i < config.numLUTs; i++ ) {
+		Image_4F pdfLUT( LUTPath + "/" + config.LUTFilenames[ i ] + ".png" );
 
 		// First step is populating the cumulative distribution function... "how much of the curve have we passed" (accumulated integral)
 		std::vector< float > cdf;
@@ -350,7 +379,7 @@ inline void SetupImportanceSampling_lightTypes ( AetherConfig &config ) {
 	// we now have the solution for the LUT
 	textureOptions_t opts;
 	opts.width = 1024;
-	opts.height = numLUTs;
+	opts.height = config.numLUTs;
 	opts.dataType = GL_R32F;
 	opts.minFilter = GL_LINEAR;
 	opts.magFilter = GL_LINEAR;
@@ -419,7 +448,7 @@ inline void LightConfigWindow ( AetherConfig &config ) {
 		ImGui::SliderFloat( ( string( "Power" ) + lString ).c_str(), &config.lights[ l ].power, 0.0f, 100.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
 		// this will latch, so we basically get a big chained or that triggers if any of the conditionals like this one got triggered
 		config.lightListDirty |= ImGui::IsItemEdited();
-		ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &config.lights[ l ].pickedLUT, LUTFilenames, numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
+		ImGui::Combo( ( string( "Light Type" ) + lString ).c_str(), &config.lights[ l ].pickedLUT, config.LUTFilenames, config.numLUTs ); // may eventually do some kind of scaled gaussians for user-configurable RGB triplets...
 		config.lightListDirty |= ImGui::IsItemEdited();
 		ImGui::Combo( ( string( "Emitter Type" ) + lString ).c_str(), &config.lights[ l ].emitterType, emitterTypes, numEmitters );
 		config.lightListDirty |= ImGui::IsItemEdited();
@@ -542,9 +571,9 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 			v = v / max;
 	};
 
-	auto loadLUT = [] ( std::vector< float > &PDFVector, const int index ) {
+	auto loadLUT = [&] ( std::vector< float > &PDFVector, const int index ) {
 		const string LUTPath = "../src/data/spectraLUT/Preprocessed/";
-		Image_4F pdfLUT( LUTPath + LUTFilenames[ index ] + ".png" );
+		Image_4F pdfLUT( LUTPath + config.LUTFilenames[ index ] + ".png" );
 
 		// almost the same as the other usage, but we need the
 		PDFVector.clear();
@@ -593,9 +622,9 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 			std::transform( c.begin(), c.end(), c.begin(), [] ( unsigned char cf ) { return std::tolower( cf ); } );
 			g.color = HexToVec3( c );
 
-			cout << g.label << endl;
-			cout << g.description << endl;
-			cout << to_string( g.color ) << endl;
+			// cout << g.label << endl;
+			// cout << g.description << endl;
+			// cout << to_string( g.color ) << endl;
 
 			// spectral data... need to reject the listing if we do not have this
 			vector< float > filter;
@@ -717,7 +746,6 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, preview.Width(), preview.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, preview.GetImageDataBasePtr() );
 	};
 
-	static const char ** gelStrings;
 	static gelState myState;
 	static bool firstTime = true;
 	if ( firstTime ) {
@@ -727,24 +755,15 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 		loadLUT( myPDF, 0 );
 		normalizePDF( myPDF );
 
-		// setup the list of strings for the menu
-		// gelStrings = new const char * [ gelList.size() ];
-		// for ( int i = 0; i < gelList.size(); i++ ) {
-		// 	char temp[ 1024 ];
-		//
-		// 	gelStrings[ i ] = new const char [ 1024 ]( temp );
-		// 	sprintf( gelStrings[ i ], "%s", gelList[ i ].label.c_str() );
-		// }
-
 		const size_t numStrings = gelList.size();
-		gelStrings = ( const char ** ) malloc( numStrings * sizeof( const char * ) );
+		config.gelStrings = ( const char ** ) malloc( numStrings * sizeof( const char * ) );
 
 		// Loop through the list and copy each string
 		for ( size_t i = 0; i < numStrings; i++ ) {
 			// Allocate memory for each string and copy it
-			gelStrings[ i ] = ( const char * ) malloc( strlen( gelList[ i ].label.c_str() ) + 1 );
-			strcpy( ( char * ) gelStrings[ i ], gelList[ i ].label.c_str() );  // Copy the string
-			cout << "adding " << gelStrings[ i ] << endl;
+			config.gelStrings[ i ] = ( const char * ) malloc( strlen( gelList[ i ].label.c_str() ) + 1 );
+			strcpy( ( char * ) config.gelStrings[ i ], gelList[ i ].label.c_str() );  // Copy the string
+			// cout << "adding " << config.gelStrings[ i ] << endl;
 		}
 	}
 
@@ -775,7 +794,7 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 	static bool needsUpdate = true;
 
 	// source distribution picker
-	ImGui::Combo( ( string( "Light Type" ) ).c_str(), &myState.pickedLUT, LUTFilenames, numLUTs );
+	ImGui::Combo( ( string( "Light Type" ) ).c_str(), &myState.pickedLUT, config.LUTFilenames, config.numLUTs );
 	needsUpdate |= ImGui::IsItemEdited();
 
 	// for gels
@@ -785,7 +804,7 @@ inline void GelatinConfigWindow ( AetherConfig &config ) {
 		ImGui::Separator();
 
 		// show gel picker
-		ImGui::Combo( ( "Gel##" + iString ).c_str(), &myState.pickedGels[ i ], gelStrings, gelList.size() );
+		ImGui::Combo( ( "Gel##" + iString ).c_str(), &myState.pickedGels[ i ], config.gelStrings, gelList.size() );
 		needsUpdate |= ImGui::IsItemEdited();
 
 		ImGui::SameLine();
@@ -886,8 +905,8 @@ inline void SetupImportanceSampling_lights ( AetherConfig &config ) {
 		}
 
 		// ================================================================================================================
-		// some dummy lights...
-		for ( int i = 0; i < 3; i++ ) {
+		// some dummy light(s)...
+		for ( int i = 0; i < 1; i++ ) {
 			config.AddRandomLight();
 		}
 
