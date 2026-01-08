@@ -1,3 +1,59 @@
+
+	// memory associated with the xRite color chip reflectances
+	const float** xRiteReflectances = nullptr;
+	void PrecomputesRGBReflectances () {
+		// populating the xRite color checker card
+		const vec3 sRGBConstants[] = {
+			vec3( 115,  82,  68 ), // dark skin
+			vec3( 194, 150, 120 ), // light skin
+			vec3(  98, 122, 157 ), // blue sky
+			vec3(  87, 108,  67 ), // foliage
+			vec3( 133, 128, 177 ), // blue flower
+			vec3( 103, 189, 170 ), // bluish green
+			vec3( 214, 126,  44 ), // orange
+			vec3(  80,  91, 166 ), // purplish blue
+			vec3( 193,  90,  99 ), // moderate red
+			vec3(  94,  60, 108 ), // purple
+			vec3( 157, 188,  64 ), // yellow green
+			vec3( 244, 163,  46 ), // orange yellow
+			vec3(  56,  61, 150 ), // blue
+			vec3(  70, 148,  73 ), // green
+			vec3( 175,  54,  60 ), // red
+			vec3( 231, 199,  31 ), // yellow
+			vec3( 187,  86, 149 ), // magenta
+			vec3(   8, 133, 161 ), // cyan
+			vec3( 243, 243, 242 ), // white
+			vec3( 200, 200, 200 ), // neutral 8
+			vec3( 160, 160, 160 ), // neutral 6.5
+			vec3( 122, 122, 121 ), // neutral 5
+			vec3(  85,  85,  85 ), // neutral 3.5
+			vec3(  52,  52,  52 ) // black
+		};
+
+	// there is some resources associated with this sampling process...
+		// we first need to load the LUT from Jakob's paper
+		// https://rgl.epfl.ch/publications/Jakob2019Spectral
+		RGB2Spec *model = rgb2spec_load( "../src/data/Jakob2019Spectral/supplement/tables/srgb.coeff" );
+
+		// once we have that, we can use an sRGB constant to derive a reflectance curve
+			// we are going to do that by 1nm bands to match the other data
+		xRiteReflectances = ( const float ** ) malloc( 24 * sizeof( float * ) );
+
+		// for each of the reflectances
+		for ( int i = 0; i < 24; i++ ) {
+			// first step get the reflectance coefficients
+			float rgb[ 3 ] = { sRGBConstants[ i ].r / 255.0f, sRGBConstants[ i ].g / 255.0f, sRGBConstants[ i ].b / 255.0f }, coeff[ 3 ];
+
+			rgb2spec_fetch( model, rgb, coeff );
+			// printf( "fetch(): %f %f %f\n", coeff[ 0 ], coeff[ 1 ], coeff[ 2 ] );
+
+			// allocate and populate the reflectance corresponding to this color chip
+			xRiteReflectances[ i ] = ( const float * ) malloc( 450 * sizeof( float ) );
+			for ( int l = 0; l < 450; l++ ) {
+				( float& ) xRiteReflectances[ i ][ l ] = rgb2spec_eval_precise( coeff, float( l + 380 ) );
+			}
+		}
+	}
 public:
 	void RecompileShaders() {
 		// called on init and at runtime if needed
@@ -19,6 +75,8 @@ public:
 		LoadGelFilterData();
 		LoadPDFData();
 
+		// precompute reflectance curves
+		PrecomputesRGBReflectances();
 
 		// compile shaders
 		// create textures
