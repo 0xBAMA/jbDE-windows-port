@@ -11,6 +11,8 @@ class AetherConfig_t {
 	class Light {
 	public:
 	// parameters for the emitter
+		int idx;
+		Light ( int idx_in ) : idx ( idx_in ) {}
 
 		// basic parameterization
 		vec3 position, direction;
@@ -37,7 +39,10 @@ class AetherConfig_t {
 
 	// add a default constructed light
 	void AddLight () {
-		lightList.emplace_back();
+		static int lightIndexer = 0;
+		int myIndex = lightIndexer++;
+		lightList.emplace_back( myIndex );
+		ComputeLightStack( myIndex );
 	}
 
 	// remove this one from the list
@@ -52,6 +57,8 @@ class AetherConfig_t {
 		// pick a new light
 		rngi lightPick = rngi( 0, numSourcePDFs - 1 );
 		lightList[ idx ].sourcePDF = lightPick();
+
+		// recompute the preview
 		ComputeLightStack( idx );
 	}
 
@@ -440,8 +447,24 @@ class AetherConfig_t {
 		// light.PDFPreview.FlipVertical();
 		// light.PDFPreview.Save( "TestPDF.png" );
 
+		string texLabel = "Filtered PDF Preview " + to_string( light.idx );
+		if ( textureManager->Get( texLabel ) == std::numeric_limits< GLuint >::max() ) {
+			// this is the "not found" condition... create the texture
+			// ================================================================================================================
+			{	textureOptions_t opts;
+				opts.dataType = GL_RGBA8;
+				opts.minFilter = GL_LINEAR;
+				opts.magFilter = GL_LINEAR;
+				opts.width = 450 + 104;
+				opts.height = 64;
+				opts.textureType = GL_TEXTURE_2D;
+
+			textureManager->Add( texLabel, opts );
+			}
+		}
+
 		glActiveTexture( GL_TEXTURE0 );
-		glBindTexture( GL_TEXTURE_2D, textureManager->Get( "Filtered PDF Preview" ) );
+		glBindTexture( GL_TEXTURE_2D, textureManager->Get( texLabel ) );
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, light.PDFPreview.Width(), light.PDFPreview.Height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, light.PDFPreview.GetImageDataBasePtr() );
 	}
 
@@ -473,19 +496,6 @@ public:
 		// compile shaders
 		// create textures
 
-		// ================================================================================================================
-		{
-			// will be more later... currently just visualizing the filtered light PDF
-			textureOptions_t opts;
-			opts.dataType = GL_RGBA8;
-			opts.minFilter = GL_LINEAR;
-			opts.magFilter = GL_LINEAR;
-			opts.width = 450 + 104;
-			opts.height = 64;
-			opts.textureType = GL_TEXTURE_2D;
-
-			textureManager->Add( "Filtered PDF Preview", opts );
-		}
 
 		// simple testing
 		AddLight();
