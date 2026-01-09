@@ -321,6 +321,11 @@ class AetherConfig_t {
 			gelFilterDescriptions[ i ] = ( const char * ) malloc( strlen( gelRecords[ i ].description.c_str() ) + 1 );
 			strcpy( ( char * ) gelFilterDescriptions[ i ], gelRecords[ i ].description.c_str() );
 
+			vec4 sRGB = vec4( gelRecords[ i ].previewColor[ 0 ], gelRecords[ i ].previewColor[ 1 ], gelRecords[ i ].previewColor[ 2 ], 255 );
+			bvec4 cutoff = lessThan( sRGB, vec4( 0.04045f ) );
+			vec4 higher = pow( ( sRGB + vec4( 0.055f ) ) / vec4( 1.055f ), vec4( 2.4f ) );
+			vec4 lower = sRGB / vec4( 12.92f );
+			gelRecords[ i ].previewColor =  mix( higher, lower, cutoff );
 			( vec3& ) gelPreviewColors[ i ] = gelRecords[ i ].previewColor;
 
 			// filter coefficients slightly more
@@ -519,6 +524,7 @@ public:
 		// we need to eventually show the importance sampling structure up top
 		for ( int l = 0; l < lightList.size(); l++ ) {
 			// disambiguating label hashes
+			ImGui::Indent();
 			ImGui::PushID( l );
 
 			bool needsUpdate = false;
@@ -564,12 +570,8 @@ public:
 
 				// show selected gel preview color
 				vec3 col = gelPreviewColors[ lightList[ l ].gelStack[ i ] ];
-				vec4 sRGB = vec4( col[ 0 ], col[ 1 ], col[ 2 ], 255 );
-				bvec4 cutoff = lessThan( sRGB, vec4( 0.04045f ) );
-				vec4 higher = pow( ( sRGB + vec4( 0.055f ) ) / vec4( 1.055f ), vec4( 2.4f ) );
-				vec4 lower = sRGB / vec4( 12.92f );
-				vec4 r =  mix( higher, lower, cutoff );
-				if ( ImGui::ColorButton( ( "##ColorSquare" + iString ).c_str(), ImColor( r.r, r.g, r.b ), ImGuiColorEditFlags_NoAlpha, ImVec2(16, 16 ) ) ) {}
+
+				if ( ImGui::ColorButton( ( "##ColorSquare" + iString ).c_str(), ImColor( col.r, col.g, col.b ), ImGuiColorEditFlags_NoAlpha, ImVec2(16, 16 ) ) ) {}
 				ImGui::SameLine();
 
 				// show selected gel description
@@ -588,6 +590,7 @@ public:
 
 			// unapply "i" pushID
 			ImGui::PopID();
+			ImGui::Unindent();
 		}
 
 		if ( ImGui::Button( "Add Light" ) ) {
