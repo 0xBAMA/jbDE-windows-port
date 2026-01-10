@@ -321,6 +321,7 @@ class AetherConfig_t {
 			gelFilterDescriptions[ i ] = ( const char * ) malloc( strlen( gelRecords[ i ].description.c_str() ) + 1 );
 			strcpy( ( char * ) gelFilterDescriptions[ i ], gelRecords[ i ].description.c_str() );
 
+			// just do the sRGB convert and avoid doing it every frame
 			vec4 sRGB = vec4( gelRecords[ i ].previewColor[ 0 ], gelRecords[ i ].previewColor[ 1 ], gelRecords[ i ].previewColor[ 2 ], 255 );
 			bvec4 cutoff = lessThan( sRGB, vec4( 0.04045f ) );
 			vec4 higher = pow( ( sRGB + vec4( 0.055f ) ) / vec4( 1.055f ), vec4( 2.4f ) );
@@ -435,7 +436,7 @@ class AetherConfig_t {
 				int i = x + 6 * y;
 				int bx = 455;
 				int by = 5;
-				int xS = 14;
+				int xS = 13;
 				int yS = 12;
 				int xM = 2;
 				int yM = 2;
@@ -524,7 +525,6 @@ public:
 		// we need to eventually show the importance sampling structure up top
 		for ( int l = 0; l < lightList.size(); l++ ) {
 			// disambiguating label hashes
-			ImGui::Indent();
 			ImGui::PushID( l );
 
 			bool needsUpdate = false;
@@ -535,6 +535,7 @@ public:
 			const int w = ImGui::GetContentRegionAvail().x;
 			ImGui::Image( ( ImTextureID ) ( void * ) intptr_t( textureManager->Get( "Filtered PDF Preview " + to_string( l ) ) ), ImVec2( w, w * ( 64.0f ) / ( 450.0f + 104 ) ) );
 			ImGui::Text( "" );
+			ImGui::Indent( 2.0f );
 
 			// source distribution picker
 			ImGui::Combo( ( string( "Light Type" ) ).c_str(), &lightList[ l ].sourcePDF, sourcePDFLabels, numSourcePDFs );
@@ -590,7 +591,10 @@ public:
 
 			// unapply "i" pushID
 			ImGui::PopID();
-			ImGui::Unindent();
+			ImGui::Unindent( 2.0f );
+			if ( l != lightList.size() - 1 ) {
+				ImGui::Separator();
+			}
 		}
 
 		if ( ImGui::Button( "Add Light" ) ) {
