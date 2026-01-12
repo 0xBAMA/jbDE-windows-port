@@ -479,6 +479,14 @@
       "senseDistance": 11.535293579101563,
       "stepSize": 3.562953233718872,
       "turnAngle": 1.0077027082443237
+    },
+    {
+      "decayFactor": 0.421099990606308,
+      "depositAmount": 11000,
+      "senseAngle": 0.38701263070106506,
+      "senseDistance": 1.1950112581253052,
+      "stepSize": 0.6173305511474609,
+      "turnAngle": 1.7785999774932861
     }
   ]
 }

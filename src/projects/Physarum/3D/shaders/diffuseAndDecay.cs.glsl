@@ -10,7 +10,8 @@ uniform uint stampAmount;
 uniform bool applyStamp;
 
 bool maskValue ( ivec3 pos ) {
-	return ( imageLoad( mask, pos ).r > 0 );
+//	return ( imageLoad( mask, pos ).r > 0 );
+	return false;
 }
 
 uniform float decayFactor;

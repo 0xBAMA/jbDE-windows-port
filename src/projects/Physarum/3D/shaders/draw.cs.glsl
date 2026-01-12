@@ -66,6 +66,10 @@ void main () {
 		// tbd, controls for this
 		const int numBounces = 3;
 		for ( int bounce = 0; bounce < numBounces; bounce++ ) { // for N bounces
+
+		#define DDATRAVERSAL 1
+
+		#ifdef DDATRAVERSAL
 			// start the DDA traversal...
 			// from https://www.shadertoy.com/view/7sdSzH
 			vec3 deltaDist = 1.0f / abs( rayDirection );
@@ -85,6 +89,26 @@ void main () {
 				int densityRead = max( 0, int( imageLoad( continuum, mapPos0 ).r ) - noiseFloor );
 				float density = exp( -float( densityRead ) / float( densityThreshold ) );
 				if ( NormalizedRandomFloat() > density ) {
+		#else
+
+			// delta tracking
+			const ivec3 iS = imageSize( continuum );
+			for ( int i = 0; i < 1000; i++ ) {
+				float t = -log( NormalizedRandomFloat() );
+				hitPos += t * rayDirection;
+
+				if ( any( lessThan( ivec3( hitPos ), ivec3( 0 ) ) ) ||
+				any( greaterThan( ivec3( hitPos ), iS ) ) ) {
+					// oob
+					break;
+				}
+
+				// if you hit
+				int densityRead = max( 0, int( imageLoad( continuum, ivec3( hitPos ) ).r ) - noiseFloor );
+				 float density = exp( -float( densityRead ) / float( densityThreshold ) );
+//				float density = saturate( float( densityRead ) / float( densityThreshold ) );
+				if ( density < NormalizedRandomFloat() ) {
+		#endif
 
 			// materials stuff:
 				// ============================================================================
@@ -95,15 +119,16 @@ void main () {
 					rayDirection = normalize( viewerScatterWeight * rayDirection + RandomUnitVector() );
 				// ============================================================================
 
+		#ifdef DDATRAVERSAL
 					// update the DDA params
 					rayStep = ivec3( sign( rayDirection ) );
 					mask0 = bvec3( false );
 					sideDist0 = ( sign( rayDirection ) * ( vec3( 0.5f ) ) + ( sign( rayDirection ) * 0.5f ) + 0.5f ) * deltaDist;
-
 				} else {
-					// take a regular step
+//					 take a regular step
 					sideDist0 = sideDist1;
 					mapPos0 = mapPos1;
+		#endif
 				}
 			}
 		}
