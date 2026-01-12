@@ -198,14 +198,14 @@ public:
 				opts.dataType = GL_R32UI;
 				opts.minFilter = GL_NEAREST;
 				opts.magFilter = GL_NEAREST;
-				opts.width = 1920 * 3; // red, green, and blue sensitivities
-				opts.height = 1080;
+				opts.width = config.width * 3; // red, green, and blue sensitivities
+				opts.height = config.height;
 
 				textureManager.Add( "Film Plane", opts );
 			}
 
 			// ================================================================================================================
-			{ // loading the spherePack buffer
+			if ( false ) { // loading the spherePack buffer
 				Image_4U seedBlock( "seedBlock.png" );
 
 				vector< uint8_t > bufferData;
@@ -682,10 +682,10 @@ public:
 			textureManager.BindImageForShader( "iCDF", "lightICDF", shader, 2 );
 			textureManager.BindTexForShader( "iCDF", "lightICDF", shader, 2 );
 			textureManager.BindImageForShader( "Film Plane", "filmPlaneImage", shader, 3 );
-			textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
-			textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
+			// textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
+			// textureManager.BindTexForShader( "SpherePack", "SpherePack", shader, 4 );
 
-			glDispatchCompute( 16, 16, 4 );
+			glDispatchCompute( 16, 128, 16 );
 		}
 
 		static int frame = 0;

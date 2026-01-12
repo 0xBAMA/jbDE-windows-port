@@ -135,6 +135,7 @@ bool isRefractive ( int id ) {
 	return id >= CAUCHY_FUSEDSILICA;
 }
 
+/*
 #include "intersect.h"
 vec3 spherePackNormal = vec3( 0.0f );
 float spherePackAlbedo = 0.0f;
@@ -253,6 +254,7 @@ bool SpherePackDDA( in vec3 rO, in vec3 rD, in float maxDistance ) {
 
 	return spherePackDTravel < maxDistance;
 }
+*/
 
 //=============================================================================================================================
 // keep some global state for hit color, normal, etc
@@ -271,7 +273,8 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	vec4 result = traverse_cwbvh( rO, rD, tinybvh_safercp( rD ), 1e30f );
 
 	// placeholder
-	hitAlbedo = 0.9f;
+	// hitAlbedo = 0.999f;
+	hitAlbedo = 1.0f;
 	hitRoughness = 0.0f;
 	hitMaterial = MIRROR;
 
@@ -281,22 +284,22 @@ float sceneIntersection( vec3 rO, vec3 rD ) {
 	a = triangleData[ 3 * hitID ].xyz;
 	b = triangleData[ 3 * hitID + 1 ].xyz;
 	c = triangleData[ 3 * hitID + 2 ].xyz;
-	hitNormal = normalize( cross( a - c, b - c ) ); // cross product of the two edges gives us a potential normal vector
+	hitNormal = -normalize( cross( a - c, b - c ) ); // cross product of the two edges gives us a potential normal vector
 	if ( dot( rD, hitNormal ) < 0.0f ) hitFrontface = false, hitNormal = -hitNormal; // need to invert if we created an opposite-facing normal
 
 	// if ( SpherePackDDA( rO, rD, result.r ) ) {
-	if ( false ) {
-		// we hit a sphere, closer than the BVH
-		hitAlbedo = spherePackAlbedo;
-		hitMaterial = spherePackMaterialID;
-		hitRoughness = spherePackRoughness;
-		hitNormal = spherePackNormal;
-		if ( dot( rD, spherePackNormal ) < 0.0f )
-			hitNormal = -spherePackNormal, hitFrontface = false;
-		return spherePackDTravel;
-	} else {
+//	if ( false ) {
+//		 we hit a sphere, closer than the BVH
+//		hitAlbedo = spherePackAlbedo;
+//		hitMaterial = spherePackMaterialID;
+//		hitRoughness = spherePackRoughness;
+//		hitNormal = spherePackNormal;
+//		if ( dot( rD, spherePackNormal ) < 0.0f )
+//			hitNormal = -spherePackNormal, hitFrontface = false;
+//		return spherePackDTravel;
+//	} else {
 		return result.r;
-	}
+//	}
 }
 //=============================================================================================================================
 uniform vec3 viewerPosition;
@@ -335,7 +338,8 @@ bool hitFilmPlane ( in vec3 rO, in vec3 rD, in float maxDistance, in float energ
 				float tanTerm = tan( NormalizedRandomFloat() * pi / 2.0f );
 				ivec2 pixelSelect = ivec2( 0.1f * tanTerm * vec2( sin( phiTerm ), cos( phiTerm ) ) + ( pHitOffsetXY + iShalf ) / filmScale );
 
-				vec3 XYZColor = ( 1.0f / ( tanTerm + 0.001f ) ) * rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
+				// vec3 XYZColor = ( 1.0f / ( tanTerm + 0.001f ) ) * rgb_to_srgb( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
+				vec3 XYZColor = ( 1.0f / ( tanTerm + 0.001f ) ) * ( xyz_to_rgb( energy * wavelengthColor( wavelength ) ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect, uint( 256 * XYZColor.x ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 1, 0 ), uint( 256 * XYZColor.y ) );
 				imageAtomicAdd( filmPlaneImage, ivec2( 3, 1 ) * pixelSelect + ivec2( 2, 0 ), uint( 256 * XYZColor.z ) );
@@ -407,7 +411,7 @@ void main () {
 	float energy = 1.0f;
 
 	// tracing paths, for N bounces
-	const int maxBounces = 64;
+	const int maxBounces = 128;
 	for ( int b = 0; b < maxBounces; b++ ) {
 
 		// scene intersection ( BVH, DDA maybe eventually )
