@@ -1,36 +1,23 @@
-#include "aether.h"
+#include "../../../engine/engine.h"
+#include "aether2.h"
 
-class Aether final : public engineBase { // sample derived from base engine class
+class engineDemo final : public engineBase { // sample derived from base engine class
 public:
-	Aether () { Init(); OnInit(); PostInit(); }
-	~Aether () { Quit(); }
+	engineDemo () { Init(); OnInit(); PostInit(); }
+	~engineDemo () { Quit(); }
 
-	AetherConfig aetherConfig;
+	AetherConfig_t AetherConfig;
 
 	void OnInit () {
 		ZoneScoped;
 		{
 			Block Start( "Additional User Init" );
 
-			// handles
-			aetherConfig.trident = &trident;
-			aetherConfig.textureManager = &textureManager;
-			aetherConfig.shaders = &shaders;
-
 			// something to put some basic data in the accumulator texture
-			CompileShaders( aetherConfig );
+			shaders[ "Dummy Draw" ] = computeShader( "../src/projects/EngineDemo/shaders/dummyDraw.cs.glsl" ).shaderHandle;
 
-			// tally textures for X, Y, Z... "count" also, tbd if that's relevant
-			CreateTextures( aetherConfig );
-
-			// importance sampling setup for the lights types
-			SetupImportanceSampling_lightTypes( aetherConfig );
-
-			// importance sampling setup for the specific list of light configurations
-			SetupImportanceSampling_lights( aetherConfig ); // needs to be re-called upon any changes to the lighting config
-
-			// what's the plan for autoexposure?
-
+			// initializing the data
+			AetherConfig.Init( &textureManager, &shaders, &trident );
 		}
 	}
 
@@ -38,21 +25,6 @@ public:
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
 
-		if ( inputHandler.getState( KEY_MINUS ) ) {
-			aetherConfig.scale *= 1.1f;
-		}
-
-		if ( inputHandler.getState( KEY_EQUALS ) ) {
-			aetherConfig.scale *= 0.9f;
-		}
-
-		if ( inputHandler.getState( KEY_Y ) ) {
-			CompileShaders( aetherConfig );
-		}
-
-		if  ( inputHandler.getState( KEY_G ) ) {
-			aetherConfig.AnimationTrigger();
-		}
 
 	}
 
@@ -62,8 +34,7 @@ public:
 			TonemapControlsWindow();
 		}
 
-		// config window for the lights
-		LightConfigWindow( aetherConfig );
+		AetherConfig.ImGuiMenu();
 
 		if ( showProfiler ) {
 			static ImGuiUtils::ProfilersWindow profilerWindow; // add new profiling data and render
@@ -77,38 +48,19 @@ public:
 		if ( showDemoWindow ) ImGui::ShowDemoWindow( &showDemoWindow );
 	}
 
+	void DrawAPIGeometry () {
+		ZoneScoped; scopedTimer Start( "API Geometry" );
+		// draw some shit - need to add a hello triangle to this, so I have an easier starting point for raster stuff
+	}
+
 	void ComputePasses () {
 		ZoneScoped;
 
-		if ( aetherConfig.runDrawToggle ) { // draw something into accumulatorTexture
+		{ // dummy draw - draw something into accumulatorTexture
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
-			const GLuint shader = shaders[ "Draw" ];
-			glUseProgram( shader );
-
-			glUniform1f( glGetUniformLocation( shader, "time" ), SDL_GetTicks() / 1600.0f );
-
-			const glm::mat3 inverseBasisMat = inverse( glm::mat3( -trident.basisX, -trident.basisY, -trident.basisZ ) );
-			glUniformMatrix3fv( glGetUniformLocation( shader, "invBasis" ), 1, false, glm::value_ptr( inverseBasisMat ) );
-
-			static rngi wangSeeder( 0, 1000000 );
-			glUniform1i( glGetUniformLocation( shader, "wangSeed" ), wangSeeder() );
-
-			static rng frameJitter( 0.0f, 1.0f );
-			glUniform1f( glGetUniformLocation( shader, "frame" ), aetherConfig.frame + frameJitter() );
-
-			static rngi blueSeeder( 0, 512 );
-			glUniform2i( glGetUniformLocation( shader, "noiseOffset" ), blueSeeder(), blueSeeder() );
-
-			glUniform3i( glGetUniformLocation( shader, "dimensions" ), aetherConfig.dimensions.x, aetherConfig.dimensions.y, aetherConfig.dimensions.z );
-
-			glUniform1f( glGetUniformLocation( shader, "scale" ), aetherConfig.scale );
-
-			textureManager.BindImageForShader( "XTally", "bufferImageX", shader, 2 );
-			textureManager.BindImageForShader( "YTally", "bufferImageY", shader, 3 );
-			textureManager.BindImageForShader( "ZTally", "bufferImageZ", shader, 4 );
-			textureManager.BindImageForShader( "Count", "bufferImageCount", shader, 5 );
-
+			glUseProgram( shaders[ "Dummy Draw" ] );
+			glUniform1f( glGetUniformLocation( shaders[ "Dummy Draw" ], "time" ), SDL_GetTicks() / 1600.0f );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -121,10 +73,6 @@ public:
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
-
-		aetherConfig.AttemptScreenShot();
-		if ( aetherConfig.frame == aetherConfig.numFrames )
-			pQuit = true;
 
 		{ // text rendering timestamp - required texture binds are handled internally
 			scopedTimer Start( "Text Rendering" );
@@ -148,31 +96,13 @@ public:
 
 	void OnUpdate () {
 		ZoneScoped; scopedTimer Start( "Update" );
-
-		if ( trident.Dirty() ) {
-			ResetAccumulator( aetherConfig );
-		}
-
-		// if we've changed the light setup
-		if ( aetherConfig.lightListDirty ) {
-			// we need to rebuild the importance sampling structure
-			SetupImportanceSampling_lights( aetherConfig );
-			ResetTextures( aetherConfig );
-		}
-
-		// run the simulation...
-		AetherSimUpdate( aetherConfig );
-
-		// this is basically recordkeeping
-		aetherConfig.AnimationUpdate();
-
-		// any autoexposure update?
-
+		// application-specific update code
 	}
 
 	void OnRender () {
 		ZoneScoped;
 		ClearColorAndDepth();		// if I just disable depth testing, this can disappear
+		DrawAPIGeometry();			// draw any API geometry desired
 		ComputePasses();			// multistage update of displayTexture
 		BlitToScreen();				// fullscreen triangle copying to the screen
 		{
@@ -211,7 +141,7 @@ public:
 // #pragma comment( linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup" )
 
 int main ( int argc, char *argv[] ) {
-	Aether engineInstance;
+	engineDemo engineInstance;
 	while( !engineInstance.MainLoop() );
 	return 0;
 }

@@ -128,10 +128,11 @@ float de ( vec3 p, float wavelength ) {
 	{
 		// const float scale = 0.01f;
 		// pR( p.xy, 1.0f );
-		int l = int( pModInterval1( p.x, 400.0f, -3.0f, 3.0f ) );
+		int l = int( pModInterval1( p.x, 100.0f, -3.0f, 3.0f ) );
 		// int l = 0;
-		int k = int( pModInterval1( p.y, 400.0f, -1.0f, 1.0f ) );
-		int m = int( pModInterval1( p.z, 400.0f, -1.0f, 1.0f ) );
+		int k = int( pModInterval1( p.y, 100.0f, -5.0f, 5.0f ) );
+		int m = int( pModInterval1( p.z, 100.0f, -5.0f, 5.0f ) );
+		// int m = 0;
 
 		vec3 rngValue = vec3( pcg3d( uvec3( ivec3( l, m, k ) + 10000 ) ) ) / 4294967296.0f;;
 		pR( p.xy, 1.4f + rngValue.z * 1.4f * rngValue.y * 33.0f + rngValue.x * 4.0f + 0.1f * frame );
@@ -140,7 +141,7 @@ float de ( vec3 p, float wavelength ) {
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( k % 2 == 0 ? ( distance( p, vec3( 0.0f ) ) - ( 8.0f ) ) : () );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( fDodecahedron( p, 3.0f + 0.5f * ( sin( l ) * cos( k ) * sin( m ) + sin( l * k ) * sin( l * m ) * cos( m * k ) ) ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( ( sin( l * m * k + l * m + l * k + m * k ) < 0.0f ) ? fBox( p, 5.1f * vec3( 5.0f, 7.0f, 3.0f ) ) : ( distance( p, vec3( 0.0f ) ) - 45.0f ) );
-		const float d = ( invert ? -1.0f : 1.0f ) * ( rngValue.x < 0.5f ? ( fDodecahedron( p, 120.0f ) ) : ( ( fDisc( p, 120.6f ) - 30.0f ) ) );
+		const float d = ( invert ? -1.0f : 1.0f ) * ( rngValue.x < 0.5f ? ( distance( p, vec3( 0.0f ) ) - 40.8f ) : ( ( fDisc( p, 36.6f ) - 10.0f ) ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( fDisc( p, 69.0f ) - 12.0f );
 		// const float d = ( invert ? -1.0f : 1.0f ) * ( fBox( p, vec3( 6.0f, 2.0f, 1.618f ) ) );
 		// const float d = ( invert ? -1.0f : 1.0f ) * fDodecahedron( p, 7.0f );

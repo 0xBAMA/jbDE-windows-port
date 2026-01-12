@@ -11,6 +11,42 @@ inline std::string fixedWidthNumberStringF ( float value, int32_t width = 5, con
 	return string( width - std::min( width, ( int ) to_string( value ).length() ), fill ) + to_string( value );
 }
 
+inline glm::vec3 HexToVec3 ( const std::string& hex ) {
+	// uint8_t r, g, b;
+	// std::stringstream( hex ) >> std::hex >> r >> g >> b;
+	// return glm::vec3( r / 255.0f, g / 255.0f, b / 255.0f );
+
+	// Check if the input hex string is valid (should be 6 characters without the #)
+
+	// Extract the RGB components from the hex string
+	std::string redHex = hex.substr(0, 2);
+	std::string greenHex = hex.substr(2, 2);
+	std::string blueHex = hex.substr(4, 2);
+
+	// Convert hex to integers
+	int r, g, b;
+	std::stringstream ss;
+
+	ss << std::hex << redHex;
+	ss >> r;
+	ss.clear();
+
+	ss << std::hex << greenHex;
+	ss >> g;
+	ss.clear();
+
+	ss << std::hex << blueHex;
+	ss >> b;
+
+	// Normalize the values to 0-1 range by dividing by 255
+	vec3 color;
+	color.r = r / 255.0f;
+	color.g = g / 255.0f;
+	color.b = b / 255.0f;
+
+	return color;
+}
+
 inline std::string fixedPointNumberStringF ( float value, int32_t beforeDot, int32_t afterDot, const char fill = ' ' ) {
 	// Format the number using a stringstream
 	std::ostringstream ss;

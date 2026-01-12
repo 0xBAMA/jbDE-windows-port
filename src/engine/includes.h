@@ -197,6 +197,9 @@ namespace std {
 // my fork of Alexander Sannikov's LegitProfiler
 #include "../utils/ImGUI/LegitProfiler/ImGuiProfilerRenderer.h"
 
+// Wenzel Jakob's sRGB reflectance curve matching
+#include "../data/Jakob2019Spectral/supplement/rgb2spec.h"
+
 ////==== Third Party Libraries ==================================================
 // Niels Lohmann - JSON for Modern C++
 #include "../utils/Serialization/JSON/json.hpp"
