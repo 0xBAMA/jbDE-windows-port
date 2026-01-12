@@ -28,7 +28,6 @@ void main () {
 
 	ivec2 readLoc = writeLoc;
 
-
 	// grab the current state of the film plane... try to figure out how to map this to a color
 	vec3 tallySample = vec3(
 	biasGain( saturate( imageLoad( filmPlaneImage, ivec2( 3, 1 ) * readLoc + ivec2( 0, 0 ) ).r / powerScalar ), slope, thresh ),

@@ -301,9 +301,9 @@ public:
 		ImGui::Checkbox( "Run Sim", &physarumConfig.runSim );
 
 		if ( ImGui::SmallButton( "Randomize Parameters" ) ) {
-			rng senseAngle( 0.0f, float( pi ) );
+			rng senseAngle( 0.0f, float( jbDE::pi ) );
 			rng senseDistance( 0.5f, 18.0f );
-			rng turnAngle( 0.0f, float( pi ) );
+			rng turnAngle( 0.0f, float( jbDE::pi ) );
 			rng stepSize( 0.5f, 10.0f );
 			rngi depositAmount( 1000, 750000 );
 			rng decayFactor( 0.25f, 1.0f );

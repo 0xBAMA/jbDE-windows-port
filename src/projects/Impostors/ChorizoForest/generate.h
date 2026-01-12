@@ -74,8 +74,8 @@ void geometryManager_t::AddRoundedBox( const vec3 centerPoint, const vec3 scaleF
 	vec4 c = ( color == vec3( -1.0f ) ) ? vec4( 0.0f, 0.0f, 0.0f, GetPaletteValue() ) : vec4( color.xyz(), -1.0f );
 
 	// packing the euler angles together - theta, about the poles, is in the fractional component, and phi, elevation, is in the integer part
-	const float thetaRemapped = fmodf( eulerAngles.x, tau ) / tau;
-	const float phiRemapped = glm::trunc( RangeRemap( eulerAngles.y, -pi / 2.0f, pi / 2.0f, -255.0f, 255.0f ) );
+	const float thetaRemapped = fmodf( eulerAngles.x, jbDE::tau ) / jbDE::tau;
+	const float phiRemapped = glm::trunc( RangeRemap( eulerAngles.y, -jbDE::pi / 2.0f, jbDE::pi / 2.0f, -255.0f, 255.0f ) );
 	const float packedEuler = thetaRemapped + phiRemapped;
 	const float parameters[] = {
 		ROUNDEDBOX, centerPoint.x, centerPoint.y, centerPoint.z,

@@ -421,18 +421,18 @@ public:
 						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
 						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
 					#else
-						mins.x = min( min( v0.x, v1.x ), min( v2.x, v2.x - sizeAdjust * maxDisplacement ) );
-						maxs.x = max( max( v0.x, v1.x ), max( v2.x, v2.x + sizeAdjust * maxDisplacement ) );
+						mins.x = std::min( std::min( v0.x, v1.x ), std::min( v2.x, v2.x - sizeAdjust * maxDisplacement ) );
+						maxs.x = std::max( std::max( v0.x, v1.x ), std::max( v2.x, v2.x + sizeAdjust * maxDisplacement ) );
 
-						mins.y = min( min( v0.y, v1.y ), min( v2.y, v2.y - sizeAdjust * maxDisplacement ) );
-						maxs.y = max( max( v0.y, v1.y ), max( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
+						mins.y = std::min( std::min( v0.y, v1.y ), std::min( v2.y, v2.y - sizeAdjust * maxDisplacement ) );
+						maxs.y = std::max( std::max( v0.y, v1.y ), std::max( v2.y, v2.y + sizeAdjust * maxDisplacement ) );
 					#endif
 
 				// we get crashes in the BVH construction when adding the z axis jitter...
 					// mins.z = min( min( v0.z, v1.z ), min( v2.z, v0.z - maxDisplacement ) );
 					// maxs.z = max( max( v0.z, v1.z ), max( v2.z, v0.z + maxDisplacement ) );
-					mins.z = min( min( v0.z, v1.z ), v2.z );
-					maxs.z = max( max( v0.z, v1.z ), v2.z );
+					mins.z = std::min( std::min( v0.z, v1.z ), v2.z );
+					maxs.z = std::max( std::max( v0.z, v1.z ), v2.z );
 
 				// place a triangle that spans the bounding box
 					grassTrianglesBVH.push_back( tinybvh::bvhvec4( maxs.x, mins.y, maxs.z, 0.0f ) );
@@ -594,8 +594,8 @@ public:
 				ImGui::Text( "Key Light" );
 				ImGui::SameLine();
 				ImGui::Checkbox( "Enable##key", ( bool* ) &lightEnable.x );
-				ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -pi, pi );
-				ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat( "Theta##key", &thetaPhi_lightDirection[ 0 ].x, -jbDE::pi, jbDE::pi );
+				ImGui::SliderFloat( "Phi##key", &thetaPhi_lightDirection[ 0 ].y, -jbDE::pi / 2.0f, jbDE::pi / 2.0f );
 				ImGui::SliderFloat( "Jitter##key", &lightJitter[ 0 ], 0.0f, 0.3f );
 				ImGui::ColorEdit3( "Color##key", ( float* ) &lightColors[ 0 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
 				ImGui::SliderFloat( "Brightness##key", &lightBrightness[ 0 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
@@ -604,8 +604,8 @@ public:
 				ImGui::Text( "Fill Light" );
 				ImGui::SameLine();
 				ImGui::Checkbox( "Enable##fill", ( bool* ) &lightEnable.y );
-				ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -pi, pi );
-				ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat ( "Theta##fill", &thetaPhi_lightDirection[ 1 ].x, -jbDE::pi, jbDE::pi );
+				ImGui::SliderFloat ( "Phi##fill", &thetaPhi_lightDirection[ 1 ].y, -jbDE::pi / 2.0f, jbDE::pi / 2.0f );
 				ImGui::SliderFloat ( "Jitter##fill", &lightJitter[ 1 ], 0.0f, 0.3f );
 				ImGui::ColorEdit3( "Color##fill", ( float* ) &lightColors[ 1 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
 				ImGui::SliderFloat( "Brightness##fill", &lightBrightness[ 1 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
@@ -614,8 +614,8 @@ public:
 				ImGui::Text( "Back Light" );
 				ImGui::SameLine();
 				ImGui::Checkbox( "Enable##back", ( bool* ) &lightEnable.z );
-				ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -pi, pi );
-				ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -pi / 2.0f, pi / 2.0f );
+				ImGui::SliderFloat ( "Theta##back", &thetaPhi_lightDirection[ 2 ].x, -jbDE::pi, jbDE::pi );
+				ImGui::SliderFloat ( "Phi##back", &thetaPhi_lightDirection[ 2 ].y, -jbDE::pi / 2.0f, jbDE::pi / 2.0f );
 				ImGui::SliderFloat ( "Jitter##back", &lightJitter[ 2 ], 0.0f, 0.3f );
 				ImGui::ColorEdit3( "Color##back", ( float* ) &lightColors[ 2 ], ImGuiColorEditFlags_Float | ImGuiColorEditFlags_PickerHueWheel );
 				ImGui::SliderFloat( "Brightness##back", &lightBrightness[ 2 ], 0.0f, 10.0f, "%.5f", ImGuiSliderFlags_Logarithmic );
