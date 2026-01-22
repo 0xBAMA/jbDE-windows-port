@@ -20,6 +20,46 @@ struct agentRecord_t {
 	vec2 velocity;
 };
 
+#include "random.h"
+uniform int wangSeed;
+
+// triggering randomized reset
+uniform int resetSeed;
+uniform float spread;
+
+agentRecord_t getRandomAgent () {
+	// deterministic seeding on RNG
+	uint seedCache = seed;
+	seed = resetSeed;
+
+	// populate the deterministic portion of the seeding ( seed informs all agents, exactly )
+	float offsetValues[ 7 ];
+	for ( int i = 0; i < 7; i++ ) {
+		offsetValues[ i ] = NormalizedRandomFloat();
+	}
+
+	// apply the agent-specific jitter of the parameters... ( non-deterministic, varies by agent )
+	seed = seedCache;
+	for ( int i = 0; i < 7; i++ ) {
+		offsetValues[ i ] += spread * NormalDistributionRand();
+	}
+
+	// evaluating the offsets on a known range
+	agentRecord_t temp;
+	temp.mass = mix( 1.5f, 20.0f, offsetValues[ 0 ] );
+	temp.drag = mix( 0.5f, 1.0f, offsetValues[ 1 ] );
+	temp.senseDistance = mix( 5.0f, 20.0f, offsetValues[ 2 ] );
+	temp.senseAngle = mix( 0.0f, tau, offsetValues[ 3 ] );
+	temp.turnAngle = mix( 0.0f, tau, offsetValues[ 4 ] );
+	temp.forceAmount	= mix( 0.1f, 2.0f, offsetValues[ 5 ] );
+	temp.depositAmount	= mix( 10.0f, 1000.0f, offsetValues[ 6 ] );
+
+	// note that position and velocity needs to be uniformly random in all cases
+	temp.position = vec2( imageSize( atomicImage ).xy ) * vec2( NormalizedRandomFloat(), NormalizedRandomFloat() );
+	temp.velocity = normalize( RandomInUnitDisk() );
+	return temp;
+}
+
 uniform int numAgents;
 layout( binding = 0, std430 ) buffer agentData {
 	agentRecord_t data[];
@@ -48,33 +88,9 @@ float pheremone ( vec2 pos ) {
 	return texture( floatTex, pos.xy ).r;
 }
 
-uniform int wangSeed;
-uint seed = 0;
-uint wangHash () {
-	seed = uint( seed ^ uint( 61 ) ) ^ uint( seed >> uint( 16 ) );
-	seed *= uint( 9 );
-	seed = seed ^ ( seed >> 4 );
-	seed *= uint( 0x27d4eb2d );
-	seed = seed ^ ( seed >> 15 );
-	return seed;
-}
-
-float normalizedRandomFloat () {
-	return float( wangHash() ) / 4294967296.0f;
-}
-
-const float pi = 3.14159265358979323846f;
-vec3 randomUnitVector () {
-	float z = normalizedRandomFloat() * 2.0f - 1.0f;
-	float a = normalizedRandomFloat() * 2.0f * pi;
-	float r = sqrt( 1.0f - z * z );
-	float x = r * cos( a );
-	float y = r * sin( a );
-	return vec3( x, y, z );
-}
-
 vec2 randomInUnitDisk () {
-	return randomUnitVector().xy;
+	return RandomUnitVector().xy;
+//	return rnd_disc_cauchy();
 }
 
 void main () {
@@ -91,34 +107,51 @@ void main () {
 		// init rng
 		seed = wangSeed + 69 * index;
 
-		// sense taps...
-		const vec2 avDir			= normalize( agent.velocity );
-		const vec2 rightVec			= agent.senseDistance * rotate( avDir, -agent.senseAngle );
-		const vec2 middleVec		= agent.senseDistance * avDir;
-		const vec2 leftVec			= agent.senseDistance * rotate( avDir,  agent.senseAngle );
-		const float rightSample		= pheremone( agent.position + rightVec );
-		const float middleSample	= pheremone( agent.position + middleVec );
-		const float leftSample		= pheremone( agent.position + leftVec );
+		// user wants to reset the agent
+		if ( resetSeed != 0 ) {
+//			data[ index ] == getRandomAgent();
+			agentRecord_t temp = getRandomAgent();
+			data[ index ].mass = temp.mass;
+			data[ index ].pad = temp.pad;
+			data[ index ].drag = temp.drag;
+			data[ index ].senseDistance = temp.senseDistance;
+			data[ index ].senseAngle = temp.senseAngle;
+			data[ index ].turnAngle = temp.turnAngle;
+			data[ index ].forceAmount = temp.forceAmount;
+			data[ index ].depositAmount = temp.depositAmount;
+			data[ index ].position = temp.position;
+			data[ index ].velocity = temp.velocity;
+		} else {
+		// do the regular update
+			// sense taps...
+			const vec2 avDir			= normalize( agent.velocity );
+			const vec2 rightVec			= agent.senseDistance * rotate( avDir, -agent.senseAngle );
+			const vec2 middleVec		= agent.senseDistance * avDir;
+			const vec2 leftVec			= agent.senseDistance * rotate( avDir,  agent.senseAngle );
+			const float rightSample		= pheremone( agent.position + rightVec );
+			const float middleSample	= pheremone( agent.position + middleVec );
+			const float leftSample		= pheremone( agent.position + leftVec );
 
-		// make a decision on whether to turn left, right, go straight, or a random direction
-			// this can be generalized and simplified, as some sort of weighted sum thing - will bear revisiting
-		vec2 impulseVector = middleVec;
-		if ( middleSample > leftSample && middleSample > rightSample ) {
-			// just retain the existing direction
-		} else if ( middleSample < leftSample && middleSample < rightSample ) { // turn a random direction
-			impulseVector = randomInUnitDisk();
-		} else if ( rightSample > middleSample && middleSample > leftSample ) { // turn right (positive)
-			impulseVector = rotate( middleVec, agent.turnAngle );
-		} else if ( leftSample > middleSample && middleSample > rightSample ) { // turn left (negative)
-			impulseVector = rotate( middleVec, -agent.turnAngle );
+			// make a decision on whether to turn left, right, go straight, or a random direction
+				// this can be generalized and simplified, as some sort of weighted sum thing - will bear revisiting
+			vec2 impulseVector = middleVec;
+			if ( middleSample > leftSample && middleSample > rightSample ) {
+				// just retain the existing direction
+			} else if ( middleSample < leftSample && middleSample < rightSample ) { // turn a random direction
+				impulseVector = randomInUnitDisk();
+			} else if ( rightSample > middleSample && middleSample > leftSample ) { // turn right (positive)
+				impulseVector = rotate( middleVec, agent.turnAngle );
+			} else if ( leftSample > middleSample && middleSample > rightSample ) { // turn left (negative)
+				impulseVector = rotate( middleVec, -agent.turnAngle );
+			}
+
+			// apply impulse to an object of known mass + store back to SSBO
+			vec2 acceleration = impulseVector * agent.forceAmount / agent.mass;	// get the resulting acceleration
+			data[ index ].velocity = agent.velocity = agent.drag * agent.velocity + acceleration;					// compute the new velocity
+			data[ index ].position = agent.position = wrap( agent.position + agent.velocity );				// get the new position
+
+			// deposit
+			imageAtomicAdd( atomicImage, ivec2( agent.position ), uint( agent.depositAmount ) );
 		}
-
-		// apply impulse to an object of known mass + store back to SSBO
-		vec2 acceleration = impulseVector * agent.forceAmount / agent.mass;	// get the resulting acceleration
-		data[ index ].velocity = agent.velocity = agent.drag * agent.velocity + acceleration;					// compute the new velocity
-		data[ index ].position = agent.position = wrap( agent.position + agent.velocity );				// get the new position
-
-		// deposit
-		imageAtomicAdd( atomicImage, ivec2( agent.position ), uint( agent.depositAmount ) );
 	}
 }

@@ -88,7 +88,7 @@ public:
 			// shader compilation
 			shaders[ "Agent" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/agent.cs.glsl" ).shaderHandle;			// agent update shader
 			shaders[ "CopyClear" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/copyClear.cs.glsl" ).shaderHandle;		// copy and clear shader
-			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;		// diffuse and decay shader
+			shaders[ "Diffuse" ]		= computeShader( "../src/projects/Physarum/2D_inertia/shaders/diffuse.cs.glsl" ).shaderHandle;			// diffuse and decay shader
 			shaders[ "Autoexposure" ]	= computeShader( "../src/projects/Physarum/2D_inertia/shaders/autoexposure.cs.glsl" ).shaderHandle;	// autoexposure compute shader
 			shaders[ "Draw" ]			= computeShader( "../src/projects/Physarum/2D_inertia/shaders/draw.cs.glsl" ).shaderHandle;			// put data in the accumulator texture
 
@@ -99,8 +99,7 @@ public:
 			glObjectLabel( GL_PROGRAM, shaders[ "Autoexposure" ], -1, string( "Autoexposure" ).c_str() );
 			glObjectLabel( GL_PROGRAM, shaders[ "Draw" ], -1, string( "Draw" ).c_str() );
 
-			//
-			PopulateSSBORandom();
+			physarumConfig.dims = ivec2( config.width, config.height );
 
 			// create uint buffer for resolving atomics
 			textureOptions_t opts;
@@ -135,25 +134,26 @@ public:
 
 			// disable vignette
 			tonemap.enableVignette = false;
+
+			// initialize the memory for the agents
+			PopulateSSBORandom();
 		}
 	}
 
 	void PopulateSSBORandom () {
 		// populating the SSBO of records
-		static vector< agentRecord_t > agents;
-		if ( physarumConfig.agentSSBO == 0 ) // first time
-			agents.resize( physarumConfig.numAgents );
 
+		/*
 		rngN offset = rngN( 1.0f, 0.01f );
 		rng xD = rng( 0.0f, float( physarumConfig.dims.x - 1 ) );
 		rng yD = rng( 0.0f, float( physarumConfig.dims.y - 1 ) );
-		rng rotDist = rng( 0.0f, tau );
+		rng rotDist = rng( 0.0f, jbDE::tau );
 
 		rng mass = rng( 1.5f, 20.0f );
 		rng drag = rng( 0.5f, 1.0f );
 		rng senseDistance = rng( 5.0f, 20.0f );
-		rng senseAngle = rng( 0.0f, tau );
-		rng turnAngle = rng( 0.0f, tau );
+		rng senseAngle = rng( 0.0f, jbDE::tau );
+		rng turnAngle = rng( 0.0f, jbDE::tau );
 		rng forceAmount	= rng( 0.1f, 2.0f );
 		rng depositAmount	= rng( 10.0f, 1000.0f );
 
@@ -187,13 +187,35 @@ public:
 			// add it to the list
 			agents[ i ] = agent;
 		}
+		*/
 
 		// create the buffer and upload the contents
-		if ( !physarumConfig.agentSSBO )
+		static bool firstTime = true;
+		if ( firstTime ) {
+			firstTime = false;
+
+			vector< agentRecord_t > agents;
+			agents.resize( physarumConfig.numAgents );
+
 			glGenBuffers( 1, &physarumConfig.agentSSBO );
-		glBindBuffer( GL_SHADER_STORAGE_BUFFER, physarumConfig.agentSSBO );
-		glBufferData( GL_SHADER_STORAGE_BUFFER, agents.size() * sizeof( agentRecord_t ), ( GLvoid * ) &agents[ 0 ], GL_DYNAMIC_COPY );
-		glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, physarumConfig.agentSSBO );
+			glBindBuffer( GL_SHADER_STORAGE_BUFFER, physarumConfig.agentSSBO );
+			glBufferData( GL_SHADER_STORAGE_BUFFER, agents.size() * sizeof( agentRecord_t ), ( GLvoid * ) &agents[ 0 ], GL_DYNAMIC_COPY );
+			glBindBufferBase( GL_SHADER_STORAGE_BUFFER, 0, physarumConfig.agentSSBO );
+		}
+
+		// with the buffer created...
+		glUseProgram( shaders[ "Agent" ] );
+
+		static rngi wangSeeder = rngi( 0, 10000000 );
+		glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "resetSeed" ), wangSeeder() + 1 );
+		glUniform1f( glGetUniformLocation( shaders[ "Agent" ], "spread" ), 0.0f );
+		glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "wangSeed" ), wangSeeder() );
+		glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "numAgents" ), physarumConfig.numAgents );
+		textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "Agent" ], 0 );
+
+		const int workgroupsRoundedUp = ( physarumConfig.numAgents + 63 ) / 64;
+		glDispatchCompute( 1, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
+		glMemoryBarrier( GL_ALL_BARRIER_BITS );
 	}
 
 	void HandleCustomEvents () {
@@ -312,6 +334,7 @@ public:
 				glUseProgram( shaders[ "Agent" ] );
 				textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "Agent" ], 0 );
 				textureManager.BindTexForShader( "Pheremone Float Buffer 1", "floatTex", shaders[ "Agent" ], 1 );
+				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "resetSeed" ), 0 );
 				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "wangSeed" ), wangSeeder() );
 				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "numAgents" ), physarumConfig.numAgents );
 				const int workgroupsRoundedUp = ( physarumConfig.numAgents + 63 ) / 64;
@@ -356,8 +379,11 @@ public:
 			}
 		}
 
+		static bool firstTime = true;
 		static int frame = 0;
-		if ( physarumConfig.autoExposure && frame++ % 60 == 0 ) { // run the autoexposure update ~1Hz
+		if ( firstTime ) {
+			firstTime = false;
+		// if ( physarumConfig.autoExposure && frame++ % 60 == 0 ) { // run the autoexposure update ~1Hz
 			int w = physarumConfig.dims.x / 2;
 			int h = physarumConfig.dims.y / 2;
 
