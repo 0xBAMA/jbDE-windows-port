@@ -1,7 +1,9 @@
 #version 430
 layout( local_size_x = 16, local_size_y = 16, local_size_z = 1 ) in;
 
-layout( r32ui ) uniform uimage2D bufferImage;
+layout( r32ui ) uniform uimage2D bufferImageR;
+layout( r32ui ) uniform uimage2D bufferImageG;
+layout( r32ui ) uniform uimage2D bufferImageB;
 layout( binding = 0, std430 ) buffer maxBuffer { uint maxCount; };
 
 uniform float t;
@@ -59,14 +61,14 @@ float rayPlaneIntersect ( in vec3 rayOrigin, in vec3 rayDirection ) {
 
 void main () {
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
-	seed = rngSeed;
+	seed = rngSeed + 6969 * loc.x + 69420 * loc.y;
 
 	const float fieldScale = 3.0f;
 
 	for ( int i = 0; i < 5; i++ ) {
 		const vec2 remappedLoc = vec2(
-			RangeRemapValue( float( loc.x ) + NormalizedRandomFloat(), 0, imageSize( bufferImage ).x, 0.0f, fieldScale ),
-			RangeRemapValue( float( loc.y ) + NormalizedRandomFloat(), 0, imageSize( bufferImage ).y, 0.0f, fieldScale )
+			RangeRemapValue( float( loc.x ) + NormalizedRandomFloat(), 0, imageSize( bufferImageR ).x, 0.0f, fieldScale ),
+			RangeRemapValue( float( loc.y ) + NormalizedRandomFloat(), 0, imageSize( bufferImageG ).y, 0.0f, fieldScale )
 		);
 
 		// so we create the ray
@@ -78,21 +80,43 @@ void main () {
 
 		// refract at the surface
 		const vec3 hitPoint = initialRayPosition + initialRayDirection * distanceToWater;
-		const vec3 refractedRay = refract( initialRayDirection, normal( hitPoint ), 1.3f );
+		const vec3 refractedRayR = refract( initialRayDirection, normal( hitPoint ), 1.28f );
+		const vec3 refractedRayB = refract( initialRayDirection, normal( hitPoint ), 1.33f );
 
 		// intersect the refracted ray with a plane
-		const float dPlane = rayPlaneIntersect( hitPoint, refractedRay );
-		const vec3 finalPoint = vec3( hitPoint + dPlane * refractedRay );
+		const float dPlaneR = rayPlaneIntersect( hitPoint, refractedRayR );
+		const float dPlaneB = rayPlaneIntersect( hitPoint, refractedRayB );
+		const vec3 finalPointR = vec3( hitPoint + dPlaneR * refractedRayR );
+		const vec3 finalPointB = vec3( hitPoint + dPlaneB * refractedRayB );
 
 		// do the increment, where this ray-plane intersection says
-		const ivec2 writeLoc = ivec2(
-			int( RangeRemapValue( finalPoint.x, 0.0f, fieldScale, 0, imageSize( bufferImage ).x ) ),
-			int( RangeRemapValue( finalPoint.z, 0.0f, fieldScale, 0, imageSize( bufferImage ).y ) )
+		const vec2 writeLocR = vec2(
+			RangeRemapValue( finalPointR.x, 0.0f, fieldScale, 0, imageSize( bufferImageR ).x ),
+			RangeRemapValue( finalPointR.z, 0.0f, fieldScale, 0, imageSize( bufferImageR ).y )
 		);
 
-		if ( all( lessThan( writeLoc.xy, imageSize( bufferImage ) ) ) && all( greaterThan( writeLoc, ivec2( 0 ) ) ) ) {
-			// atomicMax( maxCount, imageAtomicAdd( bufferImage, writeLoc, 1 ) + 1 );
-			imageAtomicAdd( bufferImage, writeLoc, 1 );
+		const vec2 writeLocB = vec2(
+			RangeRemapValue( finalPointB.x, 0.0f, fieldScale, 0, imageSize( bufferImageB ).x ),
+			RangeRemapValue( finalPointB.z, 0.0f, fieldScale, 0, imageSize( bufferImageB ).y )
+		);
+
+		vec3 offsets;
+		offsets.x = NormalDistributionRand();
+		offsets.y = NormalDistributionRand();
+		offsets.z = NormalDistributionRand();
+
+		const ivec2 wpR = ivec2( mix( writeLocR, writeLocB, saturate( offsets.x * 0.3f ) ) + rnd_disc_cauchy() );
+		const ivec2 wpG = ivec2( mix( writeLocR, writeLocB, saturate( offsets.y * 0.3f + 0.35f ) ) + rnd_disc_cauchy() );
+		const ivec2 wpB = ivec2( mix( writeLocR, writeLocB, saturate( offsets.z * 0.3f + 0.7f ) ) + rnd_disc_cauchy() );
+
+		if ( all( lessThan( wpR, imageSize( bufferImageR ) ) ) && all( greaterThan( wpR, ivec2( 0 ) ) ) ) {
+			imageAtomicAdd( bufferImageR, wpR, 1 );
+		}
+		if ( all( lessThan( wpG, imageSize( bufferImageR ) ) ) && all( greaterThan( wpG, ivec2( 0 ) ) ) ) {
+			imageAtomicAdd( bufferImageG, wpG, 1 );
+		}
+		if ( all( lessThan( wpB, imageSize( bufferImageR ) ) ) && all( greaterThan( wpB, ivec2( 0 ) ) ) ) {
+			imageAtomicAdd( bufferImageB, wpB, 1 );
 		}
 	}
 }

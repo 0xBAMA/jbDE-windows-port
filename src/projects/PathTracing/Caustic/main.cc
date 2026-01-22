@@ -36,7 +36,9 @@ public:
 			opts.magFilter		= GL_NEAREST;
 			opts.textureType	= GL_TEXTURE_2D;
 			opts.wrap			= GL_CLAMP_TO_BORDER;
-			textureManager.Add( "Field", opts );
+			textureManager.Add( "FieldR", opts );
+			textureManager.Add( "FieldG", opts );
+			textureManager.Add( "FieldB", opts );
 		}
 	}
 
@@ -82,7 +84,9 @@ public:
 			scopedTimer Start( "Drawing" );
 			bindSets[ "Drawing" ].apply();
 			glUseProgram( shaders[ "Draw" ] );
-			textureManager.BindImageForShader( "Field", "bufferImage", shaders[ "Draw" ], 2 );
+			textureManager.BindImageForShader( "FieldR", "bufferImageR", shaders[ "Draw" ], 2 );
+			textureManager.BindImageForShader( "FieldG", "bufferImageG", shaders[ "Draw" ], 3 );
+			textureManager.BindImageForShader( "FieldB", "bufferImageB", shaders[ "Draw" ], 4 );
 			glDispatchCompute( ( config.width + 15 ) / 16, ( config.height + 15 ) / 16, 1 );
 			glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 		}
@@ -118,7 +122,7 @@ public:
 		//glTexImage2D( GL_TEXTURE_2D, 0, GL_R32UI, 1024, 1024, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, &zeroes[ 0 ] );
 		//glMemoryBarrier( GL_ALL_BARRIER_BITS );
 
-		textureManager.ZeroTexture2D( "Field" );
+		// textureManager.ZeroTexture2D( "Field" );
 
 		// run the shader to run some rays
 		static rngi wangSeeder = rngi( 0, 100000 );
@@ -126,7 +130,9 @@ public:
 		glUseProgram( shader );
 		glUniform1f( glGetUniformLocation( shader, "t" ), SDL_GetTicks() / 5000.0f );
 		glUniform1i( glGetUniformLocation( shader, "rngSeed" ), wangSeeder() );
-		textureManager.BindImageForShader( "Field", "bufferImage", shader, 0 );
+		textureManager.BindImageForShader( "FieldR", "bufferImageR", shader, 0 );
+		textureManager.BindImageForShader( "FieldG", "bufferImageG", shader, 1 );
+		textureManager.BindImageForShader( "FieldB", "bufferImageB", shader, 2 );
 		glDispatchCompute( ( 1024 ) / 16, ( 1024 ) / 16, 1 );
 		glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
 	}
