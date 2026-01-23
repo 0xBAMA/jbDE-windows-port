@@ -32,10 +32,11 @@ struct agentRecord_t {
 
 struct physarumConfig_t {
 // resolution of the substrate buffers
-	ivec2 dims = ivec2( 2880 / 2, 1800 / 2 );
+	// ivec2 dims = ivec2( 2880 / 2, 1800 / 2 );
+	ivec2 dims = ivec2( 1920 * 2, 1080 * 2 );
 
 // number of agents in play
-	uint32_t numAgents = 50000000u;
+	uint32_t numAgents = 50000000;
 	GLuint agentSSBO = 0;
 	agentRecord_t baseAgent;
 
@@ -58,7 +59,7 @@ struct physarumConfig_t {
 
 // program state
 	bool runSim = true;
-	int numIterationsPerFrame = 1;
+	int numIterationsPerFrame = 10;
 
 // moving to impulse-based update will require some kind of clamping...
 	int agentSpeedClampMethod = 0;
@@ -339,7 +340,7 @@ public:
 				glUniform1i( glGetUniformLocation( shaders[ "Agent" ], "numAgents" ), physarumConfig.numAgents );
 				const int workgroupsRoundedUp = ( physarumConfig.numAgents + 63 ) / 64;
 				glDispatchCompute( 1, std::max( workgroupsRoundedUp / 64, 1 ), 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
 
 		// Diffuse/Decay
 			// First pass, uint texture (1) contents added to first float texture (2) contents
@@ -348,7 +349,7 @@ public:
 				textureManager.BindImageForShader( "Pheremone Uint Buffer", "atomicImage", shaders[ "CopyClear" ], 0 );
 				textureManager.BindImageForShader( "Pheremone Float Buffer 1", "floatImage", shaders[ "CopyClear" ], 1 );
 				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
 				// ready to do the blur step
 
 			// Second pass, first separable blur pass, first float texture (2) horizontal blur into second float texture (3)
@@ -362,7 +363,7 @@ public:
 				glUniform1i( glGetUniformLocation( shaders[ "Diffuse" ], "separableBlurMode" ), 0 );
 				glUniform1f( glGetUniformLocation( shaders[ "Diffuse" ], "radius" ), physarumConfig.fieldDiffuseRadius );
 				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
 
 			// Third pass, second separable blur pass, second float texture (3) vertical blur into first float texture (2)
 				// Decay applied when writing back to the first float texture (2)
@@ -375,7 +376,7 @@ public:
 				glUniform1i( glGetUniformLocation( shaders[ "Diffuse" ], "separableBlurMode" ), 1 );
 				glUniform1f( glGetUniformLocation( shaders[ "Diffuse" ], "radius" ), physarumConfig.fieldDiffuseRadius );
 				glDispatchCompute( ( physarumConfig.dims.x + 15 ) / 16, ( physarumConfig.dims.y + 15 ) / 16 , 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
 			}
 		}
 
@@ -398,7 +399,7 @@ public:
 
 				// dispatch the compute shader( 1x1x1 groupsize for simplicity )
 				glDispatchCompute( w, h, 1 );
-				glMemoryBarrier( GL_SHADER_IMAGE_ACCESS_BARRIER_BIT );
+				glMemoryBarrier( GL_ALL_BARRIER_BITS );
 				w /= 2; h /= 2;
 			}
 		}
