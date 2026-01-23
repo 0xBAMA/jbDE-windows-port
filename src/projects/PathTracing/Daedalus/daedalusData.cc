@@ -184,7 +184,7 @@ void Daedalus::SendBasePathtraceUniforms() {
 	textureManager.BindTexForShader( "Roughness Material Texture", "roughnessMaterial", shader, 7 );
 	*/
 
-	textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
+	// textureManager.BindImageForShader( "SpherePack", "SpherePack", shader, 4 );
 }
 
 void Daedalus::SendInnerLoopPathtraceUniforms() {

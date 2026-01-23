@@ -2404,38 +2404,40 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
+	if ( true ) {
 		// const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
-		const vec4 d = vec4( fractalD( p / 3.0f ) * 3.0f );
-//		const vec4 d = concretemap( p );
+		const vec4 d = vec4( deCage( p ) );
+//		const vec4 d = concretemap( p ) + vec4( displacement2.x * 0.05f, 0.0f, 0.0f, 0.0f );
 		sceneDist = min( sceneDist, d.x );
 		if ( sceneDist == d.x && d.x < epsilon ) {
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 			hitRoughness = 0.3f;
-			// hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( d.yzw, nickel, vec3( 0.75f ) );
-			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( 0.25f );
+//			 hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( d.yzw, nickel, displacement2.rgb );
+			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( vec3( 1.0f ), nvidia, saturate( GetLuma( displacement2.xyz ).r + 0.1f ) );
 		}
 	}
 
 	if ( true ) {
-		const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 1.0f ) );
-		sceneDist = min( sceneDist, d );
-		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 3.0f, 0.0f, 0.0f );
-		}
-	}
-
-	if ( true ) {
-		const float d = fBox( p - vec3( 0.0f, 0.0f, 10.0f ), vec3( 4.0f, 4.0f, 0.1f ) );
+		const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
 			hitColor = vec3( 0.618f * sapphire );
+//			hitColor = blood;
 		}
 	}
 
 	if ( true ) {
+		const float d = fBox( p - vec3( 0.0f, 20.0f, 0.0f ), vec3( 30.0f, 0.1f, 6.0f ) );
+		sceneDist = min( sceneDist, d );
+		if ( sceneDist == d && d < epsilon ) {
+			hitSurfaceType = EMISSIVE_FRESNEL;
+			// hitColor = vec3( 1.0f ) * carrot;
+			hitColor = vec3( 1.0f ) * mix( blood, aqua, displacement.xyz ) * displacement2.xyz;
+		}
+	}
+
+	if ( false ) {
 //		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
 		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.5f ).yxz );
 
@@ -2466,13 +2468,13 @@ float de( in vec3 p ) {
 	 	}
 	 }
 
-	if ( true ) {
-		const float d = max( dBounds, deBBB( p ) );
+	if ( false ) {
+		const float d = max( dBounds, fractalD( p ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 			hitRoughness = 0.1f;
-			hitColor = vec3( 0.9f );
+			hitColor = vec3( hitSurfaceType == MIRROR ? 0.99f : 0.1f );
 		}
 	}
 
@@ -3395,8 +3397,8 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 intersection_t GetNearestSceneIntersection( in ray_t ray ) {
 	// return a single intersection_t representing the closest ray intersection
 	intersection_t SDFResult		= raymarchEnable		? raymarch( ray )				: DefaultIntersection();
-	// intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
-	intersection_t VoxelResult		= SpherePackDDA( ray );
+	 intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
+//	intersection_t VoxelResult		= SpherePackDDA( ray );
 	intersection_t MaskedPlane		= maskedPlaneEnable		? MaskedPlaneIntersect( ray )	: DefaultIntersection();
 	intersection_t ExplicitList		= explicitListEnable	? ExplicitListIntersect( ray )	: DefaultIntersection();
 	intersection_t convexPolyhedra	= DefaultIntersection();

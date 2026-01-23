@@ -84,7 +84,7 @@ public:
 				textureManager.Add( "Roughness Material Texture", opts );
 			}
 
-			{ // loading the spherePack buffer
+			if ( false ) { // loading the spherePack buffer
 				Image_4U seedBlock( "seedBlock.png" );
 
 				vector< uint8_t > bufferData;
