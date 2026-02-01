@@ -2220,6 +2220,21 @@ float deBBB( vec3 p0 ){
 	return abs(p.y)*0.25;
 }
 
+float deGGG ( vec3 p ) {
+	p = mod( p, 2.0f ) - 1.0f;
+	p = abs( p ) - 1.0f;
+	if ( p.x < p.z ) p.xz = p.zx;
+	if ( p.y < p.z ) p.yz = p.zy;
+	if ( p.x < p.y ) p.xy = p.yx;
+	float s = 1.0f;
+	for ( int i = 0; i < 10; i++ ) {
+		float r2 = 2.0f / clamp( dot( p, p ), 0.1f, 1.0f );
+		p = abs( p ) * r2 - vec3( 0.6f, 0.6f, 3.5f );
+		s *= r2;
+	}
+	return length( p ) / s;
+}
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
