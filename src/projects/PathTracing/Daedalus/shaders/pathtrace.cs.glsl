@@ -2419,7 +2419,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		// const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
 		const vec4 d = vec4( deCage( p ) );
 //		const vec4 d = concretemap( p ) + vec4( displacement2.x * 0.05f, 0.0f, 0.0f, 0.0f );
@@ -2433,16 +2433,17 @@ float de( in vec3 p ) {
 	}
 
 	if ( true ) {
-		const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
+		// const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
+		const float d = fBox( p, vec3( 0.8f, 0.1f, 5.0f ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 0.618f * sapphire );
+			hitColor = vec3( 0.1618f * nvidia );
 //			hitColor = blood;
 		}
 	}
 
-	if ( true ) {
+	if ( false ) {
 		const float d = fBox( p - vec3( 0.0f, 20.0f, 0.0f ), vec3( 30.0f, 0.1f, 6.0f ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
@@ -2452,7 +2453,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
+	if ( true ) {
 //		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
 		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.5f ).yxz );
 
@@ -2460,7 +2461,7 @@ float de( in vec3 p ) {
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 0.618f );
+			hitColor = vec3( 0.618f * aqua );
 
 //			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
 //			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
@@ -2483,13 +2484,13 @@ float de( in vec3 p ) {
 	 	}
 	 }
 
-	if ( false ) {
-		const float d = max( dBounds, fractalD( p ) );
+	if ( true ) {
+		const float d = max( dBounds, deGGG( p ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 			hitRoughness = 0.1f;
-			hitColor = vec3( hitSurfaceType == MIRROR ? 0.99f : 0.1f );
+			hitColor = vec3( hitSurfaceType == MIRROR ? 0.99f : 0.4f );
 		}
 	}
 
