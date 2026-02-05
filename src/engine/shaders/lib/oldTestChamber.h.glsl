@@ -58,6 +58,7 @@ float deOldTestChamber ( vec3 p ) {
 		if ( sceneDist == dRails && dRails <= epsilon ) {
 			hitColor = vec3( 0.618f );
 			hitSurfaceType = METALLIC;
+			hitRoughness = 0.0f;
 		}
 	} // end railing bounding box
 
