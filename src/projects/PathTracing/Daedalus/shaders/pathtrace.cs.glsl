@@ -16,6 +16,7 @@ uniform int wangSeed;
 #include "hg_sdf.glsl"	// SDF modeling + booleans, etc
 #include "mathUtils.h"	// couple random math utilities
 #include "colorRamps.glsl.h" // 1d -> 3d color mappings
+#include "colorspaceConversions.glsl" // various colorspace conversions
 #include "glyphs.h"		// the uint encoded glyph masks
 #include "consistentPrimitives.glsl.h" // primitives with the same handling of normal, etc
 //=============================================================================================================================
@@ -2219,30 +2220,6 @@ float deBBB( vec3 p0 ){
 	p/=p.w;
 	return abs(p.y)*0.25;
 }
-float deBBB2( vec3 p0 ){
-	vec4 p = vec4( p0, 1.0f );
-	for ( int i = 0; i < 10; i++ ) {
-		p = abs( p );
-		p.xyz = mod( p.xyz - 1.0f, 2.0f ) - 1.0f;
-		if ( p.x > p.z ) p.xz = p.zx;
-		if ( p.z > p.y ) p.zy = p.yz;
-		p *= 1.23f;
-	}
-	p /= p.w;
-	return abs( p.y ) * 0.25;
-}
-float deBBB3( vec3 p0 ){
-	vec4 p = vec4(p0, 1.);
-	for(int i = 0; i < 8; i++){
-		if(p.x > p.z)p.xz = p.zx;
-		p = abs(p);
-		if(p.z > p.y)p.zy = p.yz;
-		p.xyz = mod(p.xyz-1., 2.)-1.;
-		p*=1.23;
-	}
-	p/=p.w;
-	return abs(p.y)*0.25;
-}
 
 float deGGG ( vec3 p ) {
 	p = mod( p, 2.0f ) - 1.0f;
@@ -2280,13 +2257,6 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	{
-		const float d = deOldTestChamber( p / 3.0f ) * 3.0f;
-		sceneDist = min( sceneDist, d );
-	}
-	return sceneDist;
-
-	/*
 	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f );
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
@@ -2351,9 +2321,11 @@ float de( in vec3 p ) {
 			// hitRoughness = noiseValue;
 			// hitSurfaceType = LUMARBLECHECKER;
 			
+			/*
 			hitColor = mix( gold, vec3( 0.99f ), -0.5f );
 			hitRoughness = 0.1f;
 			hitSurfaceType = METALLIC;
+			*/
 
 			// hitSurfaceType = MIRROR;
 
@@ -2436,6 +2408,7 @@ float de( in vec3 p ) {
 			// hitColor = brass;
 
 
+			/*
 			const float noiseValue = saturate( pow( perlinfbm( p, 30.0f, 4 ), 4 ) * 2.0f );
 			if ( noiseValue > 0.05f ) {
 				const float remappedN = RangeRemapValue( noiseValue, 0.05f, 0.1f, 0.0f, 1.0f );
@@ -2443,30 +2416,36 @@ float de( in vec3 p ) {
 				hitSurfaceType = ( NormalizedRandomFloat() < remappedN ) ? DIFFUSE : METALLIC;
 				hitRoughness = remappedN;
 			}
+			*/
 		}
 	}
 
 	if ( false ) {
 		// const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
-		const vec4 d = vec4( deBBB( p ) );
+		const vec4 d = vec4( deCage( p ) );
 //		const vec4 d = concretemap( p ) + vec4( displacement2.x * 0.05f, 0.0f, 0.0f, 0.0f );
 		sceneDist = min( sceneDist, d.x );
 		if ( sceneDist == d.x && d.x < epsilon ) {
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 			hitRoughness = 0.3f;
-			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( 0.1f );
+//			 hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( d.yzw, nickel, displacement2.rgb );
+			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : mix( vec3( 1.0f ), nvidia, saturate( GetLuma( displacement2.xyz ).r + 0.1f ) );
 		}
 	}
 
+	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f ) ) );
 	if ( true ) {
+		vec3 pCache = p;
+		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
 		// const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
-		const float d = fBox( p, vec3( 0.8f, 0.1f, 5.0f ) );
+		const float d = fBox( p, vec3( 0.01618f, 0.01f, 5.0f ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 0.1618f * nvidia );
+			hitColor = vec3( 0.1618f * sapphire );
 //			hitColor = blood;
 		}
+		p = pCache;
 	}
 
 	if ( false ) {
@@ -2474,21 +2453,21 @@ float de( in vec3 p ) {
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			 hitColor = vec3( 1.0f ) * carrot;
-//			hitColor = vec3( 1.0f ) * mix( blood, aqua, displacement.xyz ) * displacement2.xyz;
+			// hitColor = vec3( 1.0f ) * carrot;
+			hitColor = vec3( 1.0f ) * mix( blood, aqua, displacement.xyz ) * displacement2.xyz;
 		}
 	}
 
+	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f, 0.1, 0.2f ) ) );
 	if ( true ) {
-//		pModInterval1( p.x, 15.0f, -7.0f, 7.0f );
-//		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.5f ).yxz );
-		const float d = max( dBounds, deBBB3( p ) );
+		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
+		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.01f ).yxz );
 
 	 	// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 0.618f * aqua );
+			hitColor = vec3( oklab_mix( blood, nvidia, pow( idx / 7.0f, 2.0f ) ) );
 
 //			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
 //			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
@@ -2511,8 +2490,10 @@ float de( in vec3 p ) {
 	 	}
 	 }
 
+	p = pOriginal;
 	if ( true ) {
-		const float d = max( dBounds, deGGG( p ) );
+		const float scale = 2.0f;
+		const float d = max( dBounds, deGGG( p / scale ) * scale );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
@@ -2520,9 +2501,8 @@ float de( in vec3 p ) {
 			hitColor = vec3( hitSurfaceType == MIRROR ? 0.99f : 0.4f );
 		}
 	}
-	*/
 
-//	return sceneDist;
+	return sceneDist;
 
 	// pModInterval1( p.x, 1.0f, -5.0f, 5.0f );
 	// pModInterval1( p.y, 4.0f, -2.0f, 2.0f );
@@ -2545,7 +2525,10 @@ float de( in vec3 p ) {
 	// 	}
 	// }
 
-
+	// {
+	// 	const float d = deOldTestChamber( p );
+	// 	sceneDist = min( sceneDist, d );
+	// }
 
 	// p.y = -p.y;
 
@@ -3414,6 +3397,13 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 		result.roughness = spheres[ indexOfHit ].materialProps.g;
 		if ( result.materialID == EMISSIVE_FRESNEL || result.materialID == EMISSIVE ) {
 			result.albedo /= 100.0f;
+
+			uint rngCache = seed;
+			seed = indexOfHit * 42069;
+			if ( NormalizedRandomFloat() < 0.75f ) {
+				result.materialID = REFRACTIVE;
+			}
+			seed = rngCache;
 		}
 		if ( result.materialID == CHECKER ) {
 			result.materialID = ( NormalizedRandomFloat() > 0.9f ) ? MIRROR : DIFFUSE;
@@ -3428,8 +3418,9 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 			// result.normal = -result.normal; // this is already handled, for the sphere, at least...
 		}
 		result.albedo = spheres[ indexOfHit ].colorMaterial.xyz;
-		result.IoR = spheres[ indexOfHit ].materialProps.r;
-		// result.roughness = spheres[ indexOfHit ].materialProps.g;
+//		result.IoR = spheres[ indexOfHit ].materialProps.r;
+
+		 result.roughness = spheres[ indexOfHit ].materialProps.g;
 		// result.roughness = saturate( pow( perlinfbm( ray.origin + ray.direction * result.dTravel, 20.0f, 4 ), 3.0f ) * 0.2f );
 	}
 	return result;
