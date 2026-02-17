@@ -142,6 +142,9 @@ struct keyboardState_t {
 	// where was the mouse when it happened
 	ivec2 mousePosition = ivec2( 0.0f );
 
+	// the normalized mouse position
+	vec2 mousePositionNormalized = vec2( 0.0f );
+
 	// keyboard + mouse state
 	uint32_t data[ 4 ] = { 0 };
 
@@ -176,6 +179,8 @@ constexpr int KEYSTATE_RISING = 2;
 constexpr int KEYSTATE_FALLING = 3;
 
 struct inputHandler_t {
+
+	SDL_Window * window;
 
 	// state vector (allocated ring buffer for N frames history)
 	static constexpr int numStateBuffers = 64;
@@ -325,6 +330,10 @@ struct inputHandler_t {
 		uint32_t mouseState = SDL_GetMouseState( &mouseLoc.x, &mouseLoc.y );
 		stateBuffer[ currentOffset ].mousePosition = ivec2( mouseLoc );
 
+		int x, y;
+		SDL_GetWindowSize( window, &x, &y );
+		stateBuffer[ currentOffset ].mousePositionNormalized = mouseLoc / vec2( float( x ), float( y ) );
+
 		// mouse buttons
 		if ( mouseState & SDL_BUTTON_LMASK ) stateBuffer[ currentOffset ].setState( MOUSE_BUTTON_LEFT );
 		if ( mouseState & SDL_BUTTON_MMASK ) stateBuffer[ currentOffset ].setState( MOUSE_BUTTON_MIDDLE );
@@ -359,6 +368,10 @@ struct inputHandler_t {
 
 	const ivec2 getMousePos () const {
 		return stateBuffer[ currentOffset ].mousePosition;
+	}
+
+	const vec2 getMousePosNormalized () const {
+		return stateBuffer[ currentOffset ].mousePositionNormalized;
 	}
 
 	// get instant state
