@@ -23,8 +23,8 @@ void main () {
 	const ivec2 loc = ivec2( gl_GlobalInvocationID.xy );
 	vec2 samplePoint = vec2( loc + 0.5f ) / imageSize( accumulatorTexture ).xy;
 
-	samplePoint -= vec2( 0.025f, 0.15f );
-	samplePoint *= 1.5f;
+//	samplePoint -= vec2( 0.025f, 0.15f );
+//	samplePoint *= 1.5f;
 
 	// what is the autoexposure brightness factor? clamp on the bottom end
 	const float autoExposureAdjust = 1.0f / max( 0.01f, texelFetch( fieldMax, ivec2( 0 ), autoExposureTexOffset ).r );

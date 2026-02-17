@@ -177,12 +177,7 @@ public:
 		ImGui::Text( "Mouse Position: %d %d", inputHandler.getMousePos().x, inputHandler.getMousePos().y );
 		{
 			// mouse remapping to match the shader
-			path2DConfig.mappedMousePos = vec2( inputHandler.getMousePos().x, config.height - inputHandler.getMousePos().y ) + vec2( 0.5f );
-			path2DConfig.mappedMousePos /= vec2( float( config.width ), float( config.height ) );
-			path2DConfig.mappedMousePos -= vec2( 0.025f, 0.15f );
-			path2DConfig.mappedMousePos *= 1.5f;
-			path2DConfig.mappedMousePos.x = RangeRemap( std::clamp( path2DConfig.mappedMousePos.x, 0.0f, 1.0f ), 0.0f, 1.0f, -path2DConfig.dims.x, path2DConfig.dims.x );
-			path2DConfig.mappedMousePos.y = RangeRemap( path2DConfig.mappedMousePos.y, 1.0f, 0.0f, -path2DConfig.dims.y, path2DConfig.dims.y );
+			path2DConfig.mappedMousePos = vec2( inputHandler.getMousePosNormalized().x, inputHandler.getMousePosNormalized().y );
 		}
 		ImGui::Text( "Remapped Mouse Position: %.2f %.2f", path2DConfig.mappedMousePos.x, path2DConfig.mappedMousePos.y );
 
