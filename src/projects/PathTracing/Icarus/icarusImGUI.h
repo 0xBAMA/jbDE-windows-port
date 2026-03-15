@@ -1,5 +1,5 @@
 void IcarusImguiWindow ( icarusState_t &state ) {
-	ImGui::Begin( "Icarus", NULL );
+	ImGui::Begin( "Icarus" );
 
 	ImGui::SeparatorText( "Render" );
 	ImGui::SliderInt( "Max Bounces", ( int * ) &state.maxBounces, 0, 256 );

@@ -92,7 +92,7 @@ void main () {
 				// const vec3 color = oklch_to_srgb( vec3( smoothstep( 0.8f, 0.9f, mixFactor ), 0.5f, atan( direction.x, direction.y ) ) );
 //				vec3 color = vec3( smoothstep( 0.0f, 0.9f, mixFactor ) * 5.0f ) + vec3( smoothstep( -0.7f, -1.0f, mixFactor ) ) * vec3( 1.9f, 0.2f, 0.04f ).rrr;
 //				 color += vec3( 0.5f );
-				vec3 color = vec3( 0.01f );
+				vec3 color = vec3( 10.0f );
 
 				vec3 transmission = GetTransmission( myState );
 				if ( all( lessThan( transmission, vec3( 1.0f ) ) ) )
