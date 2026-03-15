@@ -29,6 +29,7 @@ vec4 Blue( in ivec2 loc ) {
 	return imageLoad( blueNoise, ( loc + noiseOffset ) % imageSize( blueNoise ).xy );
 }
 //=============================================================================================================================
+uniform sampler2D panelTexture;
 //=============================================================================================================================
 #define NONE	0
 #define BLUE	1
@@ -391,9 +392,9 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 	// precalculate reflected vector, random diffuse vector, random specular vector
 	const vec3 reflectedVector = reflect( rayPrevious.direction, intersection.normal );
 	const vec3 randomVectorCosineWeighted = cosWeightedRandomHemisphereDirection( intersection.normal );
-	// const vec3 randomVectorDiffuse = normalize( ( 1.0f + epsilon ) * intersection.normal + RandomUnitVector() );
+	vec3 randomVectorDiffuse = normalize( ( 1.0f + epsilon ) * intersection.normal + RandomUnitVector() );
 
-	vec3 randomVectorDiffuse = RandomUnitVector();
+//	vec3 randomVectorDiffuse = RandomUnitVector();
 	if ( dot( randomVectorDiffuse, intersection.normal ) <= 0.0f ) {
 		randomVectorDiffuse = -randomVectorDiffuse;
 	}
@@ -442,10 +443,10 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 		}
 
 		case DIFFUSE: {
-			ray.direction = randomVectorCosineWeighted;
+//			ray.direction = randomVectorCosineWeighted;
 			throughput *= intersection.albedo;
 
-			// ray.direction = randomVectorDiffuse;
+			 ray.direction = randomVectorDiffuse;
 			// throughput *= ( intersection.albedo * saturate( dot( intersection.normal, ray.direction ) ) ) / pi;
 			break;
 		}
@@ -2236,6 +2237,51 @@ float deGGG ( vec3 p ) {
 	return length( p ) / s;
 }
 
+float deFractal3 ( vec3 p ){
+	p = p.xzy;
+	vec3 cSize = vec3(1., 1., 1.3);
+	float scale = 1.;
+	for( int i=0; i < 14; i++ ){
+		p = 2.0*clamp(p, -cSize, cSize) - p;
+		float r2 = dot(p,p+sin(p.z*.3));
+		float k = max((2.)/(r2), .027);
+		p *= k;  scale *= k;
+	}
+	float l = length(p.xy);
+	float rxy = l - 4.0;
+	float n = l * p.z;
+	rxy = max(rxy, -(n) / 4.);
+	return (rxy) / abs(scale);
+}
+
+float deFFE ( vec3 p ) {
+	//Initialize fractal, loop number, and raymarcher iterators
+	float i, n=1e2, l=-n;
+	vec3 s, v;
+	//Fractal loop
+	for ( s = v = p, i = n; i > 0.1f; i *= 0.4f )
+	//Rotate octave 2 radians
+		v.xz *= mat2( cos( vec4( 0, 11, 33, 0 ) + 2. ) ),
+	//Subtract cube SDFs
+		s = max(s,min(min(v=i*.8-abs(mod(v,i+i)-i),v.x),v.z));
+	return s.y;
+}
+
+mat2 rotF (float a) { return mat2(cos(a),-sin(a),sin(a),cos(a)); }
+float deFFE2 (vec3 p) {
+	float scene = 100.;
+	float t = floor(100./5.);
+	float falloff = 1.0;
+	for (float index = 0.; index < 10.; ++index) {
+		p.xz *= rotF( t / falloff );
+		p = abs(p) - 0.5 * falloff;
+		scene = min(scene, max(p.x, max(p.y, p.z)));
+//		falloff /= 1.8;
+		falloff /= 2.5f;
+	}
+	return -scene;
+}
+
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -2257,7 +2303,7 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f );
+	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f ) / 1.0f;
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
@@ -2436,14 +2482,14 @@ float de( in vec3 p ) {
 	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f ) ) );
 	if ( true ) {
 		vec3 pCache = p;
-		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
-		// const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
-		const float d = fBox( p, vec3( 0.01618f, 0.01f, 5.0f ) );
+		float idx = pModInterval1( p.x, 0.1f, 0.0f, 21.0f );
+		 const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
+//		const float d = fBox( p, vec3( 0.001618f, 0.001f, 5.0f ) );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( 0.1618f * sapphire );
-//			hitColor = blood;
+//			hitColor = oklab_mix( nvidia, sapphire, pow( idx / 21.0f, 1.5f ) ).bgr;
+			hitColor = 0.3f * sapphire;
 		}
 		p = pCache;
 	}
@@ -2458,8 +2504,8 @@ float de( in vec3 p ) {
 		}
 	}
 
-	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f, 0.1, 0.2f ) ) );
-	if ( true ) {
+//	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f, 0.1, 0.2f ) ) );
+	if ( false ) {
 		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
 		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.01f ).yxz );
 
@@ -2467,7 +2513,8 @@ float de( in vec3 p ) {
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
-			hitColor = vec3( oklab_mix( blood, nvidia, pow( idx / 7.0f, 2.0f ) ) );
+//			hitColor = vec3( oklab_mix( carrot, vec3( 1.0f, 0.0f, 1.0f ), pow( idx / 7.0f, 1.0f ) ) );
+			hitColor = 0.1f * nvidia;
 
 //			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
 //			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
@@ -2492,13 +2539,19 @@ float de( in vec3 p ) {
 
 	p = pOriginal;
 	if ( true ) {
-		const float scale = 2.0f;
-		const float d = max( dBounds, deGGG( p / scale ) * scale );
+		const float scale = 10.0f;
+		 const float d = max( dBounds, deFFE2( p / scale ) * scale );
+//		const float d = deFFE2( p / scale ) * scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+//			hitSurfaceType = EMISSIVE;
+//			hitSurfaceType = DIFFUSE;
 			hitRoughness = 0.1f;
-			hitColor = vec3( hitSurfaceType == MIRROR ? 0.99f : 0.4f );
+			hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : vec3( bone );
+//			hitColor = texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb;
+//			hitColor = bone;
+//			hitColor = 0.1618f;
 		}
 	}
 
@@ -2850,6 +2903,7 @@ uniform vec3 ddaSpheresBoundSize;
 uniform int ddaSpheresResolution;
 layout( rgba8ui ) readonly uniform uimage3D DDATex;
 layout( r32f ) readonly uniform image2D HeightmapTex;
+
 //=============================================================================================================================
 vec3 GetPositionForIdx( ivec3 idx ) {
 	return ( vec3( idx ) - vec3( ddaSpheresResolution / 2.0f ) ) * 0.009f + vec3( 6.5f );
@@ -3526,11 +3580,15 @@ void ProcessTileInvocation( in ivec2 pixel ) {
 	// mix the new and old values based on the current sampleCount
 	float sampleCount = previousColor.a + 1.0f;
 	const float mixFactor = 1.0f / sampleCount;
-	const vec4 mixedColor = vec4( mix( previousColor.rgb, newData.color.rgb, mixFactor ), sampleCount );
+	const vec4 mixedColor = vec4( ( any( isnan( newData.color.rgb ) ) ) ? vec3( 0.0f ) : mix( previousColor.rgb, newData.color.rgb, mixFactor ), sampleCount );
 	const vec4 mixedNormalD = vec4(
 		clamp( mix( previousNormalD.xyz, newData.normalD.xyz, mixFactor ), -1.0f, 1.0f ),
 		mix( previousNormalD.w, newData.normalD.w, mixFactor )
 	);
+
+//	if ( isnan( mixedColor.r ) || isnan( mixedColor.g ) || isnan( mixedColor.b ) ) {
+//		mixedColor.rgb = vec3( 0.0f );
+//	}
 
 	// store the values back
 	imageStore( accumulatorColor, pixel, clamp( mixedColor, 0.0f, 10000.0f ) );
