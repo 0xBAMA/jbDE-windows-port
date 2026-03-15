@@ -175,6 +175,10 @@ void Daedalus::SendBasePathtraceUniforms() {
 	// textureManager.BindImageForShader( "DDATex", "DDATex", shader, 4 );
 	// textureManager.BindImageForShader( "HeightmapTex", "HeightmapTex", shader, 5 );
 
+	// messing with the panel images
+	textureManager.BindImageForShader( "Panel Texture", "panelTexture", shader, 5 );
+	textureManager.BindTexForShader( "Panel Texture", "panelTexture", shader, 5 );
+
 	/*
 	textureManager.BindImageForShader( "Diffuse Material Texture", "diffuseMaterial", shader, 5 );
 	textureManager.BindTexForShader( "Diffuse Material Texture", "diffuseMaterial", shader, 5 );

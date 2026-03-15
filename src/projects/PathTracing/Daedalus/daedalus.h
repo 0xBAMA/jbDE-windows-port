@@ -49,6 +49,11 @@ public:
 			// DDAVATTex();
 			// HeightmapTex();
 
+			{
+				RandomTexture();
+			}
+
+
 			if ( false ) { // loading material textures
 
 				string base = string( "../../Materials/" ) +
@@ -170,6 +175,42 @@ public:
 		}
 	}
 
+	void RandomTexture () {
+
+		static bool firstTime = true;
+
+		if ( !firstTime ) {
+			textureManager.Remove( "Panel Texture" );
+		}
+
+		firstTime = false;
+
+		std::vector< string > panels;
+		for ( auto const& dir_entry : std::filesystem::directory_iterator{ "../panels_final/" } ) {
+			std::cout << dir_entry.path().string() << '\n';
+			panels.push_back( dir_entry.path().string() );
+		}
+
+		rngi pick = rngi( 0, panels.size() - 1 );
+
+		// Image_4U testImage( "../panels_final/USA_NL1.GIF", Image_4U::backend::STB_IMG );
+		Image_4U testImage( panels[ pick() ], Image_4U::backend::STB_IMG );
+
+		textureOptions_t opts = textureOptions_t();
+		opts.dataType		= GL_RGBA8;
+		opts.width			= testImage.Width();
+		opts.height			= testImage.Height();
+		// opts.minFilter		= GL_NEAREST;
+		// opts.magFilter		= GL_NEAREST;
+		opts.minFilter		= GL_LINEAR;
+		opts.magFilter		= GL_LINEAR;
+		opts.textureType	= GL_TEXTURE_2D;
+		opts.wrap			= GL_CLAMP_TO_BORDER;
+		opts.pixelDataType	= GL_UNSIGNED_BYTE;
+		opts.initialData	= testImage.GetImageDataBasePtr();
+		textureManager.Add( "Panel Texture", opts );
+	}
+
 	void HandleCustomEvents () {
 		// application specific controls
 		ZoneScoped; scopedTimer Start( "HandleCustomEvents" );
@@ -240,6 +281,10 @@ public:
 		}
 		if ( state[ SDL_SCANCODE_EQUALS ] ) {
 			daedalusConfig.render.FoV -= scalar;
+		}
+
+		if ( state[ SDL_SCANCODE_I ] ) {
+			RandomTexture();
 		}
 
 		// f to reset basis, shift + f to reset basis and home to origin
