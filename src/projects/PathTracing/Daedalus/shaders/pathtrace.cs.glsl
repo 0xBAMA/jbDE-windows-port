@@ -2268,16 +2268,30 @@ float deFFE ( vec3 p ) {
 }
 
 mat2 rotF (float a) { return mat2(cos(a),-sin(a),sin(a),cos(a)); }
+float escapeee;
 float deFFE2 (vec3 p) {
+	escapeee = 0.0f;
 	float scene = 100.;
 	float t = floor(100./5.);
 	float falloff = 1.0;
-	for (float index = 0.; index < 10.; ++index) {
-		p.xz *= rotF( t / falloff );
+	bool toggle = false;
+	for (float index = 0.; index < 14.; ++index) {
+		if ( toggle ) {
+			p.yx *= rotF( 0.2f * t / falloff );
+			falloff *= 1.3f;
+		} else {
+			p.xz *= rotF( 0.5f * t / falloff );
+		}
+		toggle = !toggle;
 		p = abs(p) - 0.5 * falloff;
+		float sceneCache = scene;
 		scene = min(scene, max(p.x, max(p.y, p.z)));
-//		falloff /= 1.8;
-		falloff /= 2.5f;
+		if ( scene != sceneCache ) {
+			escapeee += 0.06f;
+		}
+		// falloff /= 1.8;
+		falloff /= 1.618;
+//		falloff /= 2.5f;
 	}
 	return -scene;
 }
@@ -2303,7 +2317,7 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f ) / 1.0f;
+	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f ) / 0.5f;
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
@@ -2539,17 +2553,21 @@ float de( in vec3 p ) {
 
 	p = pOriginal;
 	if ( true ) {
-		const float scale = 10.0f;
+		const float scale = 25.0f;
 		 const float d = max( dBounds, deFFE2( p / scale ) * scale );
 //		const float d = deFFE2( p / scale ) * scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-			hitSurfaceType = NormalizedRandomFloat() < 0.9f ? DIFFUSE : MIRROR;
+//			 hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			hitSurfaceType = NormalizedRandomFloat() > escapeee ? METALLIC : MIRROR;
 //			hitSurfaceType = EMISSIVE;
 //			hitSurfaceType = DIFFUSE;
 			hitRoughness = 0.1f;
-			hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : vec3( bone );
-//			hitColor = texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb;
+			 hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : mix( nickel, texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb, escapeee );
+//			hitColor = mix( nickel, nvidia, escapeee );
+
+//			if ( escapeee > 0.84f ) hitSurfaceType = EMISSIVE, hitColor = vec3( sapphire );
+//			hitColor = ;
 //			hitColor = bone;
 //			hitColor = 0.1618f;
 		}
