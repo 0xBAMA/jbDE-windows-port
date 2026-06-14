@@ -287,6 +287,7 @@ void Daedalus::ShowDaedalusConfigWindow() {
 			ImGui::SameLine(); if ( ImGui::SmallButton( " 720p " ) )		ResizeAccumulators( x = 1280, y = 720 );
 			ImGui::SameLine(); if ( ImGui::SmallButton( " 1080p " ) )	ResizeAccumulators( x = 1920, y = 1080 );
 			ImGui::SameLine(); if ( ImGui::SmallButton( " 4K " ) )		ResizeAccumulators( x = 3840, y = 2160 );
+			ImGui::SameLine(); if ( ImGui::SmallButton( " Lenticular Print " ) )	ResizeAccumulators( x = 3840 * 1.23f * 1.01f, y = 2160 * 1.23f * 1.01f );
 			ImGui::Unindent();
 			ImGui::Indent();
 			ImGui::Text( "Ultrawide" );
