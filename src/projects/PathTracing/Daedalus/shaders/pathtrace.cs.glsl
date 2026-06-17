@@ -573,13 +573,13 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 		case REFRACTIVE: {
 			throughput *= intersection.albedo; // temp
 
-			ray.origin -= 2.0f * epsilon * intersection.normal;
 			float cosTheta = min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f );
 			float sinTheta = sqrt( 1.0f - cosTheta * cosTheta );
 			bool cannotRefract = ( intersection.IoR * sinTheta ) > 1.0f; // accounting for TIR effects
 			if ( cannotRefract || Reflectance( cosTheta, intersection.IoR ) > NormalizedRandomFloat() ) {
 				ray.direction = normalize( mix( reflect( normalize( ray.direction ), intersection.normal ), RandomUnitVector(), intersection.roughness ) );
 			} else {
+				ray.origin -= 2.0f * epsilon * intersection.normal;
 				ray.direction = normalize( mix( refract( normalize( ray.direction ), intersection.normal, intersection.IoR ), RandomUnitVector(), intersection.roughness ) );
 			}
 			break;
@@ -588,7 +588,6 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 		case REFRACTIVE_BACKFACE: {
 			throughput *= intersection.albedo; // temp
 
-			ray.origin += 2.0f * epsilon * intersection.normal;
 			intersection.normal = -intersection.normal;
 			float adjustedIOR = 1.0f / intersection.IoR;
 			float cosTheta = min( dot( -normalize( ray.direction ), intersection.normal ), 1.0f );
@@ -597,6 +596,7 @@ bool EvaluateMaterial( inout vec3 finalColor, inout vec3 throughput, in intersec
 			if ( cannotRefract || Reflectance( cosTheta, adjustedIOR ) > NormalizedRandomFloat() ) {
 				ray.direction = normalize( mix( reflect( normalize( ray.direction ), intersection.normal ), RandomUnitVector(), intersection.roughness ) );
 			} else {
+				ray.origin -= 2.0f * epsilon * intersection.normal;
 				ray.direction = normalize( mix( refract( normalize( ray.direction ), intersection.normal, adjustedIOR ), RandomUnitVector(), intersection.roughness ) );
 			}
 			break;
@@ -618,6 +618,7 @@ uniform float raymarchUnderstep;
 uniform int raymarchMaxSteps;
 //=============================================================================================================================
 // global state tracking
+bool invert = false;
 vec3 hitColor;
 int hitSurfaceType;
 float hitRoughness;
@@ -1024,7 +1025,7 @@ vec2 sdFbmiq( in vec3 p, float d ) {
                         -0.60, -0.48,  0.64 );
     float t = 0.0;
 	float s = 1.0;
-    for( int i=0; i<10; i++ ) {
+    for( int i=0; i<12; i++ ) {
         float n = s*sdBaseiq(p);
     	d = smaxiq( d, -n, 0.15*s );
         t += d;
@@ -2301,6 +2302,55 @@ float deFFE2 (vec3 p) {
 	return -scene;
 }
 
+float deRRRRRRRRRRRRRR( vec3 p ){
+	float s = 2.;
+	float e = 0.;
+	for(int j=0;++j<8;)
+	p.xz=abs(p.xz)-1.7f,
+	p.z>p.x?p=p.zyx:p,
+	p.z=1.2-abs(p.z-1.0+sin(p.z)*.2),
+	p.y>p.x?p=p.yxz:p,
+	p.x=5.-abs(p.x-5.+sin(p.x*3.)*.2),
+	p.y>p.x?p=p.yxz:p,
+	p.y=.9-abs(p.y-.4),
+	e=10.*clamp(.3/min(dot(p,p),1.),.0,1.)+
+	2.*clamp(.1/min(dot(p,p),1.),.0,1.),
+	p=e*p-vec3(5,1,1),
+	s*=e;
+	return length(p)/s;
+}
+
+float deeger( vec3 p ) {
+	float itr=8.,r=0.5f;
+	p=abs(p)-1.3;
+	if(p.x < p.z)p.xz=p.zx;
+	if(p.y < p.z)p.yz=p.zy;
+	if(p.x < p.y)p.xy=p.yx;
+	float s=1.;
+	p-=vec3(.5,-.3,1.5);
+	for(float i=0.;i++ < itr;) {
+		float r2=2./clamp(dot(p,p),.1,1.);
+		p=abs(p)*r2;
+		p-=vec3(.7,.3,5.5);
+		s*=r2;
+	}
+	return length(p.xy)/(s-r);
+}
+
+#define sabs1(p)sqrt((p)*(p)+1e-1)
+#define sabs2(p)sqrt((p)*(p)+1e-3)
+float deitrich( vec3 p ){
+	float s=2.; p=abs(p);
+	for (int i=0; i<4; i++){
+		p=1.-sabs2(p-1.);
+		float r=-9.*clamp(max(.2/pow(min(min(sabs1(p.x),
+		sabs1(p.y)),sabs1(p.z)),.5), .1), 0., .5);
+		s*=r; p*=r; p+=1.;
+	}
+	s=abs(s); float a=2.;
+	p-=clamp(p,-a,a);
+	return length(p)/s-.01;
+}
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
 #include "pbrConstants.glsl"
@@ -2312,6 +2362,7 @@ float de( in vec3 p ) {
 	hitColor = vec3( 0.0f );
 	hitSurfaceType = NOHIT;
 	hitRoughness = 0.0f;
+	invert = false;
 
 	// form for the following:
 	// {
@@ -2499,7 +2550,7 @@ float de( in vec3 p ) {
 	}
 
 	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f ) ) );
-	if ( true ) {
+	if ( false ) {
 		vec3 pCache = p;
 		float idx = pModInterval1( p.x, 0.1f, 0.0f, 21.0f );
 		 const float d = fBox( p - vec3( 0.0f, 0.0f, -5.0f ), vec3( 0.8f, 0.1f, 30.0f ) );
@@ -2524,16 +2575,17 @@ float de( in vec3 p ) {
 	}
 
 //	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f, 0.1, 0.2f ) ) );
-	if ( false ) {
-		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
-		const float d = fBox( p - vec3( 0.0f, 6.5f, 0.0f ), vec3( 6.9f, 0.05f, 0.01f ).yxz );
+	if ( true ) {
+//		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
+		const float d = fBox( p - vec3( 0.0f, -0.5f, 0.0f ), vec3( 2.5f, 0.5f, 0.1f ).yxz );
 
 	 	// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
 //			hitColor = vec3( oklab_mix( carrot, vec3( 1.0f, 0.0f, 1.0f ), pow( idx / 7.0f, 1.0f ) ) );
-			hitColor = 0.1f * nvidia;
+//			hitColor = 0.1f * nvidia;
+			hitColor = vec3( 2.99f );
 
 //			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
 //			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
@@ -2558,26 +2610,32 @@ float de( in vec3 p ) {
 
 	p = pOriginal;
 	if ( true ) {
-		const float scale = 25.0f;
-		 const float d = max( dBounds, deFFE2( p / scale ) * scale );
+		const float scale = 2.0f;
+		const float d = deeger( p / scale ) * scale;
 //		const float d = deFFE2( p / scale ) * scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 //			 hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
-			hitSurfaceType = NormalizedRandomFloat() > escapeee ? METALLIC : MIRROR;
+//			hitSurfaceType = NormalizedRandomFloat() > escapeee ? METALLIC : MIRROR;
 //			hitSurfaceType = EMISSIVE;
-//			hitSurfaceType = DIFFUSE;
-			hitRoughness = 0.1f;
-			 hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : mix( nickel, texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb, escapeee );
+
+			hitSurfaceType = REFRACTIVE;
+			hitRoughness = 0.0f;
+
+//			 hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : mix( nickel, texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb, escapeee );
 //			hitColor = mix( nickel, nvidia, escapeee );
 
+
 //			if ( escapeee > 0.84f ) hitSurfaceType = EMISSIVE, hitColor = vec3( sapphire );
-//			hitColor = ;
-//			hitColor = bone;
-//			hitColor = 0.1618f;
+//			hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : bone;
+//			hitColor = vec3( 0.99f );
+			hitColor = nickel;
 		}
 	}
 
+	if ( abs( sceneDist ) != sceneDist ) {
+		invert = true;
+	}
 	return sceneDist;
 
 	// pModInterval1( p.x, 1.0f, -5.0f, 5.0f );
@@ -2774,7 +2832,8 @@ intersection_t raymarch( in ray_t ray ) {
 	vec3 pQuery = ray.origin;
 	for ( int steps = 0; steps < raymarchMaxSteps; steps++ ) {
 		pQuery = ray.origin + dTotal * ray.direction;
-		dQuery = de( pQuery );
+//		invert = false;
+		dQuery = abs( de( pQuery ) );
 		dTotal += dQuery * raymarchUnderstep;
 		if ( dTotal > raymarchMaxDistance || abs( dQuery ) < epsilon ) {
 			break;
@@ -2785,6 +2844,10 @@ intersection_t raymarch( in ray_t ray ) {
 	intersection.dTravel = ( dTotal > raymarchMaxDistance ) ? maxDistance : dTotal; // mitigating issues with expensive raymarch
 	intersection.albedo = hitColor;
 	intersection.materialID = hitSurfaceType;
+	if ( hitSurfaceType == REFRACTIVE ) {
+		intersection.IoR = 1.6;
+		hitSurfaceType = invert ? REFRACTIVE_BACKFACE : REFRACTIVE;
+	}
 	intersection.roughness = hitRoughness;
 	intersection.normal = SDFNormal( ray.origin + dTotal * ray.direction );
 	intersection.frontfaceHit = ( dot( intersection.normal, ray.direction ) <= 0.0f );
@@ -2996,8 +3059,9 @@ vec3 GetColorForIdx( ivec3 idx ) {
 	// return vec3( pcg3d( uvec3( idx ) ) / 4294967296.0f ) + vec3( 0.8f );
 	// return mix( vec3( 0.99f ), vec3( 0.99, 0.6f, 0.1f ), pcg3d( uvec3( idx ) ).x / 4294967296.0f );
 	// return mix( vec3( 0.618f ), vec3( 0.0, 0.0f, 0.0f ), saturate( pcg3d( uvec3( idx ) ) / 4294967296.0f ) );
-	 return GetLuma( imageLoad( DDATex, idx ).rgb / 255.0f ) * 3.0f * nvidia;
+//	 return GetLuma( imageLoad( DDATex, idx ).rgb / 255.0f ) * 3.0f * nvidia;
 	// return magma( imageLoad( HeightmapTex, idx.xy ).r );
+	return imageLoad( DDATex, idx ).rgb / 255.0f;
 }
 //=============================================================================================================================
 int GetMaterialIDForIdx( ivec3 idx ) {

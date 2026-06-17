@@ -172,7 +172,7 @@ void Daedalus::SendBasePathtraceUniforms() {
 	textureManager.BindImageForShader( "Depth/Normals Accumulator", "accumulatorNormalsAndDepth", shader, 2 );
 	textureManager.BindTexForShader( "Sky Cache", "skyCache", shader, 3 );
 	// textureManager.BindImageForShader( "TextBuffer", "textBuffer", shader, 4 );
-	// textureManager.BindImageForShader( "DDATex", "DDATex", shader, 4 );
+	textureManager.BindImageForShader( "DDATex", "DDATex", shader, 4 );
 	// textureManager.BindImageForShader( "HeightmapTex", "HeightmapTex", shader, 5 );
 
 	// messing with the panel images

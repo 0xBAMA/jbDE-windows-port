@@ -46,7 +46,7 @@ public:
 			// prepare the glyph and DDA VAT buffers
 			// PrepGlyphBuffer();
 			// GoLTex();
-			// DDAVATTex();
+			DDAVATTex();
 			// HeightmapTex();
 
 			{

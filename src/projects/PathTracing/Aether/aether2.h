@@ -346,7 +346,6 @@ class AetherConfig_t {
 			cout << endl << endl;
 			*/
 		}
-
 	}
 
 	// Starting from the selected source PDF, with no filters applied.
