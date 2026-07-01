@@ -24,8 +24,8 @@ public:
 	tileDispenser() {} // default, unused
 	tileDispenser( uint32_t t, uint32_t w, uint32_t h ) :
 		tileSize( t ), imageWidth( w ), imageHeight( h ) {
-		tilesBetweenQueries = 5;
-		tileTimeLimitMS = 15.0f;
+		tilesBetweenQueries = 1;
+		tileTimeLimitMS = 8.0f;
 		RegenerateTileList();
 	}
 

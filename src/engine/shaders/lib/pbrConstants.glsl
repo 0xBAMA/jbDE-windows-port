@@ -1,3 +1,22 @@
+// https://www.shadertoy.com/view/ttcyRS
+vec3 oklab_mix( vec3 colA, vec3 colB, float h ) {
+    // https://bottosson.github.io/posts/oklab
+    const mat3 kCONEtoLMS = mat3(
+    0.4121656120f,  0.2118591070f,  0.0883097947f,
+    0.5362752080f,  0.6807189584f,  0.2818474174f,
+    0.0514575653f,  0.1074065790f,  0.6302613616f );
+    const mat3 kLMStoCONE = mat3(
+    4.0767245293f, -1.2681437731f, -0.0041119885f,
+    -3.3072168827f, 2.6093323231f, -0.7034763098f,
+    0.2307590544f, -0.3411344290f,  1.7068625689f );
+    vec3 lmsA = pow( kCONEtoLMS * colA, vec3( 1.0f / 3.0f ) );
+    vec3 lmsB = pow( kCONEtoLMS * colB, vec3( 1.0f / 3.0f ) );
+    vec3 lms = mix( lmsA, lmsB, h );
+    // gain in the middle (no oaklab anymore, but looks better?) -iq
+    // lms *= 1.0f + 0.2f * h * ( 1.0f - h );
+    return kLMStoCONE * ( lms * lms * lms );
+}
+
 // values from: https://physicallybased.info/
 const vec3 aluminum		= vec3( 0.912f, 0.914f, 0.920f );
 const vec3 aqua			= vec3( 0.020f, 0.760f, 0.870f );

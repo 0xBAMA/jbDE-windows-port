@@ -145,8 +145,9 @@ struct daedalusConfig_t {
 
 		// intialize the main view
 		showConfigWindow = true;
-		view.outputZoom = 1.0f;
-		view.outputOffset = ( vec2( targetWidth, targetHeight ) - vec2( outputWidth, outputHeight ) ) / 2.0f;
+		view.outputZoom = 0.53f;
+		// view.outputOffset = ( vec2( targetWidth, targetHeight ) - vec2( outputWidth, outputHeight ) ) / 2.0f;
+		view.outputOffset = vec2( -85.7f, -249.57f );
 		filterBlendAmount = 0.5f;
 		filterEveryFrame = false;
 		filterSelector = 0;
