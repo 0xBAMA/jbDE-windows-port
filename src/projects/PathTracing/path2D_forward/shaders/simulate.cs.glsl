@@ -399,8 +399,8 @@ float de ( vec2 p ) {
 			seed = 31415 * uint( gridIndex.x ) + uint( gridIndex.y ) * 42069 + 999999;
 			const vec3 noise = 0.5f * hash33( vec3( gridIndex.xy, 0.0f ) ) + vec3( 2.0f );
 //			 const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 2.25f ) ? ( rectangle( Rotate2D( noise.z * tau ) * p, vec2( 5.0f * noise.y, 15.0f * noise.z ) ) ) : ( ( distance( p, vec2( 0.0f ) ) - ( 14.0f * noise.y ) ) ) );
-//			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 20.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
-			const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 15.0f * noise.z );
+			const float d = ( invert ? -1.0f : 1.0f ) * ( ( noise.z > 0.25f ) ? ( distance( p, vec2( 0.0f ) ) - 20.0f * noise.z ) : ( ( distance( p, vec2( 0.0f ) ) - ( 24.0f * noise.y ) ) ) );
+//			const float d = ( invert ? -1.0f : 1.0f ) * ( distance( p, vec2( 0.0f ) ) - 15.0f * noise.z );
 			seed = seedCache;
 			sceneDist = min( sceneDist, d );
 			if ( sceneDist == d && d < epsilon ) {
@@ -606,7 +606,8 @@ void main () {
 //	rayOrigin = vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), -1600.0f );
 	// rayOrigin = vec2( -2000.0f + pickedLight * 200.0f, 0.0f ) + Rotate2D( pickedLight * 0.3f ) * vec2( 100.0f * ( NormalizedRandomFloat() - 0.5f ), 0.0f );
 	// rayOrigin = vec2( -400 + 5.0f * ( NormalizedRandomFloat() - 0.5f ), -330.0f );
-	rayOrigin = mousePos;
+	rayOrigin.x = RangeRemapValue( mousePos.x, 0.0f, 1.0f, -1280.0f, 1280.0f);
+	rayOrigin.y = RangeRemapValue( mousePos.y, 0.0f, 1.0f, -768.0f, 768.0f);
 
 	mat2 rotation = Rotate2D( 0.5f );
 

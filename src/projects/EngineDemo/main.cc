@@ -28,16 +28,58 @@ public:
 				// could write temporary json file, call something that would parse it and apply operations to an image? could be cool
 				// something like bin/imageProcess <json path>, and have that json specify source file, a list of ops, and destination path
 
+			// Image_4F testImage( "../panels_final/AKAKA.GIF", Image_4F::backend::STB_IMG );
+			Image_4F testImage( "../panels_final/USA_NL1.GIF", Image_4F::backend::STB_IMG );
+			testImage.Save( "test.png" );
+
+			// sharpen
+			/*
+			float kernel[3][3] = {
+				{  0, -1,  0 },
+				{ -1,  5, -1 },
+				{  0, -1,  0 }
+			};
+			*/
+
+			float kernel[5][5] = {
+				{  1, -1,  1, -1,  1 },
+				{ -1,  1, -1,  1, -1 },
+				{  1, -1,  1, -1,  1 },
+				{ -1,  1, -1,  1, -1 },
+				{  1, -1,  1, -1,  1 },
+			};
+
+			Image_4F testSharpened( testImage.Width(), testImage.Height() );
+			for ( int x = 0; x < testImage.Width(); x++ ) {
+				for ( int y = 0; y < testImage.Height(); y++ ) {
+					color_4F sum; // = testImage.GetAtXY( x, y );
+
+					for ( int xx = 0; xx < 5; xx++ ) {
+						for ( int yy = 0; yy < 5; yy++ ) {
+							for ( int i = 0; i < 3; i++ ) {
+								sum[ i ] += kernel[ xx ][ yy ] * testImage.GetAtXY( x + xx - 2, y + yy - 2 )[ i ];
+							}
+						}
+					}
+
+					sum[ alpha ] = 1.0f;
+					testSharpened.SetAtXY( x, y, sum );
+				}
+			}
+
+			testSharpened.Save( "testSharpened.png" );
+			config.oneShot = true;
+
 			// =============================================================================================================
-
-			int num = 0xFFDD1100;
-			cout << "starting with a number " << num << newline;
-			cout << bitfieldExtract( num, 0, 8 ) << newline;
-			cout << bitfieldExtract( num, 8, 8 ) << newline;
-			cout << bitfieldExtract( num, 16, 8 ) << newline;
-			cout << bitfieldExtract( num, 24, 8 ) << newline;
-			cout << endl;
-
+			//
+			// int num = 0xFFDD1100;
+			// cout << "starting with a number " << num << newline;
+			// cout << bitfieldExtract( num, 0, 8 ) << newline;
+			// cout << bitfieldExtract( num, 8, 8 ) << newline;
+			// cout << bitfieldExtract( num, 16, 8 ) << newline;
+			// cout << bitfieldExtract( num, 24, 8 ) << newline;
+			// cout << endl;
+			//
 		// // messing with data moshing
 		// 	Image_4F testImage;
 		// 	testImage.Load( "test.png" );

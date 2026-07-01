@@ -165,9 +165,9 @@ public:
 
 		// expose controls for the physarum
 		if ( ImGui::SmallButton( "Randomize Parameters" ) ) {
-			rng senseAngle( 0.0f, float( pi ) );
+			rng senseAngle( 0.0f, float( jbDE::pi ) );
 			rng senseDistance( 0.0f, 0.005f );
-			rng turnAngle( 0.0f, float( pi ) );
+			rng turnAngle( 0.0f, float( jbDE::pi ) );
 			rng stepSize( 0.0f, 0.005f );
 			rngi depositAmount( 4000, 75000 );
 			rng decayFactor( 0.75f, 1.0f );

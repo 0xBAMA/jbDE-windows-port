@@ -36,9 +36,9 @@ struct icarusState_t {
 	// perf settings
 	const int numIntersectors = 4; // I'd rather get this straight from the header...
 	uint32_t maxBounces	= 16;
-	bool runSDF			= false;
+	bool runSDF			= true;
 	bool runTriangle	= false;
-	bool runBVH			= true;
+	bool runBVH			= false;
 	bool runVolume		= false;
 
 	// how are we generating primary ray locations
@@ -86,7 +86,7 @@ struct icarusState_t {
 	int DoFBokehMode = 0;
 	float DoFRadius = 0.001f;
 	float DoFFocusDistance = 5.0f;
-	float chromabScaleFactor = 0.006f;
+	float chromabScaleFactor = 0.003f;
 };
 
 // resize the mesh to fit in a unit cube, centered at the origin

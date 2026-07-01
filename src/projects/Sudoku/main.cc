@@ -28,7 +28,7 @@ struct SudokuBoard {
 	}
 
 	ivec2 cursor = { 5, 5 };
-	void setCursorClamped( ivec2 newPos ) { cursor.x = clamp( newPos.x, 0, 8 ); cursor.y = clamp(newPos.y, 0, 8 ); }
+	void setCursorClamped( ivec2 newPos ) { cursor.x = std::clamp( newPos.x, 0, 8 ); cursor.y = std::clamp( newPos.y, 0, 8 ); }
 	void cursorUp() { setCursorClamped( cursor + ivec2( 0, -1 ) ); };
 	void cursorDown() { setCursorClamped( cursor + ivec2( 0, 1 ) ); };
 	void cursorLeft() { setCursorClamped( cursor + ivec2(  -1, 0 ) ); };

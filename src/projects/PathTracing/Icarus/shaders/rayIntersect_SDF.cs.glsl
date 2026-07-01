@@ -319,6 +319,23 @@ float  detroit(vec3 p){
 	return length(p)/s;
 }
 
+float deFractal3 ( vec3 p ){
+	p = p.xzy;
+	vec3 cSize = vec3(1., 1., 1.3);
+	float scale = 1.;
+	for( int i=0; i < 14; i++ ){
+		p = 2.0*clamp(p, -cSize, cSize) - p;
+		float r2 = dot(p,p+sin(p.z*.3));
+		float k = max((2.)/(r2), .027);
+		p *= k;  scale *= k;
+	}
+	float l = length(p.xy);
+	float rxy = l - 4.0;
+	float n = l * p.z;
+	rxy = max(rxy, -(n) / 4.);
+	return (rxy) / abs(scale);
+}
+
 #include "wood.h"
 
 //=============================================================================================================================
@@ -350,23 +367,24 @@ float de ( vec3 p ) {
 
 	// return sceneDist;
 
-	const vec3 bboxSize = vec3( 0.05f );
+	const vec3 bboxSize = vec3( 1.05f );
 
 	{
 //		const float offset = GetLuma( matWood( p * 10.1f ) ).r;
-		const float scale = 1.0f;
-		// const float d = max( fBox( p, bboxSize ), deGAZ( p * scale + vec3( 0.0f, 0.0f, 15.0f ) ) / scale ) - 0.01f * offset;
-		const float d = fBox( p + vec3( -0.05f, 0.1f, 0.0f ), bboxSize );
-		// const float d = deGAZ( p * scale ) / scale;
+		const float scale = 10.0f;
+//		const float d = max( fBox( p, bboxSize ), deFractal3( p * scale + vec3( 0.0f, 0.0f, 15.0f ) ) / scale ) - 0.01f * offset;
+		const float d = max( fBox( p, bboxSize ), deFractal3( p / scale + vec3( 0.0f, 0.0f, 15.0f ) ) * scale );
+//		const float d = fBox( p + vec3( -0.05f, 0.1f, 0.0f ), bboxSize );
+//		 const float d = deFractal3( p / scale ) * scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
 //			hitSurfaceType = ( NormalizedRandomFloat() < 0.9f ) ? DIFFUSE : MIRROR;
-			 hitSurfaceType = EMISSIVE;
+//			 hitSurfaceType = EMISSIVE;
+			hitSurfaceType = MIRROR;
 			// hitColor = checkerBoard( 10.0f, p ) ? vec3( nvidia ) : mix( vec3( 0.618f ), blood * 0.5f, vec3( 0.5f ) + ( curlNoise( p ).r + 1.0f ) * 0.1f );
 			// hitColor = checkerBoard( 0.5f, p ) ? nvidia : carrot;
 //			hitColor = nickel;
-			hitColor = vec3( 2.98f * blood );
-	
+			hitColor = vec3( 0.9f );
 			// if ( mod( p.y, 0.75f ) < 0.1f ) {
 				// hitSurfaceType = EMISSIVE;
 				// hitColor = vec3( 1.0f );

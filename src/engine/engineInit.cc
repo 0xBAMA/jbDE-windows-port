@@ -89,6 +89,8 @@ void engineBase::CreateWindowAndContext () {
 		window.OpenGLSetup();
 	}
 
+	inputHandler.window = window.window;
+
 	// setup OpenGL debug callback with configured delay
 	numMsDelayAfterCallback = config.numMsDelayAfterCallback;
 	severeCallsToKill = config.severeCallsToKill;

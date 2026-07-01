@@ -355,7 +355,7 @@ vec3 YlGnRd_r ( float t ) {
 #define COOLWARM	6
 #define CUBEHELIX	7
 #define GISTEARTH	8
-#define HSV			9
+#define HSV_		9
 #define INFERNO		10
 #define INFERNO2	11
 #define JET			12
@@ -386,7 +386,7 @@ vec4 refPalette ( float t, int idx ) {
 		case COOLWARM:	fragColor.xyz = coolwarm( t );			break;
 		case CUBEHELIX:	fragColor.xyz = cubehelix( t );			break;
 		case GISTEARTH:	fragColor.xyz = gist_earth( t );		break;
-		case HSV:		fragColor.xyz = hsv( t );				break;
+		case HSV_:		fragColor.xyz = hsv( t );				break;
 		case INFERNO:	fragColor.xyz = inferno( t );			break;
 		case INFERNO2:	fragColor.xyz = inferno2( t );			break;
 		case JET:		fragColor.xyz = jet( t );				break;
