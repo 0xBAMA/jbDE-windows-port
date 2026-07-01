@@ -227,7 +227,7 @@ ray_t GetCameraRayForUV( in vec2 uv ) { // switchable cameras ( fisheye, etc ) -
 		uv.xy += 1.0f;
 
 		// Estimate hex coordinate
-		float R = 0.075f;
+		float R = 0.03f;
 		vec2 grid;
 		grid.y = floor( uv.y / ( 1.5f * R ) );
 		float odd = mod( grid.y, 2.0f );
@@ -272,7 +272,7 @@ ray_t GetCameraRayForUV( in vec2 uv ) { // switchable cameras ( fisheye, etc ) -
 
 		// and now get the parameters from the remapped uv
 		r.direction = normalize( aspectRatio * uv.x * basisX + uv.y * basisY + ( 1.0f / FoV ) * basisZ );
-		r.origin = viewerPosition;
+		r.origin = viewerPosition + 0.5f * ( h1.x * basisX + h1.y * basisY );
 		break;
 	}
 
@@ -308,7 +308,7 @@ ray_t GetCameraRayForUV( in vec2 uv ) { // switchable cameras ( fisheye, etc ) -
 
 	return r;
 }
-
+#include "colorspaceConversions.glsl"
 //=============================================================================================================================
 uniform sampler2D skyCache;
 uniform bool skyInvert;
@@ -826,20 +826,20 @@ vec3 Rotate(vec3 z,float AngPFXY,float AngPFYZ,float AngPFXZ) {
 }
 
 float deTT( vec3 p ) {
-    float Scale = 1.34f;
-    float FoldY = 1.5709f;
-    float FoldX = 1.425709f;
-    float FoldZ = 0.035271f;
-    float JuliaX = -1.763517f;
-    float JuliaY = 1.92486f;
-    float JuliaZ = -1.734913f;
-    float AngX = -51.080209f;
-    float AngY = 0.4f;
-    float AngZ = -19.096322f;
-    float Offset = -3.036726f;
-    int EnableOffset = 1;
-    int Iterations = 80;
-    float Precision = 1.0f;
+	float Scale = 1.34f;
+	float FoldY = 1.025709f;
+	float FoldX = 1.025709f;
+	float FoldZ = 0.035271f;
+	float JuliaX = -1.763517f;
+	float JuliaY = 0.392486f;
+	float JuliaZ = -1.734913f;
+	float AngX = -51.080209f;
+	float AngY = 0.0f;
+	float AngZ = -29.096322f;
+	float Offset = -3.236726f;
+	int EnableOffset = 1;
+	int Iterations = 80;
+	float Precision = 1.0f;
     // output _sdf c = _SDFDEF)
 
     vec4 OrbitTrap = vec4(1,1,1,1);
@@ -966,6 +966,17 @@ float smaxiq( float a, float b, float k ) {
     float h = max(k-abs(a-b),0.0);
     return max(a, b) + h*h*0.25/k;
 }
+
+float deStairs ( vec3 P ) {
+	vec3 Q;
+	float a, d = min( ( P.y - abs( fract( P.z ) - 0.5f ) ) * 0.7f, 1.5f - abs( P.x ) );
+	for( a = 2.0f; a < 6e2f; a += a )
+	Q = P * a,
+	Q.xz *= rotate2D( a ),
+	d += abs( dot( sin( Q ), Q - Q + 1.0f ) ) / a / 7.0f;
+	return d;
+}
+
 
 //---------------------------------------------------------------
 // A random SDF - it places spheres of random sizes in a grid
@@ -2417,7 +2428,7 @@ float de( in vec3 p ) {
 		// apply transform
 //		p = ( transform_imguizmo * vec4( p, 1.0f ) ).xyz;
 
-		const float scale = 10.5f;
+		const float scale = 1.5f;
 
 		const float dBase = dePortrait( p / scale ) * scale;
 		const float d = max( max( dBase + GetLuma( displacement2 ).r * 0.04f * ( 1.0f - ot ), dBounds ), dBounds );
@@ -2536,7 +2547,7 @@ float de( in vec3 p ) {
 		}
 	}
 
-	if ( false ) {
+	if ( true ) {
 		// const vec4 d = concretemap( p ) + vec4( 0.05f * GetLuma( displacement2 ).rrrr );
 		const vec4 d = vec4( deCage( p ) );
 //		const vec4 d = concretemap( p ) + vec4( displacement2.x * 0.05f, 0.0f, 0.0f, 0.0f );
@@ -2587,6 +2598,15 @@ float de( in vec3 p ) {
 //			hitColor = 0.1f * nvidia;
 			hitColor = vec3( 2.99f );
 
+			if ( hitSurfaceType == MIRROR ) hitColor = vec3( 0.99f );
+
+			if ( isEye ) {
+				hitColor = honey * 3.0f;
+				hitSurfaceType = EMISSIVE_FRESNEL;
+			}
+//			hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : ( nvidia * 0.5f );
+//			float noiseValue = saturate( perlinfbm( p.xzy, 15.0f, 4 ) + 0.4f );
+//			hitColor = 0.2f * mix( nvidia, vec3( 0.9f ), noiseValue );
 //			vec3 c0 = voronoi( pOriginal.xz * 5.0f );
 //			vec3 c1 = voronoi( pOriginal.yz * 5.0f );
 //			vec3 c;
@@ -2600,7 +2620,7 @@ float de( in vec3 p ) {
 //			if ( c == c1 ) {
 //				hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 //				hitRoughness = displacement.r;
-//				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
+			//				hitColor = hitSurfaceType == MIRROR ? vec3( 0.99f ) : vec3( smoothstep( c1.z, 0.0f, 0.01f ) * 0.01f );
 //			}
 
 //			 hitColor = 3.0f * ( mod( i, 2 ) == 0 ? vec3( 0.99f ) : mix( blood, honey, 0.3f ) );

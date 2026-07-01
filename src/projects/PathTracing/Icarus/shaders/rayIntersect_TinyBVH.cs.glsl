@@ -166,11 +166,11 @@ void main () {
 		const vec3 color = vec3( verts[ 2 * primitiveIdx + 1 ].xyz );
 		const float materialValue =  verts[ 2 * primitiveIdx + 1 ].w;
 
-//		 SetHitAlbedo( TinyBVHIntersection, refPalette( 1.0f - color.r, BLUESR ).xyz );
+		 SetHitAlbedo( TinyBVHIntersection, refPalette( 1.0f - color.r, BLUESR ).xyz );
 //		SetHitAlbedo( TinyBVHIntersection, refPalette( ( color.r ), 3 ).rgb );
 		// SetHitAlbedo( TinyBVHIntersection, ( color.r < 0.8f ) ? blood * color.r : vec3( color.r ) );
 //		 SetHitAlbedo( TinyBVHIntersection, mix( blood, vec3( 0.1f ), sqrt( color.r ) ) );
-		 SetHitAlbedo( TinyBVHIntersection, vec3( pow( color.r, 0.5f ) ) );
+//		 SetHitAlbedo( TinyBVHIntersection, vec3( pow( color.r, 0.5f ) ) );
 
 		SetHitDistance( TinyBVHIntersection, hit.x );
 		// SetHitMaterial( TinyBVHIntersection, ( NormalizedRandomFloat() < color.r ) ? DIFFUSE : REFRACTIVE );

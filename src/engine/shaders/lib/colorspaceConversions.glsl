@@ -1628,7 +1628,7 @@ vec3 rgbToLuv(vec3 tuple)
 #define SRGB		1
 #define XYZ			2
 #define XYY			3
-#define HSV			4
+#define HSV__			4
 #define HSL			5
 #define HCY			6
 #define YPBPR		7
@@ -1656,7 +1656,7 @@ vec4 convert ( uvec4 value, int spaceswitch ) {
 		case SRGB:		converted.rgb = rgb_to_srgb( base_rgbval.rgb ); break;
 		case XYZ:		converted.rgb = rgb_to_xyz( base_rgbval.rgb ); break;
 		case XYY:		converted.rgb = rgb_to_xyY( base_rgbval.rgb ); break;
-		case HSV:		converted.rgb = rgb_to_hsv( base_rgbval.rgb ); break;
+		case HSV__:		converted.rgb = rgb_to_hsv( base_rgbval.rgb ); break;
 		case HSL:		converted.rgb = rgb_to_hsl( base_rgbval.rgb ); break;
 		case HCY:		converted.rgb = rgb_to_hcy( base_rgbval.rgb ); break;
 		case YPBPR:		converted.rgb = rgb_ypbpr( base_rgbval.rgb ); break;
@@ -1688,7 +1688,7 @@ uvec4 convertBack ( vec4 value, int spaceswitch ) {
 		case SRGB:		converted.rgb = uvec3( srgb_to_rgb( value.rgb ) * 255 ); break;
 		case XYZ:		converted.rgb = uvec3( xyz_to_rgb( value.rgb ) * 255 ); break;
 		case XYY:		converted.rgb = uvec3( xyY_to_rgb( value.rgb ) * 255 ); break;
-		case HSV:		converted.rgb = uvec3( hsv_to_rgb( value.rgb ) * 255 ); break;
+		case HSV__:		converted.rgb = uvec3( hsv_to_rgb( value.rgb ) * 255 ); break;
 		case HSL:		converted.rgb = uvec3( hsl_to_rgb( value.rgb ) * 255 ); break;
 		case HCY:		converted.rgb = uvec3( hcy_to_rgb( value.rgb ) * 255 ); break;
 		case YPBPR:		converted.rgb = uvec3( ypbpr_rgb( value.rgb ) * 255 ); break;
