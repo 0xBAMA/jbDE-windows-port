@@ -1,6 +1,6 @@
 #pragma once
 
-// this table is coming from https://www.shadertoy.com/view/M3jcDW (original source unknown)
+// Standard Observer Curves - XYZ color constants
 inline vec3 cie_1964(float lambda) {
     switch(int(lambda)) {
         case 360: return vec3(0.000000122200, 0.000000013398, 0.000000535027);
@@ -478,26 +478,17 @@ inline vec3 cie_1964(float lambda) {
     }
 }
 
-/*
-vec3 wl_rgb(float lambda) {
-    vec3 xyz = cie_1964(lambda);
-    float x = xyz.x;
-    float y = xyz.y;
-    float z = xyz.z;
-    vec3 rgb;
-    rgb.r =  3.2404542*x - 1.5371385*y - 0.4985314*z;
-    rgb.g = -0.9692660*x + 1.8760108*y + 0.0415560*z;
-    rgb.b =  0.0556434*x - 0.2040259*y + 1.0572252*z;
-    return clamp(rgb, 0., 1.);
-}
-*/
-
 // Used to convert from XYZ to linear RGB space
 const mat3 XYZ_2_RGB = ( mat3(
     3.2404542, -0.9692660, 0.0556434,
     -1.5371385, 1.8760108, -0.2040259,
     -0.4985314, 0.0415560, 1.0572252
 ) );
+
+inline vec3 wavelengthColorLinear ( float wavelength ) { // units are nanometers, producing an LDR color
+	vec3 XYZconstant = mix( cie_1964( floor( wavelength ) ), cie_1964( ceil( wavelength ) ), fract( wavelength ) );
+	return ( XYZ_2_RGB * XYZconstant );
+}
 
 inline vec3 TonemapUchimura2 ( vec3 v ) {
     const float P = 1.0;  // max display brightness
@@ -524,11 +515,6 @@ inline vec3 TonemapUchimura2 ( vec3 v ) {
     vec3 L = m + a * ( v - vec3( m ) );
 
     return T * w0 + L * w1 + S * w2;
-}
-
-inline vec3 wavelengthColorLinear ( float wavelength ) { // units are nanometers, producing an LDR color
-    vec3 XYZconstant = mix( cie_1964( floor( wavelength ) ), cie_1964( ceil( wavelength ) ), fract( wavelength ) );
-    return ( XYZ_2_RGB * XYZconstant );
 }
 
 inline vec3 wavelengthColorLDR ( float wavelength ) { // units are nanometers, producing an LDR color

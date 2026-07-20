@@ -747,30 +747,6 @@ float deGazTemple4( vec3 p ){
 	return dot(p,a)/s;
 }
 
-#define fold45(p)(p.y>p.x)?p.yx:p
-float deGazTemple5( vec3 p ) {
-	float scale = 2.1, off0 = .8, off1 = .3, off2 = .83;
-	vec3 off =vec3(2.,.2,.1);
-	float s=1.0;
-	for(int i = 0;++i<20;) {
-		p.xy = abs(p.xy);
-		p.xy = fold45(p.xy);
-		p.y -= off0;
-		p.y = -abs(p.y);
-		p.y += off0;
-		p.x += off1;
-		p.xz = fold45(p.xz);
-		p.x -= off2;
-		p.xz = fold45(p.xz);
-		p.x += off1;
-		p -= off;
-		p *= scale;
-		p += off;
-		s *= scale;
-	}
-	return length(p)/s;
-}
-
 float deRingo ( vec3 p ) {
   float e, s, t=0.0; // time adjust term
   vec3 q=p;
@@ -2332,35 +2308,22 @@ float deRRRRRRRRRRRRRR( vec3 p ){
 }
 
 float deeger( vec3 p ) {
-	float itr=8.,r=0.5f;
-	p=abs(p)-1.3;
-	if(p.x < p.z)p.xz=p.zx;
-	if(p.y < p.z)p.yz=p.zy;
-	if(p.x < p.y)p.xy=p.yx;
-	float s=1.;
-	p-=vec3(.5,-.3,1.5);
-	for(float i=0.;i++ < itr;) {
-		float r2=2./clamp(dot(p,p),.1,1.);
-		p=abs(p)*r2;
-		p-=vec3(.7,.3,5.5);
-		s*=r2;
+	p.z-=-1.;
+	#define fold(p,v)p-2.*min(0.,dot(p,v))*v;
+	float s=3., l=0.;
+	for(int i = 0;++i<15;){
+		p.xy=fold(p.xy,normalize(vec2(1,-1.3)));
+		p.y=-abs(p.y);
+		p.y+=.5;
+		p.xz=abs(p.xz);
+		p.yz=fold(p.yz,normalize(vec2(8,-1)));
+		p.x-=.5;
+		p.yz=fold(p.yz,normalize(vec2(1,-2)));
+		p-=vec3(1.8,.4,.1);
+		l = 2.6/dot(p,p);    p*=l;
+		p+=vec3(1.8,.7,.2);  s*=l;
 	}
-	return length(p.xy)/(s-r);
-}
-
-#define sabs1(p)sqrt((p)*(p)+1e-1)
-#define sabs2(p)sqrt((p)*(p)+1e-3)
-float deitrich( vec3 p ){
-	float s=2.; p=abs(p);
-	for (int i=0; i<4; i++){
-		p=1.-sabs2(p-1.);
-		float r=-9.*clamp(max(.2/pow(min(min(sabs1(p.x),
-		sabs1(p.y)),sabs1(p.z)),.5), .1), 0., .5);
-		s*=r; p*=r; p+=1.;
-	}
-	s=abs(s); float a=2.;
-	p-=clamp(p,-a,a);
-	return length(p)/s-.01;
+	return length(p.xy)/s;
 }
 //=============================================================================================================================
 #include "oldTestChamber.h.glsl"
@@ -2384,7 +2347,7 @@ float de( in vec3 p ) {
 		// }
 	// }
 
-	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f ) / 0.5f;
+	const vec3 bboxDim = vec3( 25.0f, 20.0f, 20.0f ) / 5.5f;
 //	const float dBounds = distance( p, vec3( 0.0f ) ) - marbleRadius - 0.001f;
 	 const float dBounds = sdBox( p, bboxDim );
 	// const float dBounds = sdBox( p, vec3( marbleRadius ) );
@@ -2586,9 +2549,9 @@ float de( in vec3 p ) {
 	}
 
 //	p *= Rotate3D( 0.3f, normalize( vec3( 1.0f, 0.1, 0.2f ) ) );
-	if ( true ) {
+	if ( false ) {
 //		float idx = pModInterval1( p.x, 0.3f, 0.0f, 7.0f );
-		const float d = fBox( p - vec3( 0.0f, -0.5f, 0.0f ), vec3( 2.5f, 0.5f, 0.1f ).yxz );
+		const float d = fBox( p - vec3( 0.0f, -0.5f, 0.0f ), vec3( 0.5f, 1.5f, 0.1f ).yxz );
 
 	 	// const float d = deJeyko( p );
 		sceneDist = min( sceneDist, d );
@@ -2596,7 +2559,7 @@ float de( in vec3 p ) {
 			hitSurfaceType = EMISSIVE_FRESNEL;
 //			hitColor = vec3( oklab_mix( carrot, vec3( 1.0f, 0.0f, 1.0f ), pow( idx / 7.0f, 1.0f ) ) );
 //			hitColor = 0.1f * nvidia;
-			hitColor = vec3( 2.99f );
+			hitColor = vec3( 1.0f );
 
 			if ( hitSurfaceType == MIRROR ) hitColor = vec3( 0.99f );
 
@@ -2631,16 +2594,17 @@ float de( in vec3 p ) {
 	p = pOriginal;
 	if ( true ) {
 		const float scale = 2.0f;
-		const float d = deeger( p / scale ) * scale;
-//		const float d = deFFE2( p / scale ) * scale;
+		const float d = max( dBounds, abs( deeger( p / scale ) ) * scale - 0.003f * displacement.x );
+//		const float d = max( dBounds, abs( deeger( p / scale ) ) * scale);
+//		const float d = deeger( p / scale ) * scale;
 		sceneDist = min( sceneDist, d );
 		if ( sceneDist == d && d < epsilon ) {
-//			 hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
+			 hitSurfaceType = NormalizedRandomFloat() < 0.9f ? METALLIC : MIRROR;
 //			hitSurfaceType = NormalizedRandomFloat() > escapeee ? METALLIC : MIRROR;
 //			hitSurfaceType = EMISSIVE;
 
-			hitSurfaceType = REFRACTIVE;
-			hitRoughness = 0.0f;
+//			hitSurfaceType = REFRACTIVE;
+			hitRoughness = 0.1f;
 
 //			 hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : mix( nickel, texture( panelTexture, p.xy / 10.0f + 0.5f ).rgb, escapeee );
 //			hitColor = mix( nickel, nvidia, escapeee );
@@ -2649,7 +2613,7 @@ float de( in vec3 p ) {
 //			if ( escapeee > 0.84f ) hitSurfaceType = EMISSIVE, hitColor = vec3( sapphire );
 //			hitColor = ( hitSurfaceType == MIRROR ) ? vec3( 0.99f ) : bone;
 //			hitColor = vec3( 0.99f );
-			hitColor = nickel;
+			hitColor = mix( blood, tire, pow( GetLuma( displacement.xyz ), vec3( 3.0f ) ) );
 		}
 	}
 
@@ -2846,11 +2810,11 @@ vec3 SDFNormal( in vec3 position ) {
 //	}
 }
 //=============================================================================================================================
-intersection_t raymarch( in ray_t ray ) {
+intersection_t raymarch( in ray_t ray, in int bounce ) {
 	float dQuery = 0.0f;
 	float dTotal = 0.0f;
 	vec3 pQuery = ray.origin;
-	for ( int steps = 0; steps < raymarchMaxSteps; steps++ ) {
+	for ( int steps = 0; steps < ( max( 1, raymarchMaxSteps * ( 1.0f / max( float( bounce ), 1.0f ) ) ) ); steps++ ) {
 		pQuery = ray.origin + dTotal * ray.direction;
 //		invert = false;
 		dQuery = abs( de( pQuery ) );
@@ -3587,9 +3551,9 @@ intersection_t ExplicitListIntersect( in ray_t ray ) {
 	return result;
 }
 //=============================================================================================================================
-intersection_t GetNearestSceneIntersection( in ray_t ray ) {
+intersection_t GetNearestSceneIntersection( in ray_t ray, in int bounce ) {
 	// return a single intersection_t representing the closest ray intersection
-	intersection_t SDFResult		= raymarchEnable		? raymarch( ray )				: DefaultIntersection();
+	intersection_t SDFResult		= raymarchEnable		? raymarch( ray, bounce )		: DefaultIntersection();
 	 intersection_t VoxelResult		= ddaSpheresEnable		? VoxelIntersection( ray )		: DefaultIntersection();
 //	intersection_t VoxelResult		= SpherePackDDA( ray );
 	intersection_t MaskedPlane		= maskedPlaneEnable		? MaskedPlaneIntersect( ray )	: DefaultIntersection();
@@ -3634,7 +3598,7 @@ result_t GetNewSample( in vec2 uv ) {
 
 	for ( int bounce = 0; bounce < maxBounces; bounce++ ) {
 		// get the scene intersection for this bounce
-		intersection_t intersection = GetNearestSceneIntersection( ray );
+		intersection_t intersection = GetNearestSceneIntersection( ray, bounce );
 
 		if ( bounce == 0 ) // first hit populates the normal/depth buffer result
 			result.normalD = vec4( intersection.normal, intersection.dTravel );

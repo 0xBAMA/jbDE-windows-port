@@ -3,6 +3,7 @@
 #include "../../../engine/engine.h"
 #include "spectralToolkit.h"
 
+
 class AetherConfig_t {
 
 // light class used for:
@@ -129,6 +130,57 @@ class AetherConfig_t {
 				( float& ) xRiteReflectances[ i ][ l ] = rgb2spec_eval_precise( coeff, float( l + 380 ) );
 			}
 		}
+
+		std::ofstream out;
+		out.open( "srgbReflectances.txt", std::ios::out );
+		out << "// for 4-bit quantized sRGB" << std::endl;
+		out << "const vec3 JakobValues[ " << 6 * 6 * 6 << " ] = {" << std::endl;
+
+		color_4F col{{ 0.25f, 0.5f, 1.0f, 1.0f }};
+		vec4 linearRGB = vec4( col[ 0 ], col[ 1 ], col[ 2 ], col[ 3 ] );
+		bvec4 cutoff = lessThan( linearRGB, vec4( 0.0031308f ) );
+		vec4 higher = vec4( 1.055f ) * pow( linearRGB, vec4( 1.0f / 2.4f ) ) - vec4( 0.055f );
+		vec4 lower = linearRGB * vec4( 12.92f );
+		vec4 result = mix( higher, lower, cutoff );
+
+		float rgb0[ 3 ] = { result.r, result.g, result.b }, coeff0[ 3 ];
+		rgb2spec_fetch( model, rgb0, coeff0 );
+		cout << "Coefficients for sky blue float3(" << coeff0[ 0 ] << "," << coeff0[ 1 ] << "," << coeff0[ 2 ] << ")" << std::endl;
+
+		for ( int b = 0; b <= 5; b++ ) {
+			out << std:: endl << "// b = " << std::to_string( b / 5.0f ) << std::endl;
+			for ( int g = 0; g <= 5; g++ ) {
+				out << "\t";
+				for ( int r = 0; r <= 5; r++ ) {
+
+					// getting the reflectance coefficients...
+					float rgb[ 3 ] = { r / 5.0f, g / 5.0f, b / 5.0f }, coeff[ 3 ];
+					rgb2spec_fetch( model, rgb, coeff );
+
+					// evaluating for the wavelength bands
+					if ( r == 0 && g == 0 && b == 0 ) {
+						// for ( int i = 0; i < 16; i++ ) {
+							out << std::fixed << std::setprecision( 6 ) << std::setw( 12 ) << glm::to_string( vec3( 0.0f ) ) << ", ";
+						// }
+					} else {
+						// for ( int i = 0; i < 16; i++ ) {
+							// float val = rgb2spec_eval_precise( coeff, 400 + ( i / 16.0 ) * 300 );
+							// if ( val < 0.001f ) {
+								// val = 0.0f;
+							// }
+							// out << std::fixed << std::setprecision( 6 ) << val << ", ";
+						// }
+							out << std::fixed << std::setprecision( 6 ) << std::setw( 12 ) << glm::to_string( vec3( coeff[ 0 ], coeff[ 1 ], coeff[ 2 ] ) ) << ", ";
+					}
+					// out << " // , (" << std::fixed << std::setw( 2 ) <<  std::setprecision( 2 ) << std::to_string( r / 15.0f ) << ", " << std::fixed << std::setw( 2 ) << std::to_string( g / 15.0f ) << ", " << std::fixed << std::setw( 2 ) << std::to_string( b / 15.0f ) << ")" << std::endl;
+					// out << " // r = " << std::to_string( r / 15.0f ) << std::endl;
+				}
+				out << "// g = " << std::to_string( g / 5.0f ) << std::endl;
+			}
+		}
+		out << "};" << std::endl;
+		out.close();
+
 	}
 
 	void LoadPDFData () {
@@ -426,7 +478,7 @@ class AetherConfig_t {
 			// we need to iterate over wavelengths and get an average color value under this illuminant
 			for ( int y = 0; y < 450; y++ ) {
 				// color[ chip ] += ( wavelengthColorLinear( 380 + y ) * light.PDFScratch[ y ] ) / 450.0f;
-				color[ chip ] += 3.5f * glm::clamp( wavelengthColorLinear( 380 + y ) * xRiteReflectances[ chip ][ y ] * light.PDFScratch[ y ], vec3( 0.0f ), vec3( 1.0f ) ) / 450.0f;
+				color[ chip ] += 3.5f * glm::clamp( vec3( wavelengthColorLinear( 380.0f + y ) * xRiteReflectances[ chip ][ y ] * light.PDFScratch[ y ] ), vec3( 0.0f ), vec3( 1.0f ) ) / 450.0f;
 			}
 		}
 
